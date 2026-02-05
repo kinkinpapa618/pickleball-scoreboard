@@ -33,6 +33,11 @@ export function Court({ positions, serverTeam, names, serverHand, score1, score2
     return positions[pid] === serveSide;
   };
 
+  const isReceiver = (pid: string, team: 1 | 2) => {
+    if (team === serverTeam) return false;
+    return positions[pid] === serveSide;
+  };
+
   return (
     <div className="relative w-full aspect-[16/9] max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 select-none">
       {/* Court Surface */}
@@ -44,6 +49,7 @@ export function Court({ positions, serverTeam, names, serverHand, score1, score2
              <PlayerMarker 
                name={names.t2p2} 
                isServing={isServer("t2p2", 2)}
+               isReceiver={isReceiver("t2p2", 2)}
                isTop={true}
              />
           </div>
@@ -52,6 +58,7 @@ export function Court({ positions, serverTeam, names, serverHand, score1, score2
             <PlayerMarker 
                name={names.t2p1} 
                isServing={isServer("t2p1", 2)}
+               isReceiver={isReceiver("t2p1", 2)}
                isTop={true}
              />
           </div>
@@ -75,6 +82,7 @@ export function Court({ positions, serverTeam, names, serverHand, score1, score2
             <PlayerMarker 
                name={names.t1p2} 
                isServing={isServer("t1p2", 1)}
+               isReceiver={isReceiver("t1p2", 1)}
                isTop={false}
              />
           </div>
@@ -83,6 +91,7 @@ export function Court({ positions, serverTeam, names, serverHand, score1, score2
             <PlayerMarker 
                name={names.t1p1} 
                isServing={isServer("t1p1", 1)}
+               isReceiver={isReceiver("t1p1", 1)}
                isTop={false}
              />
           </div>
@@ -92,7 +101,7 @@ export function Court({ positions, serverTeam, names, serverHand, score1, score2
   );
 }
 
-function PlayerMarker({ name, isServing, isTop }: { name: string, isServing: boolean, isTop: boolean }) {
+function PlayerMarker({ name, isServing, isReceiver, isTop }: { name: string, isServing: boolean, isReceiver: boolean, isTop: boolean }) {
   return (
     <motion.div 
       layout
@@ -103,19 +112,32 @@ function PlayerMarker({ name, isServing, isTop }: { name: string, isServing: boo
         flex flex-col items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300
         ${isServing ? 'scale-110' : 'opacity-80 scale-95'}
       `}>
-        {isServing && (
-          <motion.div 
-            initial={{ y: -10, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }}
-            className="text-yellow-400 drop-shadow-lg"
-          >
-            <div className="w-6 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)]" />
-          </motion.div>
-        )}
+        <div className="flex gap-2">
+          {isServing && (
+            <motion.div 
+              initial={{ scale: 0 }} 
+              animate={{ scale: 1 }}
+              className="w-6 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] font-bold text-yellow-900"
+            >
+              P
+            </motion.div>
+          )}
+          {isReceiver && (
+            <motion.div 
+              initial={{ scale: 0 }} 
+              animate={{ scale: 1 }}
+              className="w-6 h-6 bg-gray-400 rounded-full shadow-[0_0_10px_rgba(156,163,175,0.6)] flex items-center justify-center text-[10px] font-bold text-gray-900"
+            >
+              R
+            </motion.div>
+          )}
+        </div>
         <div className={`
           flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm md:text-base shadow-lg backdrop-blur-sm
           ${isServing 
             ? 'bg-white text-blue-900 border-2 border-yellow-400' 
+            : isReceiver
+            ? 'bg-white/90 text-gray-900 border-2 border-gray-400'
             : 'bg-black/40 text-white border border-white/20'}
         `}>
           <User className="w-4 h-4" />

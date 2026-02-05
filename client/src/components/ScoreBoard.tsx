@@ -9,29 +9,24 @@ interface ScoreBoardProps {
 
 export function ScoreBoard({ score1, score2, serverTeam, serverHand }: ScoreBoardProps) {
   return (
-    <div className="w-full grid grid-cols-[1fr_auto_1fr] gap-4 md:gap-12 items-center justify-center py-6">
-      {/* Team 1 Score */}
-      <TeamScore 
-        score={score1} 
-        label="Đội 1 (Team 1)" 
-        isActive={serverTeam === 1} 
-        hand={serverHand} 
-        align="right"
-      />
-
-      {/* VS / Divider */}
-      <div className="text-muted-foreground font-bold text-xl opacity-50 translate-y-4">
-        -
+    <div className="w-full flex items-center justify-center gap-4 md:gap-8 py-6">
+      <div className="flex items-center gap-4 md:gap-8">
+        <div className="text-7xl md:text-9xl font-display font-bold text-primary drop-shadow-2xl">
+          {score1}
+        </div>
+        <div className="text-4xl md:text-6xl font-display font-bold opacity-30">
+          -
+        </div>
+        <div className="text-7xl md:text-9xl font-display font-bold text-primary drop-shadow-2xl">
+          {score2}
+        </div>
+        <div className="text-4xl md:text-6xl font-display font-bold opacity-30">
+          -
+        </div>
+        <div className="bg-accent text-accent-foreground text-xl md:text-3xl font-bold px-4 py-2 rounded-xl shadow-lg whitespace-nowrap">
+          TAY {serverHand}
+        </div>
       </div>
-
-      {/* Team 2 Score */}
-      <TeamScore 
-        score={score2} 
-        label="Đội 2 (Team 2)" 
-        isActive={serverTeam === 2} 
-        hand={serverHand} 
-        align="left"
-      />
     </div>
   );
 }
