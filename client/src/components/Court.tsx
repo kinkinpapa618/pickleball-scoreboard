@@ -18,27 +18,23 @@ function PlayerMarker({
   isServing,
   isReceiver,
   slot,
-  position,
   side,
+  positionName,
+  isTeam1,
 }: {
   name: string;
   isServing: boolean;
   isReceiver: boolean;
   slot: number;
-  position: "left" | "right";
   side: "team1" | "team2";
+  positionName: string;
+  isTeam1: boolean;
 }) {
   return (
-    <div className={`
-      absolute flex flex-col items-center justify-center
-      ${position === "left" ? "top-1/4" : "bottom-1/4"} 
-      ${side === "team1" ? "left-1/4" : "right-1/4"}
-      transform -translate-x-1/2 -translate-y-1/2
-      w-24 md:w-28 lg:w-32
-    `}>
+    <div className="flex flex-col items-center gap-1">
       {/* Badge cho người phát/người nhận */}
       {(isServing || isReceiver) && (
-        <div className="flex flex-col items-center gap-1 mb-2 w-full">
+        <div className="flex flex-col items-center gap-1 mb-1 w-full">
           {isServing && (
             <motion.div
               initial={{ scale: 0 }}
@@ -63,14 +59,16 @@ function PlayerMarker({
       {/* Thẻ tên cầu thủ */}
       <div
         className={`
-          w-full flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all duration-300
+          w-20 md:w-24 lg:w-28 flex flex-col items-center gap-1 px-2 py-3 rounded-xl transition-all duration-300
           ${isServing ? "scale-105 shadow-lg ring-2 ring-yellow-400" : "opacity-90"}
           ${
             isServing
               ? "bg-gradient-to-r from-yellow-50 to-yellow-100"
               : isReceiver
               ? "bg-gradient-to-r from-gray-50 to-gray-100"
-              : "bg-black/40 text-white"
+              : isTeam1
+              ? "bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-300"
+              : "bg-gradient-to-r from-red-50 to-red-100 border border-red-300"
           }
         `}
       >
@@ -83,9 +81,9 @@ function PlayerMarker({
         </div>
 
         {/* Vị trí và Slot */}
-        <div className="flex items-center justify-center gap-2 text-[10px] md:text-xs">
-          <div className={`px-2 py-0.5 rounded-full ${position === "left" ? "bg-blue-500/20 text-blue-300" : "bg-green-500/20 text-green-300"}`}>
-            {position === "left" ? "TRÊN" : "DƯỚI"}
+        <div className="flex items-center justify-center gap-1 text-[10px] md:text-xs">
+          <div className={`px-2 py-0.5 rounded-full font-medium ${positionName === "Ô 1" ? "bg-blue-500/20 text-blue-700" : "bg-green-500/20 text-green-700"}`}>
+            {positionName}
           </div>
           <div className="text-gray-600 font-medium">
             SLOT {slot}
@@ -115,63 +113,112 @@ export function Court({
     pid => pid.startsWith(`t${receiverTeam}`) && positions[pid] === serverPosition
   );
 
-  // Hàm xác định vị trí cố định cho mỗi người chơi
-  const getPlayerPositions = () => {
-    const positionsArray = [
-      // Đội 1 - Vị trí cố định
-      { id: "t1p1", name: names.t1p1, team: "team1", position: positions.t1p1, fixedX: "25%", fixedY: "25%" },
-      { id: "t1p2", name: names.t1p2, team: "team1", position: positions.t1p2, fixedX: "25%", fixedY: "75%" },
-      // Đội 2 - Vị trí cố định
-      { id: "t2p1", name: names.t2p1, team: "team2", position: positions.t2p1, fixedX: "75%", fixedY: "25%" },
-      { id: "t2p2", name: names.t2p2, team: "team2", position: positions.t2p2, fixedX: "75%", fixedY: "75%" },
-    ];
+  // Hàm xác định thông tin cho từng player với vị trí cố định
+  const getPlayerInfo = (team: number, player: number) => {
+    const playerId = `t${team}p${player}`;
+    const position = positions[playerId];
 
-    return positionsArray.map(player => ({
-      ...player,
-      isServer: player.id === serverPlayerId,
-      isReceiver: player.id === receiverPlayerId,
-      slot: player.id.endsWith("p1") ? 1 : 2,
-    }));
+    // Xác định vị trí dựa trên team và player
+    let positionName = "";
+    let gridClass = "";
+
+    if (team === 1) {
+      if (player === 1) {
+        positionName = "Ô 1"; // Dưới bên trái
+        gridClass = "row-start-2 col-start-1";
+      } else { // player === 2
+        positionName = "Ô 2"; // Trên bên trái
+        gridClass = "row-start-1 col-start-1";
+      }
+    } else { // team === 2
+      if (player === 1) {
+        positionName = "Ô 1"; // Trên bên phải
+        gridClass = "row-start-1 col-start-2";
+      } else { // player === 2
+        positionName = "Ô 2"; // Dưới bên phải
+        gridClass = "row-start-2 col-start-2";
+      }
+    }
+
+    return {
+      id: playerId,
+      name: names[playerId as keyof typeof names],
+      positionName,
+      gridClass,
+      isServer: playerId === serverPlayerId,
+      isReceiver: playerId === receiverPlayerId,
+      slot: player,
+      isTeam1: team === 1,
+    };
   };
 
-  const allPlayers = getPlayerPositions();
+  // Tạo mảng thông tin cho tất cả players
+  const players = [
+    getPlayerInfo(1, 1), // t1p1
+    getPlayerInfo(1, 2), // t1p2
+    getPlayerInfo(2, 1), // t2p1
+    getPlayerInfo(2, 2), // t2p2
+  ];
 
   return (
     <div className="relative w-full aspect-[16/9] max-w-6xl mx-auto rounded-xl overflow-hidden shadow-2xl border-2 md:border-4 border-white/20 select-none bg-gradient-to-br from-blue-900/20 to-purple-900/20">
-      {/* Court Surface - Layout ngang */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 flex">
+      {/* Court Surface - Layout ngang với grid */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700">
+        {/* Grid container cho 4 vị trí cố định */}
+        <div className="h-full grid grid-rows-2 grid-cols-2">
+          {/* Team 1 Side (Bên trái) */}
+          <div className="relative border-r-2 md:border-r-4 border-white/30">
+            {/* Khu vực trước lưới */}
+            <div className="absolute right-0 w-1/4 h-full bg-blue-500/20 border-l border-dashed border-white/20"></div>
+          </div>
 
-        {/* Team 1 Side (Bên trái) - Chiếm 50% */}
-        <div className="w-1/2 relative border-r-2 md:border-r-4 border-white/30">
-          {/* Khu vực trước lưới */}
-          <div className="absolute right-0 w-1/4 h-full bg-blue-500/20 border-l border-dashed border-white/20"></div>
+          {/* Team 2 Side (Bên phải) */}
+          <div className="relative border-l-2 md:border-l-4 border-white/30">
+            {/* Khu vực trước lưới */}
+            <div className="absolute left-0 w-1/4 h-full bg-blue-500/20 border-r border-dashed border-white/20"></div>
+          </div>
 
-          {/* Vị trí cầu thủ đội 1 được cố định bằng CSS */}
+          {/* Row 2 - Phần dưới của sân */}
+          <div className="relative border-r-2 md:border-r-4 border-t-2 border-white/30">
+            {/* Khu vực trước lưới */}
+            <div className="absolute right-0 w-1/4 h-full bg-blue-500/20 border-l border-dashed border-white/20"></div>
+          </div>
+
+          <div className="relative border-l-2 md:border-l-4 border-t-2 border-white/30">
+            {/* Khu vực trước lưới */}
+            <div className="absolute left-0 w-1/4 h-full bg-blue-500/20 border-r border-dashed border-white/20"></div>
+          </div>
         </div>
 
         {/* Net (Ở giữa) */}
-        <div className="w-1 md:w-2 bg-gradient-to-b from-white via-white to-gray-300 h-full shadow-lg z-10 relative">
+        <div className="absolute top-0 bottom-0 left-1/2 transform -translate-x-1/2 w-1 md:w-2 bg-gradient-to-b from-white via-white to-gray-300 h-full shadow-lg z-10">
           <div className="h-full w-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzjIHFBmAAxxGMCAIg0VAABm6gwVd0K0ZAAAAABJRU5ErkJggg==')] opacity-50"></div>
-        </div>
-
-        {/* Team 2 Side (Bên phải) - Chiếm 50% */}
-        <div className="w-1/2 relative border-l-2 md:border-l-4 border-white/30">
-          {/* Khu vực trước lưới */}
-          <div className="absolute left-0 w-1/4 h-full bg-blue-500/20 border-r border-dashed border-white/20"></div>
         </div>
       </div>
 
       {/* Render tất cả cầu thủ ở vị trí cố định */}
-      {allPlayers.map(player => (
-        <PlayerMarker
+      {players.map(player => (
+        <div 
           key={player.id}
-          name={player.name}
-          isServing={player.isServer}
-          isReceiver={player.isReceiver}
-          slot={player.slot}
-          position={player.position}
-          side={player.team as "team1" | "team2"}
-        />
+          className={`
+            absolute flex items-center justify-center z-20
+            ${player.id === "t1p1" ? "left-[25%] top-[75%]" : ""}
+            ${player.id === "t1p2" ? "left-[25%] top-[25%]" : ""}
+            ${player.id === "t2p1" ? "left-[75%] top-[25%]" : ""}
+            ${player.id === "t2p2" ? "left-[75%] top-[75%]" : ""}
+            transform -translate-x-1/2 -translate-y-1/2
+          `}
+        >
+          <PlayerMarker
+            name={player.name}
+            isServing={player.isServer}
+            isReceiver={player.isReceiver}
+            slot={player.slot}
+            side={player.isTeam1 ? "team1" : "team2"}
+            positionName={player.positionName}
+            isTeam1={player.isTeam1}
+          />
+        </div>
       ))}
 
       {/* Hiển thị thông tin lượt phát đầu tiên */}
@@ -179,7 +226,7 @@ export function Court({
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-2 md:top-4 left-1/2 -translate-x-1/2 z-20"
+          className="absolute top-2 md:top-4 left-1/2 -translate-x-1/2 z-30"
         >
           <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-yellow-900 text-xs md:text-sm font-bold px-3 md:px-4 py-1 md:py-2 rounded-full shadow-lg animate-pulse border border-yellow-300">
             🎯 0-0-2 - LƯỢT PHÁT ĐẦU TIÊN
@@ -227,11 +274,11 @@ export function Court({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-300"></div>
-            <span>VỊ TRÍ TRÊN</span>
+            <span>Ô 1</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-300"></div>
-            <span>VỊ TRÍ DƯỚI</span>
+            <span>Ô 2</span>
           </div>
         </div>
       </div>
