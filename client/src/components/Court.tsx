@@ -85,9 +85,6 @@ function PlayerMarker({
           <div className={`px-2 py-0.5 rounded-full font-medium ${positionName === "Ô 1" ? "bg-blue-500/20 text-blue-700" : "bg-green-500/20 text-green-700"}`}>
             {positionName}
           </div>
-          <div className="text-gray-600 font-medium">
-            SLOT {slot}
-          </div>
         </div>
       </div>
     </div>
