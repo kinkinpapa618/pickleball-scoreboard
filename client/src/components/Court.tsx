@@ -116,7 +116,7 @@ export function Court({
               isServing={isServer("t2p1", 2)}
               isReceiver={isReceiver("t2p1", 2)}
               isTop={true}
-              slot={1}
+              slot={2}
             />
           </div>
           {/* Top Right (Slot 2 Player D) */}
@@ -126,7 +126,7 @@ export function Court({
               isServing={isServer("t2p2", 2)}
               isReceiver={isReceiver("t2p2", 2)}
               isTop={true}
-              slot={2}
+              slot={1}
             />
           </div>
           <div className="absolute bottom-0 w-full h-1/4 bg-blue-500/30 border-t border-dashed border-white/20"></div>
