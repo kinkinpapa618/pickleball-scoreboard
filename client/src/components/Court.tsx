@@ -109,7 +109,7 @@ export function Court({
       <div className="absolute inset-0 bg-blue-600 flex flex-col">
         {/* Top Side (Team 2) */}
         <div className="flex-1 relative border-b-2 border-white/30 flex">
-          {/* Top Left (Slot 1 - Player 1 Team 2) */}
+          {/* Top Left (Slot 1 Player C from their view is Right, but following image: Slot 1 is Top-Left) */}
           <div className="flex-1 border-r border-white/20 relative">
             <PlayerMarker
               name={names.t2p1}
@@ -119,7 +119,7 @@ export function Court({
               slot={1}
             />
           </div>
-          {/* Top Right (Slot 2 - Player 2 Team 2) */}
+          {/* Top Right (Slot 2 Player D) */}
           <div className="flex-1 relative">
             <PlayerMarker
               name={names.t2p2}
@@ -137,28 +137,28 @@ export function Court({
           <div className="h-full w-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzjIHFBmAAxxGMCAIg0VAABm6gwVd0K0ZAAAAABJRU5ErkJggg==')] opacity-50"></div>
         </div>
 
-        {/* Bottom Side (Team 1) - ĐẢO NGƯỢC VỊ TRÍ */}
+        {/* Bottom Side (Team 1) */}
         <div className="flex-1 relative border-t-2 border-white/30 flex">
           <div className="absolute top-0 w-full h-1/4 bg-blue-500/30 border-b border-dashed border-white/20 pointer-events-none"></div>
 
-          {/* Bottom Left (Slot 2 - Player 2 Team 1) */}
+          {/* Bottom Left (Slot 1 Player A) */}
           <div className="flex-1 border-r border-white/20 relative pt-12">
-            <PlayerMarker
-              name={names.t1p2}
-              isServing={isServer("t1p2", 1)}
-              isReceiver={isReceiver("t1p2", 1)}
-              isTop={false}
-              slot={2}
-            />
-          </div>
-          {/* Bottom Right (Slot 1 - Player 1 Team 1) */}
-          <div className="flex-1 relative pt-12">
             <PlayerMarker
               name={names.t1p1}
               isServing={isServer("t1p1", 1)}
               isReceiver={isReceiver("t1p1", 1)}
               isTop={false}
               slot={1}
+            />
+          </div>
+          {/* Bottom Right (Slot 2 Player B) */}
+          <div className="flex-1 relative pt-12">
+            <PlayerMarker
+              name={names.t1p2}
+              isServing={isServer("t1p2", 1)}
+              isReceiver={isReceiver("t1p2", 1)}
+              isTop={false}
+              slot={2}
             />
           </div>
         </div>
