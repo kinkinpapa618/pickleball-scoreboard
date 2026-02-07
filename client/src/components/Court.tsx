@@ -18,20 +18,18 @@ function PlayerMarker({
   isReceiver,
   isTop,
   slot,
-  position,
 }: {
   name: string;
   isServing: boolean;
   isReceiver: boolean;
   isTop: boolean;
   slot: number;
-  position: "left" | "right";
 }) {
   return (
     <motion.div
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`absolute ${position === "left" ? "left-4" : "right-4"} flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
+      className={`absolute left-0 right-0 flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
     >
       <div
         className={`
@@ -105,77 +103,31 @@ export function Court({
     return positions[pid] === serveSide;
   };
 
-  // Hàm sắp xếp cầu thủ theo vai trò
-  const getTeamDisplay = (team: 1 | 2) => {
-    const teamPrefix = `t${team}`;
-    const playerIds = [`${teamPrefix}p1`, `${teamPrefix}p2`];
-
-    // Tìm người phát và người nhận trong đội
-    const serverPlayer = playerIds.find(pid => isServer(pid, team));
-    const receiverPlayer = playerIds.find(pid => isReceiver(pid, team));
-
-    let displayOrder = [...playerIds];
-
-    if (team === serverTeam) {
-      // Đội đang phát: slot 1 = người phát, slot 2 = người còn lại
-      if (serverPlayer === `${teamPrefix}p2`) {
-        // Nếu người phát là p2, đổi chỗ để p2 lên slot 1
-        displayOrder = [`${teamPrefix}p2`, `${teamPrefix}p1`];
-      }
-    } else {
-      // Đội đang nhận: slot 1 = người nhận, slot 2 = người còn lại
-      if (receiverPlayer === `${teamPrefix}p2`) {
-        // Nếu người nhận là p2, đổi chỗ để p2 lên slot 1
-        displayOrder = [`${teamPrefix}p2`, `${teamPrefix}p1`];
-      }
-    }
-
-    // Trả về thông tin hiển thị
-    return displayOrder.map((pid, index) => ({
-      id: pid,
-      name: names[pid as keyof typeof names],
-      isServer: isServer(pid, team),
-      isReceiver: isReceiver(pid, team),
-      slot: index + 1,
-      // Vị trí hiển thị: slot 1 = left, slot 2 = right
-      position: index === 0 ? "left" as const : "right" as const,
-    }));
-  };
-
-  const team1Display = getTeamDisplay(1);
-  const team2Display = getTeamDisplay(2);
-
   return (
     <div className="relative w-full aspect-[16/9] max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 select-none">
       {/* Court Surface */}
       <div className="absolute inset-0 bg-blue-600 flex flex-col">
         {/* Top Side (Team 2) */}
         <div className="flex-1 relative border-b-2 border-white/30 flex">
-          {/* Top Left - Slot 1 của Team 2 */}
+          {/* Top Left (Slot 1 Player C from their view is Right, but following image: Slot 1 is Top-Left) */}
           <div className="flex-1 border-r border-white/20 relative">
-            {team2Display[0] && (
-              <PlayerMarker
-                name={team2Display[0].name}
-                isServing={team2Display[0].isServer}
-                isReceiver={team2Display[0].isReceiver}
-                isTop={true}
-                slot={team2Display[0].slot}
-                position={team2Display[0].position}
-              />
-            )}
+            <PlayerMarker
+              name={names.t2p1}
+              isServing={isServer("t2p1", 2)}
+              isReceiver={isReceiver("t2p1", 2)}
+              isTop={true}
+              slot={1}
+            />
           </div>
-          {/* Top Right - Slot 2 của Team 2 */}
+          {/* Top Right (Slot 2 Player D) */}
           <div className="flex-1 relative">
-            {team2Display[1] && (
-              <PlayerMarker
-                name={team2Display[1].name}
-                isServing={team2Display[1].isServer}
-                isReceiver={team2Display[1].isReceiver}
-                isTop={true}
-                slot={team2Display[1].slot}
-                position={team2Display[1].position}
-              />
-            )}
+            <PlayerMarker
+              name={names.t2p2}
+              isServing={isServer("t2p2", 2)}
+              isReceiver={isReceiver("t2p2", 2)}
+              isTop={true}
+              slot={2}
+            />
           </div>
           <div className="absolute bottom-0 w-full h-1/4 bg-blue-500/30 border-t border-dashed border-white/20"></div>
         </div>
@@ -189,31 +141,25 @@ export function Court({
         <div className="flex-1 relative border-t-2 border-white/30 flex">
           <div className="absolute top-0 w-full h-1/4 bg-blue-500/30 border-b border-dashed border-white/20 pointer-events-none"></div>
 
-          {/* Bottom Left - Slot 1 của Team 1 */}
+          {/* Bottom Left (Slot 1 Player A) */}
           <div className="flex-1 border-r border-white/20 relative pt-12">
-            {team1Display[0] && (
-              <PlayerMarker
-                name={team1Display[0].name}
-                isServing={team1Display[0].isServer}
-                isReceiver={team1Display[0].isReceiver}
-                isTop={false}
-                slot={team1Display[0].slot}
-                position={team1Display[0].position}
-              />
-            )}
+            <PlayerMarker
+              name={names.t1p1}
+              isServing={isServer("t1p1", 1)}
+              isReceiver={isReceiver("t1p1", 1)}
+              isTop={false}
+              slot={1}
+            />
           </div>
-          {/* Bottom Right - Slot 2 của Team 1 */}
+          {/* Bottom Right (Slot 2 Player B) */}
           <div className="flex-1 relative pt-12">
-            {team1Display[1] && (
-              <PlayerMarker
-                name={team1Display[1].name}
-                isServing={team1Display[1].isServer}
-                isReceiver={team1Display[1].isReceiver}
-                isTop={false}
-                slot={team1Display[1].slot}
-                position={team1Display[1].position}
-              />
-            )}
+            <PlayerMarker
+              name={names.t1p2}
+              isServing={isServer("t1p2", 1)}
+              isReceiver={isReceiver("t1p2", 1)}
+              isTop={false}
+              slot={2}
+            />
           </div>
         </div>
       </div>
