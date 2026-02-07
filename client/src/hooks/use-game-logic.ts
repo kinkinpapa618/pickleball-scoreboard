@@ -26,10 +26,10 @@ export type GameState = {
 
 // Initial state helpers
 const INITIAL_POSITIONS: Record<string, "left" | "right"> = {
-  t1p1: "right", // Team 1 Player 1 starts Right (Even)
-  t1p2: "left",  // Team 1 Player 2 starts Left (Odd)
-  t2p1: "right", // Team 2 Player 1 starts Right
-  t2p2: "left",  // Team 2 Player 2 starts Left
+  t1p1: "right", // Slot 1 (Player A)
+  t1p2: "left",  // Slot 2 (Player B)
+  t2p1: "left",  // Slot 1 (Player C)
+  t2p2: "right", // Slot 2 (Player D)
 };
 
 export function useGameLogic(
@@ -49,14 +49,11 @@ export function useGameLogic(
 
   const checkWin = (s1: number, s2: number) => {
     const diff = Math.abs(s1 - s2);
-    // Logic: Win at X, must win by 2. Cap at X + 4 (roughly, user logic was 11->15, 15->18)
     const cap = winningScore === 11 ? 15 : winningScore === 15 ? 18 : 25;
     
-    // Check Cap first
     if (s1 >= cap && s1 > s2) return 1;
     if (s2 >= cap && s2 > s1) return 2;
 
-    // Check Standard Win
     if (s1 >= winningScore && diff >= 2) return 1;
     if (s2 >= winningScore && diff >= 2) return 2;
 
@@ -91,11 +88,13 @@ export function useGameLogic(
       // Swap positions for serving team ONLY
       const newPositions = { ...prev.positions };
       if (isTeam1Serving) {
-        newPositions.t1p1 = prev.positions.t1p1 === "left" ? "right" : "left";
-        newPositions.t1p2 = prev.positions.t1p2 === "left" ? "right" : "left";
+        const temp = newPositions.t1p1;
+        newPositions.t1p1 = newPositions.t1p2;
+        newPositions.t1p2 = temp;
       } else {
-        newPositions.t2p1 = prev.positions.t2p1 === "left" ? "right" : "left";
-        newPositions.t2p2 = prev.positions.t2p2 === "left" ? "right" : "left";
+        const temp = newPositions.t2p1;
+        newPositions.t2p1 = newPositions.t2p2;
+        newPositions.t2p2 = temp;
       }
 
       const winner = checkWin(newScore1, newScore2);
@@ -119,10 +118,8 @@ export function useGameLogic(
       let nextServerHand = prev.serverHand;
 
       if (prev.serverHand === 1) {
-        // Hand 1 lost -> Hand 2 serves (same team)
         nextServerHand = 2;
       } else {
-        // Hand 2 lost -> Side Out (other team serves, Hand 1)
         nextServerTeam = prev.serverTeam === 1 ? 2 : 1;
         nextServerHand = 1;
       }
