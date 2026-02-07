@@ -30,7 +30,7 @@ export default function Match() {
 
   const names = { t1p1, t1p2, t2p1, t2p2 };
 
-  // Game Hook với logic mới
+  // Game Hook
   const { state, scorePoint, fault, undo, getMatchData } = useGameLogic(
     winningScore,
     initialServer,
@@ -62,15 +62,6 @@ export default function Match() {
     }
   }, [state.winner, saved, getMatchData, createMatch]);
 
-  // Hiển thị tỷ số theo đúng logic mới: Điểm Team Phát Bóng đứng trước
-  const getDisplayScore = () => {
-    if (state.serverTeam === 1) {
-      return `${state.score1}-${state.score2}`;
-    } else {
-      return `${state.score2}-${state.score1}`;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Bar */}
@@ -86,9 +77,6 @@ export default function Match() {
         </Button>
         <div className="font-display font-bold text-lg text-primary">
           BMB Pickleball Scoreboard
-        </div>
-        <div className="text-sm font-semibold text-gray-600">
-          Tỉ số: {getDisplayScore()}-{state.serverHand}
         </div>
         <Button
           variant="ghost"
@@ -120,7 +108,7 @@ export default function Match() {
             names={names}
             score1={state.score1}
             score2={state.score2}
-            firstServe={state.firstServe}
+            firstServe={state.firstServe} // Thêm dòng này
           />
         </div>
 
@@ -149,17 +137,6 @@ export default function Match() {
             </div>
           </Button>
         </div>
-
-        {/* Debug Info - Chỉ hiển thị trong development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 p-4 bg-gray-100 rounded-lg text-sm">
-            <h3 className="font-bold mb-2">Debug Info:</h3>
-            <p>Server Team: {state.serverTeam}</p>
-            <p>Server Hand: {state.serverHand}</p>
-            <p>First Serve: {state.firstServe ? 'Yes' : 'No'}</p>
-            <p>Positions: {JSON.stringify(state.positions)}</p>
-          </div>
-        )}
       </main>
 
       {/* Winner Modal */}
@@ -175,7 +152,7 @@ export default function Match() {
             </p>
 
             <div className="text-lg text-muted-foreground mb-8">
-              Tỉ số cuối cùng:{" "}
+              Tỉ số:{" "}
               <span className="font-bold text-foreground">
                 {state.score1} - {state.score2}
               </span>
