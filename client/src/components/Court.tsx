@@ -48,7 +48,7 @@ function PlayerMarker({
                 animate={{ scale: 1 }}
                 className="w-9 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] font-bold text-yellow-900"
               >
-                PHÁT
+                 SLOT {slot} PHÁT
               </motion.div>
             )}
             {isReceiver && (
@@ -57,7 +57,7 @@ function PlayerMarker({
                 animate={{ scale: 1 }}
                 className="w-6 h-6 bg-gray-400 rounded-full shadow-[0_0_10px_rgba(156,163,175,0.6)] flex items-center justify-center text-[10px] font-bold text-gray-900"
               >
-                ĐỠ
+                 SLOT {slot} ĐỠ
               </motion.div>
             )}
           </div>
@@ -218,7 +218,7 @@ export function Court({
 
       {/* Hiển thị thông tin lượt phát đầu tiên */}
       {firstServe && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
           <div className="bg-yellow-500/90 text-yellow-900 text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-pulse">
             ⚠️ 0-0-2 - Lượt phát đầu tiên
           </div>
