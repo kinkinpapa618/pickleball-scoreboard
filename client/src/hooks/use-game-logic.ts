@@ -23,8 +23,8 @@ export function useGameLogic(
     serverHand: 1,
     positions: {
       t1p1: "left",
-      t1p2: "right",
-      t2p1: "left",
+      t2p1: "right",
+      t1p2: "left",
       t2p2: "right",
     },
     winner: null,
