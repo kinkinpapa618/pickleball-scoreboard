@@ -100,6 +100,7 @@ export default function Match() {
         />
 
         {/* Court Visual */}
+        {/* Court Visual */}
         <div className="w-full">
           <Court
             positions={state.positions}
@@ -108,6 +109,7 @@ export default function Match() {
             names={names}
             score1={state.score1}
             score2={state.score2}
+            firstServe={state.firstServe} // Thêm dòng này
           />
         </div>
 

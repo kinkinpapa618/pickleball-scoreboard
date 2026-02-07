@@ -8,16 +8,14 @@ type GameState = {
   positions: Record<string, "left" | "right">; // Vị trí trái/phải
   winner: null | 1 | 2;        // Đội thắng
   gameHistory: any[];          // Lịch sử để undo
+  firstServe: boolean;         // Cờ đánh dấu lượt phát đầu tiên của trận
 };
 
 // ==============================================
-// LOGIC CHÍNH DỰA TRÊN TÌNH HUỐNG BẠN MÔ TẢ:
+// LOGIC CẬP NHẬT VỚI TRƯỜNG HỢP ĐẶC BIỆT:
 // ==============================================
-// 1. Đội phát được điểm: giữ quyền phát, đổi vị trí TRONG ĐỘI
-// 2. Đội phát không được điểm: 
-//    - Nếu đang slot 1 → chuyển cho slot 2 cùng đội
-//    - Nếu đang slot 2 → chuyển cho slot 1 đội đối phương
-// 3. Đội nhận: slot 1 luôn nhận đầu tiên, hết lượt thì đổi slot
+// 1. Lượt phát đầu tiên của trận: chỉ có 1 người phát (tay 2)
+// 2. Từ lượt thứ 2 trở đi: có 2 người phát (tay 1 và tay 2)
 // ==============================================
 
 export function useGameLogic(
@@ -25,7 +23,7 @@ export function useGameLogic(
   initialServer: 1 | 2,
   names: { t1p1: string; t1p2: string; t2p1: string; t2p2: string }
 ) {
-  // KHỞI TẠO TRẠNG THÁI BAN ĐẦU
+  // KHỞI TẠO TRẠNG THÁI BAN ĐẦU VỚI TRƯỜNG HỢP ĐẶC BIỆT
   const [state, setState] = useState<GameState>(() => ({
     score1: 0,
     score2: 0,
@@ -39,10 +37,11 @@ export function useGameLogic(
     },
     winner: null,
     gameHistory: [],
+    firstServe: true,  // Đánh dấu đây là lượt phát đầu tiên của trận
   }));
 
   // ==============================================
-  // HÀM GHI ĐIỂM - ĐÃ SỬA THEO TÌNH HUỐNG
+  // HÀM GHI ĐIỂM - ĐÃ CẬP NHẬT VỚI FIRST_SERVE
   // ==============================================
   const scorePoint = useCallback(() => {
     setState((prev) => {
@@ -72,6 +71,7 @@ export function useGameLogic(
       let newServerTeam = prev.serverTeam;
       let newServerHand = prev.serverHand;
       let newPositions = { ...prev.positions };
+      let newFirstServe = prev.firstServe;
 
       // 7. Nếu có đội thắng -> kết thúc
       if (winner) {
@@ -101,22 +101,35 @@ export function useGameLogic(
         // Đổi chỗ vị trí của 2 người trong đội
         newPositions = {
           ...newPositions,
-          [player1]: newPositions[player2],  // P1 lấy vị trí của P2
-          [player2]: newPositions[player1],  // P2 lấy vị trí của P1
+          [player1]: newPositions[player2],
+          [player2]: newPositions[player1],
         };
+
+
       } 
-      // TRƯỜNG HỢP B: Đội phát bóng KHÔNG được điểm
+
       else {
-        // 7B.1: Kiểm tra đang là slot nào đang phát
-        if (prev.serverHand === 1) {
-          // Đang là slot 1 phát → chuyển quyền phát cho slot 2 CÙNG ĐỘI
-          newServerHand = 2;
-          // Vị trí của 4 player GIỮ NGUYÊN (không đổi)
-        } else {
-          // Đang là slot 2 phát → chuyển quyền phát cho slot 1 ĐỘI ĐỐI PHƯƠNG
+
+        newFirstServe = false;
+
+       
+        if (prev.firstServe) {
+         
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-          newServerHand = 1;  // Reset về slot 1
-          // Vị trí của 4 player GIỮ NGUYÊN (không đổi)
+          newServerHand = 1;  // Slot 1 đội đối phương
+          // Vị trí của 4 player GIỮ NGUYÊN
+        } else {
+         
+          if (prev.serverHand === 1) {
+            // Đang là slot 1 phát → chuyển quyền phát cho slot 2 CÙNG ĐỘI
+            newServerHand = 2;
+            // Vị trí của 4 player GIỮ NGUYÊN
+          } else {
+            // Đang là slot 2 phát → chuyển quyền phát cho slot 1 ĐỘI ĐỐI PHƯƠNG
+            newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+            newServerHand = 1;  // Slot 1 đội đối phương
+            // Vị trí của 4 player GIỮ NGUYÊN
+          }
         }
       }
 
@@ -129,13 +142,14 @@ export function useGameLogic(
         serverHand: newServerHand,
         positions: newPositions,
         winner,
+        firstServe: newFirstServe,
         gameHistory: history,
       };
     });
   }, [winningScore]);
 
   // ==============================================
-  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - ĐÃ SỬA
+  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - ĐÃ CẬP NHẬT
   // ==============================================
   const fault = useCallback(() => {
     setState((prev) => {
@@ -145,19 +159,26 @@ export function useGameLogic(
       // 2. Lưu lịch sử
       const history = [...prev.gameHistory, { ...prev }];
 
-      // 3. Xử lý đổi giao bóng (giống như không được điểm)
+      // 3. Xử lý đổi giao bóng
       let newServerTeam = prev.serverTeam;
       let newServerHand = prev.serverHand;
+      let newFirstServe = prev.firstServe;
 
-      if (prev.serverHand === 1) {
-        // Đang là slot 1 phát → chuyển cho slot 2 CÙNG ĐỘI
-        newServerHand = 2;
-        // Vị trí GIỮ NGUYÊN
-      } else {
-        // Đang là slot 2 phát → chuyển cho slot 1 ĐỘI ĐỐI PHƯƠNG
+      if (prev.firstServe) {
+        // TRƯỜNG HỢP ĐẶC BIỆT: Lượt phát đầu tiên của trận
+        newFirstServe = false;
         newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-        newServerHand = 1;
-        // Vị trí GIỮ NGUYÊN
+        newServerHand = 1;  // Slot 1 đội đối phương
+      } else {
+        // TRƯỜNG HỢP THÔNG THƯỜNG
+        if (prev.serverHand === 1) {
+          // Đang là slot 1 phát → chuyển cho slot 2 CÙNG ĐỘI
+          newServerHand = 2;
+        } else {
+          // Đang là slot 2 phát → chuyển cho slot 1 ĐỘI ĐỐI PHƯƠNG
+          newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+          newServerHand = 1;
+        }
       }
 
       // 4. Trả về trạng thái mới
@@ -165,6 +186,7 @@ export function useGameLogic(
         ...prev,
         serverTeam: newServerTeam,
         serverHand: newServerHand,
+        firstServe: newFirstServe,
         gameHistory: history,
       };
     });
@@ -196,8 +218,9 @@ export function useGameLogic(
       winner: state.winner,
       date: new Date().toISOString(),
       players: names,
+      firstServe: state.firstServe,  // Thêm thông tin về lượt phát đầu tiên
     };
-  }, [state.score1, state.score2, state.winner, names]);
+  }, [state.score1, state.score2, state.winner, state.firstServe, names]);
 
   // ==============================================
   // TRẢ VỀ KẾT QUẢ
