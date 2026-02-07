@@ -64,7 +64,7 @@ function PlayerMarker({
         </div>
         <div
           className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm md:text-base shadow-lg backdrop-blur-sm
+          flex items-center gap-1 px0 py0 rounded-lg font-bold text-sm md:text-base shadow-lg backdrop-blur-sm
           ${
             isServing
               ? "bg-white text-blue-900 border-2 border-yellow-400"
@@ -74,7 +74,7 @@ function PlayerMarker({
           }
         `}
         >
-          <User className="w-4 h-4" />
+          <User className="w-3 h-3" />
           {name || "Player"}
         </div>
       </div>
