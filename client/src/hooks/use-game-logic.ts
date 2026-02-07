@@ -27,15 +27,15 @@ export type GameState = {
 // Initial state helpers
 const INITIAL_POSITIONS: Record<string, "left" | "right"> = {
   t1p1: "right", // Slot 1 (Player A)
-  t1p2: "left",  // Slot 2 (Player B)
-  t2p1: "left",  // Slot 1 (Player C)
+  t1p2: "left", // Slot 2 (Player B)
+  t2p1: "left", // Slot 1 (Player C)
   t2p2: "right", // Slot 2 (Player D)
 };
 
 export function useGameLogic(
-  winningScore: number, 
+  winningScore: number,
   initialServerTeam: 1 | 2,
-  playerNames: { t1p1: string; t1p2: string; t2p1: string; t2p2: string }
+  playerNames: { t1p1: string; t1p2: string; t2p1: string; t2p2: string },
 ) {
   const [state, setState] = useState<GameState>({
     score1: 0,
@@ -50,7 +50,7 @@ export function useGameLogic(
   const checkWin = (s1: number, s2: number) => {
     const diff = Math.abs(s1 - s2);
     const cap = winningScore === 11 ? 15 : winningScore === 15 ? 18 : 25;
-    
+
     if (s1 >= cap && s1 > s2) return 1;
     if (s2 >= cap && s2 > s1) return 2;
 
@@ -61,7 +61,7 @@ export function useGameLogic(
   };
 
   const pushHistory = () => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       gameHistory: [
         ...prev.gameHistory,
@@ -77,9 +77,9 @@ export function useGameLogic(
   };
 
   const scorePoint = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       if (prev.winner) return prev;
-      
+
       const isTeam1Serving = prev.serverTeam === 1;
       const newScore1 = isTeam1Serving ? prev.score1 + 1 : prev.score1;
       const newScore2 = !isTeam1Serving ? prev.score2 + 1 : prev.score2;
@@ -119,23 +119,44 @@ export function useGameLogic(
   }, [winningScore]);
 
   const fault = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       if (prev.winner) return prev;
 
       let nextServerTeam = prev.serverTeam;
       let nextServerHand = prev.serverHand;
+      let nextPositions = { ...prev.positions };
 
       if (prev.serverHand === 1) {
+        // Chuyển sang người thứ 2 trong đội
         nextServerHand = 2;
       } else {
+        // SIDE OUT: Chuyển quyền giao bóng sang đội đối phương
         nextServerTeam = prev.serverTeam === 1 ? 2 : 1;
         nextServerHand = 1;
+
+        /**
+         * LOGIC BỔ SUNG: Đảm bảo người ở Slot 1 của đội mới nhận bóng
+         * sẽ đứng ở bên PHẢI (Right) để phát quả đầu tiên.
+         * Nếu họ đang ở bên trái, ta tráo đổi vị trí của họ với đồng đội.
+         */
+        if (nextServerTeam === 1) {
+          if (nextPositions.t1p1 !== "right") {
+            nextPositions.t1p1 = "right";
+            nextPositions.t1p2 = "left";
+          }
+        } else {
+          if (nextPositions.t2p1 !== "right") {
+            nextPositions.t2p1 = "right";
+            nextPositions.t2p2 = "left";
+          }
+        }
       }
 
       return {
         ...prev,
         serverTeam: nextServerTeam,
         serverHand: nextServerHand,
+        positions: nextPositions, // Cập nhật vị trí mới nếu có tráo đổi
         gameHistory: [
           ...prev.gameHistory,
           {
@@ -151,11 +172,11 @@ export function useGameLogic(
   }, []);
 
   const undo = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       if (prev.gameHistory.length === 0) return prev;
       const lastState = prev.gameHistory[prev.gameHistory.length - 1];
       const newHistory = prev.gameHistory.slice(0, -1);
-      
+
       return {
         ...prev,
         ...lastState,
