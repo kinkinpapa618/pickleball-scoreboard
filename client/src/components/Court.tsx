@@ -113,8 +113,8 @@ export function Court({
           <div className="flex-1 border-r border-white/20 relative">
             <PlayerMarker
               name={names.t2p1}
-              isServing={isServer("t2p1", 2)}
-              isReceiver={isReceiver("t2p1", 2)}
+              isServing={isServer("t2p1", 1)}
+              isReceiver={isReceiver("t2p1", 1)}
               isTop={true}
               slot={1}
             />
@@ -126,7 +126,7 @@ export function Court({
               isServing={isServer("t2p2", 2)}
               isReceiver={isReceiver("t2p2", 2)}
               isTop={true}
-              slot={1}
+              slot={2}
             />
           </div>
           <div className="absolute bottom-0 w-full h-1/4 bg-blue-500/30 border-t border-dashed border-white/20"></div>
@@ -155,8 +155,8 @@ export function Court({
           <div className="flex-1 relative pt-12">
             <PlayerMarker
               name={names.t1p2}
-              isServing={isServer("t1p2", 1)}
-              isReceiver={isReceiver("t1p2", 1)}
+              isServing={isServer("t1p2", 2)}
+              isReceiver={isReceiver("t1p2", 2)}
               isTop={false}
               slot={2}
             />
