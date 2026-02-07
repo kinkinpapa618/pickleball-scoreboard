@@ -114,7 +114,7 @@ export function Court({
             <PlayerMarker
               name={names.t2p1}
               isServing={isServer("t2p1", 1)}
-              isReceiver={isReceiver("t2p1", 1)}
+              isReceiver={isReceiver("t2p1", 2)}
               isTop={true}
               slot={1}
             />
@@ -124,7 +124,7 @@ export function Court({
             <PlayerMarker
               name={names.t2p2}
               isServing={isServer("t2p2", 2)}
-              isReceiver={isReceiver("t2p2", 2)}
+              isReceiver={isReceiver("t2p2", 1)}
               isTop={true}
               slot={2}
             />
@@ -146,7 +146,7 @@ export function Court({
             <PlayerMarker
               name={names.t1p1}
               isServing={isServer("t1p1", 1)}
-              isReceiver={isReceiver("t1p1", 1)}
+              isReceiver={isReceiver("t1p1", 2)}
               isTop={false}
               slot={1}
             />
@@ -156,7 +156,7 @@ export function Court({
             <PlayerMarker
               name={names.t1p2}
               isServing={isServer("t1p2", 2)}
-              isReceiver={isReceiver("t1p2", 2)}
+              isReceiver={isReceiver("t1p2", 1)}
               isTop={false}
               slot={2}
             />
