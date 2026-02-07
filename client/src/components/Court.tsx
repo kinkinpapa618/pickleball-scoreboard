@@ -55,7 +55,7 @@ function PlayerMarker({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-12 h-4 bg-gray-400 rounded-full shadow-[0_0_8px_rgba(156,163,175,0.6)] flex items-center justify-center text-[8px] font-bold text-gray-900"
+                className="w-13 h-4 bg-gray-400 rounded-full shadow-[0_0_8px_rgba(156,163,175,0.6)] flex items-center justify-center text-[8px] font-bold text-gray-900"
               >
                  SLOT {slot}-ĐỠ
               </motion.div>
