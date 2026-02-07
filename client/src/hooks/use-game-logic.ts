@@ -27,19 +27,15 @@ export function useGameLogic(
     };
 
     // Điều chỉnh cho đội phát đầu tiên: 
-    // Người đứng Ô 1 (Player 1) sẽ phát ở lượt đầu tiên
-    // Đảm bảo người phát đứng bên phải (right) khi bắt đầu phát
-    // Vì trong pickleball, người phát luôn bắt đầu từ bên phải
+    // Người phát (Server 1) phải đứng bên phải khi bắt đầu lượt phát
     let adjustedPositions = { ...positions };
 
     if (initialServer === 1) {
-      // Đội 1 phát đầu tiên: t1p1 (Ô 1) phát
-      // Đảm bảo t1p1 đứng bên phải khi phát
+      // Đội 1 phát đầu tiên: Server 1 (t1p1) phải đứng bên phải
       adjustedPositions.t1p1 = "right";
       adjustedPositions.t1p2 = "left";
     } else {
-      // Đội 2 phát đầu tiên: t2p1 (Ô 1) phát
-      // Đảm bảo t2p1 đứng bên phải khi phát
+      // Đội 2 phát đầu tiên: Server 1 (t2p1) phải đứng bên phải
       adjustedPositions.t2p1 = "right";
       adjustedPositions.t2p2 = "left";
     }
@@ -57,7 +53,7 @@ export function useGameLogic(
   });
 
   // ==============================================
-  // HÀM GHI ĐIỂM - ĐÃ SỬA THEO QUY TẮC PICKLEBALL
+  // HÀM GHI ĐIỂM - SỬA ĐÚNG THEO LUẬT PICKLEBALL
   // ==============================================
   const scorePoint = useCallback(() => {
     setState((prev) => {
@@ -106,7 +102,8 @@ export function useGameLogic(
 
       // TRƯỜNG HỢP A: Đội phát bóng THẮNG pha cầu (được điểm)
       if (scoringTeam === prev.serverTeam) {
-        // A1: Đội phát ghi điểm -> HOÁN ĐỔI VỊ TRÍ 2 NGƯỜI TRONG ĐỘI ĐÓ
+        // A1: Đội phát ghi điểm -> BẮT BUỘC HOÁN ĐỔI VỊ TRÍ 2 NGƯỜI TRONG ĐỘI
+        // Để đảm bảo lượt phát tiếp theo là phát chéo sân
         const teamPrefix = `t${prev.serverTeam}`;
         const player1 = `${teamPrefix}p1`;
         const player2 = `${teamPrefix}p2`;
@@ -117,19 +114,10 @@ export function useGameLogic(
         newPositions[player2] = temp;
 
         // A2: Giữ nguyên quyền phát cho người đó (serverTeam và serverHand không đổi)
-        // A3: Nếu đây là lượt phát đầu tiên của trận, vẫn giữ cờ isFirstServeOfMatch
-        // (vì đội vẫn còn đang trong lượt phát đầu tiên của trận)
+        // Người phát tiếp tục phát từ vị trí mới (đã đổi bên)
 
-        // A4: Đảm bảo sau khi hoán đổi, người phát hiện tại (serverHand) đứng bên phải
-        // Trong pickleball, người phát luôn đứng bên phải sau khi ghi điểm
-        const servingPlayerId = `${teamPrefix}p${prev.serverHand}`;
-        if (newPositions[servingPlayerId] !== "right") {
-          // Nếu không, hoán đổi thêm một lần nữa để đảm bảo người phát ở bên phải
-          const otherPlayerId = servingPlayerId === player1 ? player2 : player1;
-          const temp2 = newPositions[servingPlayerId];
-          newPositions[servingPlayerId] = newPositions[otherPlayerId];
-          newPositions[otherPlayerId] = temp2;
-        }
+        // A3: Không cần đảm bảo người phát đứng bên phải sau khi hoán đổi
+        // Vì họ vừa đổi bên để phát chéo
       } 
       // TRƯỜNG HỢP B: Đội phát bóng THUA pha cầu (không được điểm)
       else {
@@ -138,19 +126,19 @@ export function useGameLogic(
         // B2: Xử lý chuyển lượt phát
         if (prev.isFirstServeOfMatch) {
           // TRƯỜNG HỢP ĐẶC BIỆT: Lượt phát đầu tiên của trận
-          // Chỉ có Server 1 (Ô 1) phát một lần duy nhất
+          // Chỉ có Server 1 phát một lần duy nhất
           // Khi thua -> Side Out ngay lập tức
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-          newServerHand = 1;  // Đội mới, Server 1 (Ô 1) bắt đầu phát
+          newServerHand = 1;  // Đội mới, Server 1 bắt đầu phát
           newIsFirstServeOfMatch = false; // Đã qua lượt phát đầu tiên của trận
 
-          // Khi chuyển đội phát, đảm bảo người phát mới (Server 1) đứng bên phải
+          // KHI BẮT ĐẦU LƯỢT PHÁT MỚI (newServerHand=1): 
+          // Đảm bảo người phát mới (Server 1) đứng bên phải
           const newTeamPrefix = `t${newServerTeam}`;
           const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
 
-          // Đảm bảo người phát mới (Server 1) đứng bên phải
           if (newPositions[newServerPlayerId] !== "right") {
-            // Nếu không, hoán đổi với đồng đội (Server 2)
+            // Nếu người phát mới không đứng bên phải, hoán đổi với đồng đội
             const otherPlayerId = `${newTeamPrefix}p2`;
             const temp = newPositions[newServerPlayerId];
             newPositions[newServerPlayerId] = newPositions[otherPlayerId];
@@ -159,10 +147,12 @@ export function useGameLogic(
         } else {
           // TRƯỜNG HỢP THÔNG THƯỜNG (từ lượt thứ 2 trở đi)
           if (prev.serverHand === 1) {
-            // Server 1 (Ô 1) thua -> chuyển quyền phát cho Server 2 (Ô 2) CÙNG ĐỘI
+            // Server 1 thua -> chuyển quyền phát cho Server 2 CÙNG ĐỘI
             newServerHand = 2;
+            // KHÔNG đổi vị trí, giữ nguyên
 
-            // Đảm bảo Server 2 (người phát tiếp theo) đứng bên phải
+            // KHI CHUYỂN TỪ SERVER 1 SANG SERVER 2 TRONG CÙNG ĐỘI:
+            // Đảm bảo Server 2 đứng bên phải khi bắt đầu lượt phát của mình
             const teamPrefix = `t${prev.serverTeam}`;
             const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
             if (newPositions[newServerPlayerId] !== "right") {
@@ -173,10 +163,11 @@ export function useGameLogic(
               newPositions[otherPlayerId] = temp;
             }
           } else {
-            // Server 2 (Ô 2) thua -> Side Out, chuyển quyền phát cho đội đối phương
+            // Server 2 thua -> Side Out, chuyển quyền phát cho đội đối phương
             newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-            newServerHand = 1;  // Server 1 (Ô 1) của đội đối phương bắt đầu phát
+            newServerHand = 1;  // Server 1 của đội đối phương bắt đầu phát
 
+            // KHI BẮT ĐẦU LƯỢT PHÁT MỚI (newServerHand=1) CHO ĐỘI MỚI:
             // Đảm bảo Server 1 đội mới đứng bên phải
             const newTeamPrefix = `t${newServerTeam}`;
             const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
@@ -207,7 +198,7 @@ export function useGameLogic(
   }, [winningScore]);
 
   // ==============================================
-  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - ĐÃ SỬA CHO PICKLEBALL
+  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - SỬA ĐÚNG
   // ==============================================
   const fault = useCallback(() => {
     setState((prev) => {
@@ -227,8 +218,9 @@ export function useGameLogic(
         // TRƯỜNG HỢP ĐẶC BIỆT: Lượt phát đầu tiên của trận
         newIsFirstServeOfMatch = false;
         newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-        newServerHand = 1;  // Server 1 (Ô 1) đội đối phương
+        newServerHand = 1;  // Server 1 đội đối phương
 
+        // KHI BẮT ĐẦU LƯỢT PHÁT MỚI (newServerHand=1):
         // Đảm bảo Server 1 đội mới đứng bên phải
         const newTeamPrefix = `t${newServerTeam}`;
         const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
@@ -241,9 +233,10 @@ export function useGameLogic(
       } else {
         // TRƯỜNG HỢP THÔNG THƯỜNG
         if (prev.serverHand === 1) {
-          // Đang là Server 1 (Ô 1) phát -> chuyển cho Server 2 (Ô 2) CÙNG ĐỘI
+          // Đang là Server 1 phát -> chuyển cho Server 2 CÙNG ĐỘI
           newServerHand = 2;
 
+          // KHI CHUYỂN TỪ SERVER 1 SANG SERVER 2 TRONG CÙNG ĐỘI:
           // Đảm bảo Server 2 đứng bên phải
           const teamPrefix = `t${prev.serverTeam}`;
           const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
@@ -254,10 +247,11 @@ export function useGameLogic(
             newPositions[otherPlayerId] = temp;
           }
         } else {
-          // Đang là Server 2 (Ô 2) phát -> Side Out
+          // Đang là Server 2 phát -> Side Out
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-          newServerHand = 1;  // Server 1 (Ô 1) đội mới bắt đầu phát
+          newServerHand = 1;
 
+          // KHI BẮT ĐẦU LƯỢT PHÁT MỚI (newServerHand=1) CHO ĐỘI MỚI:
           // Đảm bảo Server 1 đội mới đứng bên phải
           const newTeamPrefix = `t${newServerTeam}`;
           const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
