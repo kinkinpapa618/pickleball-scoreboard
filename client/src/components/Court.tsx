@@ -148,7 +148,7 @@ export function Court({
               isServing={isServer("t1p1", 1)}
               isReceiver={isReceiver("t1p1", 1)}
               isTop={false}
-              slot={2}
+              slot={1}
             />
           </div>
           {/* Bottom Right (Slot 2 Player B) */}
@@ -158,7 +158,7 @@ export function Court({
               isServing={isServer("t1p2", 1)}
               isReceiver={isReceiver("t1p2", 1)}
               isTop={false}
-              slot={1}
+              slot={2}
             />
           </div>
         </div>
