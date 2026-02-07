@@ -10,6 +10,7 @@ interface CourtProps {
   serverHand: 1 | 2;
   score1: number;
   score2: number;
+  firstServe: boolean; // Thêm firstServe từ hook mới
 }
 
 function PlayerMarker({
@@ -18,18 +19,20 @@ function PlayerMarker({
   isReceiver,
   isTop,
   slot,
+  position,
 }: {
   name: string;
   isServing: boolean;
   isReceiver: boolean;
   isTop: boolean;
   slot: number;
+  position: "left" | "right";
 }) {
   return (
     <motion.div
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`absolute left-0 right-0 flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
+      className={`absolute ${position === "left" ? "left-4" : "right-4"} flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
     >
       <div
         className={`
@@ -88,20 +91,85 @@ export function Court({
   names,
   score1,
   score2,
+  serverHand,
+  firstServe, // Nhận prop firstServe mới
 }: CourtProps) {
+  // Xác định bên phát dựa trên điểm số của đội đang phát
   const isT1Serving = serverTeam === 1;
   const currentScore = isT1Serving ? score1 : score2;
-  const serveSide = currentScore % 2 === 0 ? "right" : "left";
 
-  const isServer = (pid: string, team: 1 | 2) => {
-    if (team !== serverTeam) return false;
-    return positions[pid] === serveSide;
+  // Trong lượt phát đầu tiên, chỉ có slot 1 phát (tay 2)
+  // Từ lượt thứ 2 trở đi: slot 1 phát bên phải (even score), slot 2 phát bên trái (odd score)
+  const serveSide = serverHand === 1 ? "right" : "left";
+
+  // Xác định ai là người phát
+  const getServerPlayer = (team: 1 | 2) => {
+    if (team !== serverTeam) return null;
+
+    // Tìm player trong đội đang phát có vị trí trùng với serveSide
+    return Object.entries(positions).find(([pid, side]) => 
+      pid.startsWith(`t${team}`) && side === serveSide
+    )?.[0];
   };
 
-  const isReceiver = (pid: string, team: 1 | 2) => {
-    if (team === serverTeam) return false;
-    return positions[pid] === serveSide;
+  // Xác định ai là người nhận
+  const getReceiverPlayer = (team: 1 | 2) => {
+    if (team === serverTeam) return null;
+
+    // Người nhận là người ở đội đối diện có cùng vị trí với người phát
+    const serverPlayer = getServerPlayer(serverTeam);
+    if (!serverPlayer) return null;
+
+    const serverPosition = positions[serverPlayer];
+
+    return Object.entries(positions).find(([pid, side]) => 
+      pid.startsWith(`t${team}`) && side === serverPosition
+    )?.[0];
   };
+
+  // Hàm sắp xếp cầu thủ theo vai trò
+  const getTeamPlayers = (team: 1 | 2) => {
+    const teamPrefix = `t${team}`;
+    const serverPlayer = getServerPlayer(team);
+    const receiverPlayer = getReceiverPlayer(team);
+
+    // Lấy tất cả cầu thủ trong đội
+    const players = [
+      { id: `${teamPrefix}p1`, name: names[`${teamPrefix}p1` as keyof typeof names] },
+      { id: `${teamPrefix}p2`, name: names[`${teamPrefix}p2` as keyof typeof names] },
+    ];
+
+    // Sắp xếp theo vai trò
+    let displayPlayers = [...players];
+
+    if (team === serverTeam) {
+      // Đội đang phát: slot 1 = người phát, slot 2 = người còn lại
+      const serverIndex = displayPlayers.findIndex(p => p.id === serverPlayer);
+      if (serverIndex === 1) {
+        // Đổi chỗ nếu người phát đang ở slot 2
+        [displayPlayers[0], displayPlayers[1]] = [displayPlayers[1], displayPlayers[0]];
+      }
+    } else {
+      // Đội đang nhận: slot 1 = người nhận, slot 2 = người còn lại
+      const receiverIndex = displayPlayers.findIndex(p => p.id === receiverPlayer);
+      if (receiverIndex === 1) {
+        // Đổi chỗ nếu người nhận đang ở slot 2
+        [displayPlayers[0], displayPlayers[1]] = [displayPlayers[1], displayPlayers[0]];
+      }
+    }
+
+    // Thêm thông tin vị trí và vai trò
+    return displayPlayers.map((player, index) => ({
+      ...player,
+      isServer: player.id === serverPlayer,
+      isReceiver: player.id === receiverPlayer,
+      slot: index + 1,
+      position: positions[player.id] as "left" | "right",
+    }));
+  };
+
+  const team1Players = getTeamPlayers(1);
+  const team2Players = getTeamPlayers(2);
 
   return (
     <div className="relative w-full aspect-[16/9] max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 select-none">
@@ -109,25 +177,31 @@ export function Court({
       <div className="absolute inset-0 bg-blue-600 flex flex-col">
         {/* Top Side (Team 2) */}
         <div className="flex-1 relative border-b-2 border-white/30 flex">
-          {/* Top Left (Slot 1 Player C from their view is Right, but following image: Slot 1 is Top-Left) */}
+          {/* Top Left - Slot 1 của Team 2 */}
           <div className="flex-1 border-r border-white/20 relative">
-            <PlayerMarker
-              name={names.t2p1}
-              isServing={isServer("t2p1", 2)}
-              isReceiver={isReceiver("t2p1", 2)}
-              isTop={true}
-              slot={1}
-            />
+            {team2Players[0] && (
+              <PlayerMarker
+                name={team2Players[0].name}
+                isServing={team2Players[0].isServer}
+                isReceiver={team2Players[0].isReceiver}
+                isTop={true}
+                slot={team2Players[0].slot}
+                position={team2Players[0].position}
+              />
+            )}
           </div>
-          {/* Top Right (Slot 2 Player D) */}
+          {/* Top Right - Slot 2 của Team 2 */}
           <div className="flex-1 relative">
-            <PlayerMarker
-              name={names.t2p2}
-              isServing={isServer("t2p2", 2)}
-              isReceiver={isReceiver("t2p2", 2)}
-              isTop={true}
-              slot={2}
-            />
+            {team2Players[1] && (
+              <PlayerMarker
+                name={team2Players[1].name}
+                isServing={team2Players[1].isServer}
+                isReceiver={team2Players[1].isReceiver}
+                isTop={true}
+                slot={team2Players[1].slot}
+                position={team2Players[1].position}
+              />
+            )}
           </div>
           <div className="absolute bottom-0 w-full h-1/4 bg-blue-500/30 border-t border-dashed border-white/20"></div>
         </div>
@@ -141,20 +215,43 @@ export function Court({
         <div className="flex-1 relative border-t-2 border-white/30 flex">
           <div className="absolute top-0 w-full h-1/4 bg-blue-500/30 border-b border-dashed border-white/20 pointer-events-none"></div>
 
- 
-          {/* Bottom Right (Slot 2 Player B) */}
-          <div className="flex-1 relative pt-12">
-            <PlayerMarker
-              name={names.t1p2}
-              isServing={isServer("t1p2", 1)}
-              isReceiver={isReceiver("t1p2", 1)}
-              isTop={false}
-              slot={2}
-            />
+          {/* Bottom Left - Slot 1 của Team 1 */}
+          <div className="flex-1 border-r border-white/20 relative pt-12">
+            {team1Players[0] && (
+              <PlayerMarker
+                name={team1Players[0].name}
+                isServing={team1Players[0].isServer}
+                isReceiver={team1Players[0].isReceiver}
+                isTop={false}
+                slot={team1Players[0].slot}
+                position={team1Players[0].position}
+              />
+            )}
           </div>
-          
+          {/* Bottom Right - Slot 2 của Team 1 */}
+          <div className="flex-1 relative pt-12">
+            {team1Players[1] && (
+              <PlayerMarker
+                name={team1Players[1].name}
+                isServing={team1Players[1].isServer}
+                isReceiver={team1Players[1].isReceiver}
+                isTop={false}
+                slot={team1Players[1].slot}
+                position={team1Players[1].position}
+              />
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Hiển thị thông tin lượt phát đầu tiên */}
+      {firstServe && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+          <div className="bg-yellow-500/90 text-yellow-900 text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-pulse">
+            ⚠️ Lượt phát đầu tiên - Chỉ có 1 người phát
+          </div>
+        </div>
+      )}
     </div>
   );
 }
