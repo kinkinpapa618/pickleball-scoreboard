@@ -77,10 +77,9 @@ export function useGameLogic(
   };
 
   const scorePoint = useCallback(() => {
-    if (state.winner) return;
-    pushHistory();
-
     setState(prev => {
+      if (prev.winner) return prev;
+      
       const isTeam1Serving = prev.serverTeam === 1;
       const newScore1 = isTeam1Serving ? prev.score1 + 1 : prev.score1;
       const newScore2 = !isTeam1Serving ? prev.score2 + 1 : prev.score2;
@@ -105,15 +104,24 @@ export function useGameLogic(
         score2: newScore2,
         positions: newPositions,
         winner,
+        gameHistory: [
+          ...prev.gameHistory,
+          {
+            score1: prev.score1,
+            score2: prev.score2,
+            serverTeam: prev.serverTeam,
+            serverHand: prev.serverHand,
+            positions: { ...prev.positions },
+          },
+        ],
       };
     });
-  }, [state.winner, winningScore]);
+  }, [winningScore]);
 
   const fault = useCallback(() => {
-    if (state.winner) return;
-    pushHistory();
-
     setState(prev => {
+      if (prev.winner) return prev;
+
       let nextServerTeam = prev.serverTeam;
       let nextServerHand = prev.serverHand;
 
@@ -128,9 +136,19 @@ export function useGameLogic(
         ...prev,
         serverTeam: nextServerTeam,
         serverHand: nextServerHand,
+        gameHistory: [
+          ...prev.gameHistory,
+          {
+            score1: prev.score1,
+            score2: prev.score2,
+            serverTeam: prev.serverTeam,
+            serverHand: prev.serverHand,
+            positions: { ...prev.positions },
+          },
+        ],
       };
     });
-  }, [state.winner]);
+  }, []);
 
   const undo = useCallback(() => {
     setState(prev => {
@@ -142,7 +160,7 @@ export function useGameLogic(
         ...prev,
         ...lastState,
         gameHistory: newHistory,
-        winner: null, // Reset winner if undoing winning shot
+        winner: null,
       };
     });
   }, []);

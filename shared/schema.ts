@@ -12,8 +12,6 @@ export const players = pgTable("players", {
 
 export const matches = pgTable("matches", {
   id: serial("id").primaryKey(),
-  // Storing names directly for history preservation, or could use IDs. 
-  // Given the "input" nature, saving names + IDs is flexible.
   team1Player1: text("team1_player1").notNull(),
   team1Player2: text("team1_player2").notNull(),
   team2Player1: text("team2_player1").notNull(),
@@ -22,8 +20,8 @@ export const matches = pgTable("matches", {
   scoreTeam1: integer("score_team1").notNull(),
   scoreTeam2: integer("score_team2").notNull(),
   
-  winningScore: integer("winning_score").notNull(), // 11, 15, or 21
-  winnerTeam: integer("winner_team"), // 1 or 2
+  winningScore: integer("winning_score").notNull(),
+  winnerTeam: integer("winner_team"),
   
   date: timestamp("date").defaultNow(),
 });
