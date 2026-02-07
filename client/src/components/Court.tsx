@@ -260,20 +260,6 @@ export function Court({
         <div className="absolute top-1/2 left-0 right-0 h-px bg-white/20"></div>
       </div>
 
-      {/* Chú thích vị trí */}
-      <div className="absolute bottom-4 left-4 text-[10px] md:text-xs text-white/60">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-300"></div>
-            <span>Ô 1</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-300"></div>
-            <span>Ô 2</span>
-          </div>
-        </div>
-      </div>
-
       {/* Trung tâm sân - Logo hoặc thông tin */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
         <div className="text-[10px] md:text-xs text-white/40 font-bold">
