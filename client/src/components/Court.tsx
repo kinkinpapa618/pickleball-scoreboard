@@ -18,18 +18,20 @@ function PlayerMarker({
   isReceiver,
   isTop,
   slot,
+  position,
 }: {
   name: string;
   isServing: boolean;
   isReceiver: boolean;
   isTop: boolean;
   slot: number;
+  position: "left" | "right";
 }) {
   return (
     <motion.div
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`absolute left-0 right-0 flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
+      className={`absolute ${position === "left" ? "left-4" : "right-4"} flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
     >
       <div
         className={`
@@ -93,14 +95,59 @@ export function Court({
   const currentScore = isT1Serving ? score1 : score2;
   const serveSide = currentScore % 2 === 0 ? "right" : "left";
 
-  const isServer = (pid: string, team: 1 | 2) => {
-    if (team !== serverTeam) return false;
-    return positions[pid] === serveSide;
+  // Xác định ai là người phát và ai là người nhận
+  const getServerPlayer = (team: 1 | 2) => {
+    if (team !== serverTeam) return null;
+    return Object.entries(positions).find(([pid, side]) => 
+      pid.startsWith(`t${team}`) && side === serveSide
+    )?.[0];
   };
 
-  const isReceiver = (pid: string, team: 1 | 2) => {
-    if (team === serverTeam) return false;
-    return positions[pid] === serveSide;
+  const getReceiverPlayer = (team: 1 | 2) => {
+    if (team === serverTeam) return null;
+    return Object.entries(positions).find(([pid, side]) => 
+      pid.startsWith(`t${team}`) && side === serveSide
+    )?.[0];
+  };
+
+  // Sắp xếp cầu thủ theo vai trò
+  const getTeamPlayers = (team: 1 | 2) => {
+    const teamPrefix = `t${team}`;
+    const serverPlayer = getServerPlayer(team);
+    const receiverPlayer = getReceiverPlayer(team);
+
+    // Lấy tất cả cầu thủ trong đội
+    const players = [
+      { id: `${teamPrefix}p1`, name: names[`${teamPrefix}p1` as keyof typeof names] },
+      { id: `${teamPrefix}p2`, name: names[`${teamPrefix}p2` as keyof typeof names] },
+    ];
+
+    // Nếu đội này đang phát: slot 1 = người phát, slot 2 = người còn lại
+    if (team === serverTeam) {
+      const serverIndex = players.findIndex(p => p.id === serverPlayer);
+      if (serverIndex === 1) {
+        // Đổi chỗ nếu người phát đang ở vị trí thứ 2
+        [players[0], players[1]] = [players[1], players[0]];
+      }
+    } 
+    // Nếu đội này đang nhận: slot 1 = người nhận, slot 2 = người còn lại
+    else {
+      const receiverIndex = players.findIndex(p => p.id === receiverPlayer);
+      if (receiverIndex === 1) {
+        // Đổi chỗ nếu người nhận đang ở vị trí thứ 2
+        [players[0], players[1]] = [players[1], players[0]];
+      }
+    }
+
+    return players;
+  };
+
+  const team1Players = getTeamPlayers(1);
+  const team2Players = getTeamPlayers(2);
+
+  // Xác định vị trí (trái/phải) cho từng cầu thủ
+  const getPlayerPosition = (playerId: string) => {
+    return positions[playerId];
   };
 
   return (
@@ -109,25 +156,31 @@ export function Court({
       <div className="absolute inset-0 bg-blue-600 flex flex-col">
         {/* Top Side (Team 2) */}
         <div className="flex-1 relative border-b-2 border-white/30 flex">
-          {/* Top Left (Slot 1 Player C from their view is Right, but following image: Slot 1 is Top-Left) */}
+          {/* Top Left */}
           <div className="flex-1 border-r border-white/20 relative">
-            <PlayerMarker
-              name={names.t2p1}
-              isServing={isServer("t2p1", 2)}
-              isReceiver={isReceiver("t2p1", 2)}
-              isTop={true}
-              slot={1}
-            />
+            {team2Players[0] && (
+              <PlayerMarker
+                name={team2Players[0].name}
+                isServing={getServerPlayer(2) === team2Players[0].id}
+                isReceiver={getReceiverPlayer(2) === team2Players[0].id}
+                isTop={true}
+                slot={1}
+                position={getPlayerPosition(team2Players[0].id)}
+              />
+            )}
           </div>
-          {/* Top Right (Slot 2 Player D) */}
+          {/* Top Right */}
           <div className="flex-1 relative">
-            <PlayerMarker
-              name={names.t2p2}
-              isServing={isServer("t2p2", 2)}
-              isReceiver={isReceiver("t2p2", 2)}
-              isTop={true}
-              slot={2}
-            />
+            {team2Players[1] && (
+              <PlayerMarker
+                name={team2Players[1].name}
+                isServing={getServerPlayer(2) === team2Players[1].id}
+                isReceiver={getReceiverPlayer(2) === team2Players[1].id}
+                isTop={true}
+                slot={2}
+                position={getPlayerPosition(team2Players[1].id)}
+              />
+            )}
           </div>
           <div className="absolute bottom-0 w-full h-1/4 bg-blue-500/30 border-t border-dashed border-white/20"></div>
         </div>
@@ -141,25 +194,31 @@ export function Court({
         <div className="flex-1 relative border-t-2 border-white/30 flex">
           <div className="absolute top-0 w-full h-1/4 bg-blue-500/30 border-b border-dashed border-white/20 pointer-events-none"></div>
 
-          {/* Bottom Left (Slot 1 Player A) */}
+          {/* Bottom Left */}
           <div className="flex-1 border-r border-white/20 relative pt-12">
-            <PlayerMarker
-              name={names.t1p1}
-              isServing={isServer("t1p1", 1)}
-              isReceiver={isReceiver("t1p1", 1)}
-              isTop={false}
-              slot={1}
-            />
+            {team1Players[0] && (
+              <PlayerMarker
+                name={team1Players[0].name}
+                isServing={getServerPlayer(1) === team1Players[0].id}
+                isReceiver={getReceiverPlayer(1) === team1Players[0].id}
+                isTop={false}
+                slot={1}
+                position={getPlayerPosition(team1Players[0].id)}
+              />
+            )}
           </div>
-          {/* Bottom Right (Slot 2 Player B) */}
+          {/* Bottom Right */}
           <div className="flex-1 relative pt-12">
-            <PlayerMarker
-              name={names.t1p2}
-              isServing={isServer("t1p2", 1)}
-              isReceiver={isReceiver("t1p2", 1)}
-              isTop={false}
-              slot={2}
-            />
+            {team1Players[1] && (
+              <PlayerMarker
+                name={team1Players[1].name}
+                isServing={getServerPlayer(1) === team1Players[1].id}
+                isReceiver={getReceiverPlayer(1) === team1Players[1].id}
+                isTop={false}
+                slot={2}
+                position={getPlayerPosition(team1Players[1].id)}
+              />
+            )}
           </div>
         </div>
       </div>
