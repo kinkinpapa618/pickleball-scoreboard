@@ -26,10 +26,10 @@ export type GameState = {
 
 // Initial state helpers
 const INITIAL_POSITIONS: Record<string, "left" | "right"> = {
-  t1p1: "right", // Slot 1 (Player A)
-  t1p2: "left", // Slot 2 (Player B)
-  t2p1: "left", // Slot 1 (Player C)
-  t2p2: "right", // Slot 2 (Player D)
+  t1p1: "right", // Slot 1 Team 1
+  t1p2: "left",  
+  t2p1: "right", // Slot 1 Team 2 (Sửa từ 'left' thành 'right')
+  t2p2: "left",  
 };
 
 export function useGameLogic(
