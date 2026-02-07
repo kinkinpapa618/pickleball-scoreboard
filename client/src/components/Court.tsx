@@ -158,7 +158,7 @@ export function Court({
               isServing={isServer("t1p2", 1)}
               isReceiver={isReceiver("t1p2", 1)}
               isTop={false}
-              slot={2}
+              slot={1}
             />
           </div>
         </div>
