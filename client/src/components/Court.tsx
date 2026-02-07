@@ -263,7 +263,7 @@ export function Court({
       {/* Trung tâm sân - Logo hoặc thông tin */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
         <div className="text-[10px] md:text-xs text-white/40 font-bold">
-          CẦU LÔNG ĐÔI
+          PICKLEBALL 2 VS 2
         </div>
       </div>
     </div>

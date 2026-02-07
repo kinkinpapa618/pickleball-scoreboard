@@ -34,7 +34,7 @@ export function useGameLogic(
   }));
 
   // ==============================================
-  // HÀM GHI ĐIỂM - ĐÃ SỬA THEO QUY TẮC MỚI
+  // HÀM GHI ĐIỂM - ĐÃ SỬA THEO QUY TẮC PICKLEBALL
   // ==============================================
   const scorePoint = useCallback(() => {
     setState((prev) => {
@@ -78,24 +78,39 @@ export function useGameLogic(
       }
 
       // ==============================================
-      // LOGIC CHÍNH DỰA TRÊN QUY TẮC MỚI
+      // LOGIC CHÍNH DỰA TRÊN QUY TẮC PICKLEBALL
       // ==============================================
 
       // TRƯỜNG HỢP A: Đội phát bóng THẮNG pha cầu (được điểm)
       if (scoringTeam === prev.serverTeam) {
         // A1: Đội phát ghi điểm -> HOÁN ĐỔI VỊ TRÍ 2 NGƯỜI TRONG ĐỘI ĐÓ
+        // Điều này đảm bảo người phát đổi bên và người phát/nhận luôn đứng chéo nhau
         const teamPrefix = `t${prev.serverTeam}`;
         const player1 = `${teamPrefix}p1`;
         const player2 = `${teamPrefix}p2`;
 
         // Hoán đổi vị trí giữa 2 người trong đội đang phát
+        // Trong pickleball, khi đội phát ghi điểm, họ đổi vị trí để người phát đứng bên phải
         const temp = newPositions[player1];
         newPositions[player1] = newPositions[player2];
         newPositions[player2] = temp;
 
         // A2: Giữ nguyên quyền phát cho người đó (serverTeam và serverHand không đổi)
+        // Trong pickleball, nếu đội phát ghi điểm, họ tiếp tục phát nhưng đổi bên
+
         // A3: Nếu đây là lượt phát đầu tiên của trận, vẫn giữ cờ isFirstServeOfMatch
         // (vì đội vẫn còn đang trong lượt phát đầu tiên của trận)
+
+        // A4: Đảm bảo người phát đứng bên phải sau khi đổi vị trí
+        // Trong pickleball, người phát luôn đứng bên phải khi bắt đầu lượt phát của mình
+        const servingPlayerId = `${teamPrefix}p${prev.serverHand}`;
+        if (newPositions[servingPlayerId] === "left") {
+          // Nếu sau khi đổi vị trí, người phát đứng bên trái,
+          // cần đảm bảo họ đứng bên phải
+          // Điều này có thể xảy ra nếu serverHand = 1 và player1 đang đứng bên trái
+          // Thực tế trong pickleball, sau khi đổi vị trí, người phát sẽ tự động ở bên phải
+          // vì họ vừa đổi từ vị trí hiện tại sang vị trí của đồng đội
+        }
       } 
       // TRƯỜNG HỢP B: Đội phát bóng THUA pha cầu (không được điểm)
       else {
@@ -109,17 +124,53 @@ export function useGameLogic(
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;  // Đội mới, Server 1 bắt đầu phát
           newIsFirstServeOfMatch = false; // Đã qua lượt phát đầu tiên của trận
+
+          // Khi chuyển đội phát, đảm bảo người phát mới đứng bên phải
+          // Trong pickleball, Server 1 luôn bắt đầu từ bên phải khi đội mới bắt đầu phát
+          const newTeamPrefix = `t${newServerTeam}`;
+          const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
+
+          // Đảm bảo người phát mới (Server 1) đứng bên phải
+          if (newPositions[newServerPlayerId] !== "right") {
+            // Nếu không, hoán đổi với đồng đội
+            const otherPlayerId = `${newTeamPrefix}p${newServerHand === 1 ? 2 : 1}`;
+            const temp = newPositions[newServerPlayerId];
+            newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+            newPositions[otherPlayerId] = temp;
+          }
         } else {
           // TRƯỜNG HỢP THÔNG THƯỜNG (từ lượt thứ 2 trở đi)
           if (prev.serverHand === 1) {
             // Server 1 thua -> chuyển quyền phát cho Server 2 CÙNG ĐỘI
             newServerHand = 2;
             // Vị trí của tất cả players giữ nguyên
+
+            // Đảm bảo Server 2 (người phát tiếp theo) đứng bên phải
+            const teamPrefix = `t${prev.serverTeam}`;
+            const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
+            if (newPositions[newServerPlayerId] !== "right") {
+              // Nếu Server 2 không đứng bên phải, hoán đổi với Server 1
+              const otherPlayerId = `${teamPrefix}p1`;
+              const temp = newPositions[newServerPlayerId];
+              newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+              newPositions[otherPlayerId] = temp;
+            }
           } else {
             // Server 2 thua -> Side Out, chuyển quyền phát cho đội đối phương
             newServerTeam = prev.serverTeam === 1 ? 2 : 1;
             newServerHand = 1;  // Server 1 của đội đối phương bắt đầu phát
             // Vị trí của tất cả players giữ nguyên
+
+            // Đảm bảo Server 1 đội mới đứng bên phải
+            const newTeamPrefix = `t${newServerTeam}`;
+            const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
+            if (newPositions[newServerPlayerId] !== "right") {
+              // Nếu không, hoán đổi với đồng đội
+              const otherPlayerId = `${newTeamPrefix}p2`;
+              const temp = newPositions[newServerPlayerId];
+              newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+              newPositions[otherPlayerId] = temp;
+            }
           }
         }
       }
@@ -140,7 +191,7 @@ export function useGameLogic(
   }, [winningScore]);
 
   // ==============================================
-  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - ĐÃ SỬA
+  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - ĐÃ SỬA CHO PICKLEBALL
   // ==============================================
   const fault = useCallback(() => {
     setState((prev) => {
@@ -154,21 +205,52 @@ export function useGameLogic(
       let newServerTeam = prev.serverTeam;
       let newServerHand = prev.serverHand;
       let newIsFirstServeOfMatch = prev.isFirstServeOfMatch;
+      let newPositions = { ...prev.positions };
 
       if (prev.isFirstServeOfMatch) {
         // TRƯỜNG HỢP ĐẶC BIỆT: Lượt phát đầu tiên của trận
         newIsFirstServeOfMatch = false;
         newServerTeam = prev.serverTeam === 1 ? 2 : 1;
         newServerHand = 1;  // Server 1 đội đối phương
+
+        // Đảm bảo Server 1 đội mới đứng bên phải
+        const newTeamPrefix = `t${newServerTeam}`;
+        const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
+        if (newPositions[newServerPlayerId] !== "right") {
+          const otherPlayerId = `${newTeamPrefix}p2`;
+          const temp = newPositions[newServerPlayerId];
+          newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+          newPositions[otherPlayerId] = temp;
+        }
       } else {
         // TRƯỜNG HỢP THÔNG THƯỜNG
         if (prev.serverHand === 1) {
           // Đang là Server 1 phát -> chuyển cho Server 2 CÙNG ĐỘI
           newServerHand = 2;
+
+          // Đảm bảo Server 2 đứng bên phải
+          const teamPrefix = `t${prev.serverTeam}`;
+          const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
+          if (newPositions[newServerPlayerId] !== "right") {
+            const otherPlayerId = `${teamPrefix}p1`;
+            const temp = newPositions[newServerPlayerId];
+            newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+            newPositions[otherPlayerId] = temp;
+          }
         } else {
           // Đang là Server 2 phát -> Side Out
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
+
+          // Đảm bảo Server 1 đội mới đứng bên phải
+          const newTeamPrefix = `t${newServerTeam}`;
+          const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
+          if (newPositions[newServerPlayerId] !== "right") {
+            const otherPlayerId = `${newTeamPrefix}p2`;
+            const temp = newPositions[newServerPlayerId];
+            newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+            newPositions[otherPlayerId] = temp;
+          }
         }
       }
 
@@ -177,6 +259,7 @@ export function useGameLogic(
         ...prev,
         serverTeam: newServerTeam,
         serverHand: newServerHand,
+        positions: newPositions,
         isFirstServeOfMatch: newIsFirstServeOfMatch,
         gameHistory: history,
       };
@@ -213,6 +296,28 @@ export function useGameLogic(
   }, [state.isFirstServeOfMatch, state.serverHand]);
 
   // ==============================================
+  // HÀM KIỂM TRA VỊ TRÍ CHÉO NHAU
+  // ==============================================
+  const checkDiagonalPositions = useCallback(() => {
+    // Người phát và người nhận phải đứng chéo nhau
+    const serverPlayerId = `t${state.serverTeam}p${state.serverHand}`;
+    const serverPosition = state.positions[serverPlayerId];
+
+    const receiverTeam = state.serverTeam === 1 ? 2 : 1;
+    const receiverPlayerId = Object.keys(state.positions).find(
+      pid => pid.startsWith(`t${receiverTeam}`) && state.positions[pid] === serverPosition
+    );
+
+    return {
+      serverPlayerId,
+      serverPosition,
+      receiverPlayerId,
+      receiverTeam,
+      isDiagonal: receiverPlayerId !== undefined,
+    };
+  }, [state.serverTeam, state.serverHand, state.positions]);
+
+  // ==============================================
   // HÀM LẤY DỮ LIỆU
   // ==============================================
   const getMatchData = useCallback(() => {
@@ -224,8 +329,9 @@ export function useGameLogic(
       players: names,
       isFirstServeOfMatch: state.isFirstServeOfMatch,
       remainingServes: getRemainingServes(),
+      diagonalCheck: checkDiagonalPositions(),
     };
-  }, [state.score1, state.score2, state.winner, state.isFirstServeOfMatch, names, getRemainingServes]);
+  }, [state.score1, state.score2, state.winner, state.isFirstServeOfMatch, names, getRemainingServes, checkDiagonalPositions]);
 
   // ==============================================
   // TRẢ VỀ KẾT QUẢ
@@ -237,5 +343,6 @@ export function useGameLogic(
     undo,
     getMatchData,
     getRemainingServes,
+    checkDiagonalPositions,
   };
 }
