@@ -12,35 +12,49 @@ interface CourtProps {
   score2: number;
 }
 
-function PlayerMarker({ name, isServing, isReceiver, isTop, slot }: { name: string, isServing: boolean, isReceiver: boolean, isTop: boolean, slot: number }) {
+function PlayerMarker({
+  name,
+  isServing,
+  isReceiver,
+  isTop,
+  slot,
+}: {
+  name: string;
+  isServing: boolean;
+  isReceiver: boolean;
+  isTop: boolean;
+  slot: number;
+}) {
   return (
-    <motion.div 
+    <motion.div
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`absolute left-0 right-0 flex justify-center items-center ${isTop ? 'top-4' : 'bottom-8'}`}
+      className={`absolute left-0 right-0 flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
     >
-      <div className={`
+      <div
+        className={`
         flex flex-col items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300
-        ${isServing ? 'scale-110' : 'opacity-80 scale-95'}
-      `}>
+        ${isServing ? "scale-110" : "opacity-80 scale-95"}
+      `}
+      >
         <div className="flex flex-col items-center gap-1">
           <div className="flex gap-2">
             {isServing && (
-              <motion.div 
-                initial={{ scale: 0 }} 
+              <motion.div
+                initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-6 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] font-bold text-yellow-900"
+                className="w-9 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] font-bold text-yellow-900"
               >
-                P
+                PHÁT
               </motion.div>
             )}
             {isReceiver && (
-              <motion.div 
-                initial={{ scale: 0 }} 
+              <motion.div
+                initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 className="w-6 h-6 bg-gray-400 rounded-full shadow-[0_0_10px_rgba(156,163,175,0.6)] flex items-center justify-center text-[10px] font-bold text-gray-900"
               >
-                R
+                ĐỠ
               </motion.div>
             )}
           </div>
@@ -48,14 +62,18 @@ function PlayerMarker({ name, isServing, isReceiver, isTop, slot }: { name: stri
             SLOT {slot}
           </div>
         </div>
-        <div className={`
+        <div
+          className={`
           flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm md:text-base shadow-lg backdrop-blur-sm
-          ${isServing 
-            ? 'bg-white text-blue-900 border-2 border-yellow-400' 
-            : isReceiver
-            ? 'bg-white/90 text-gray-900 border-2 border-gray-400'
-            : 'bg-black/40 text-white border border-white/20'}
-        `}>
+          ${
+            isServing
+              ? "bg-white text-blue-900 border-2 border-yellow-400"
+              : isReceiver
+                ? "bg-white/90 text-gray-900 border-2 border-gray-400"
+                : "bg-black/40 text-white border border-white/20"
+          }
+        `}
+        >
           <User className="w-4 h-4" />
           {name || "Player"}
         </div>
@@ -64,10 +82,16 @@ function PlayerMarker({ name, isServing, isReceiver, isTop, slot }: { name: stri
   );
 }
 
-export function Court({ positions, serverTeam, names, score1, score2 }: CourtProps) {
+export function Court({
+  positions,
+  serverTeam,
+  names,
+  score1,
+  score2,
+}: CourtProps) {
   const isT1Serving = serverTeam === 1;
   const currentScore = isT1Serving ? score1 : score2;
-  const serveSide = currentScore % 2 === 0 ? "right" : "left"; 
+  const serveSide = currentScore % 2 === 0 ? "right" : "left";
 
   const isServer = (pid: string, team: 1 | 2) => {
     if (team !== serverTeam) return false;
@@ -87,23 +111,23 @@ export function Court({ positions, serverTeam, names, score1, score2 }: CourtPro
         <div className="flex-1 relative border-b-2 border-white/30 flex">
           {/* Top Left (Slot 1 Player C from their view is Right, but following image: Slot 1 is Top-Left) */}
           <div className="flex-1 border-r border-white/20 relative">
-             <PlayerMarker 
-               name={names.t2p1} 
-               isServing={isServer("t2p1", 2)}
-               isReceiver={isReceiver("t2p1", 2)}
-               isTop={true}
-               slot={1}
-             />
+            <PlayerMarker
+              name={names.t2p1}
+              isServing={isServer("t2p1", 2)}
+              isReceiver={isReceiver("t2p1", 2)}
+              isTop={true}
+              slot={1}
+            />
           </div>
           {/* Top Right (Slot 2 Player D) */}
           <div className="flex-1 relative">
-            <PlayerMarker 
-               name={names.t2p2} 
-               isServing={isServer("t2p2", 2)}
-               isReceiver={isReceiver("t2p2", 2)}
-               isTop={true}
-               slot={2}
-             />
+            <PlayerMarker
+              name={names.t2p2}
+              isServing={isServer("t2p2", 2)}
+              isReceiver={isReceiver("t2p2", 2)}
+              isTop={true}
+              slot={2}
+            />
           </div>
           <div className="absolute bottom-0 w-full h-1/4 bg-blue-500/30 border-t border-dashed border-white/20"></div>
         </div>
@@ -115,27 +139,27 @@ export function Court({ positions, serverTeam, names, score1, score2 }: CourtPro
 
         {/* Bottom Side (Team 1) */}
         <div className="flex-1 relative border-t-2 border-white/30 flex">
-           <div className="absolute top-0 w-full h-1/4 bg-blue-500/30 border-b border-dashed border-white/20 pointer-events-none"></div>
+          <div className="absolute top-0 w-full h-1/4 bg-blue-500/30 border-b border-dashed border-white/20 pointer-events-none"></div>
 
           {/* Bottom Left (Slot 1 Player A) */}
           <div className="flex-1 border-r border-white/20 relative pt-12">
-            <PlayerMarker 
-               name={names.t1p1} 
-               isServing={isServer("t1p1", 1)}
-               isReceiver={isReceiver("t1p1", 1)}
-               isTop={false}
-               slot={1}
-             />
+            <PlayerMarker
+              name={names.t1p1}
+              isServing={isServer("t1p1", 1)}
+              isReceiver={isReceiver("t1p1", 1)}
+              isTop={false}
+              slot={1}
+            />
           </div>
           {/* Bottom Right (Slot 2 Player B) */}
           <div className="flex-1 relative pt-12">
-            <PlayerMarker 
-               name={names.t1p2} 
-               isServing={isServer("t1p2", 1)}
-               isReceiver={isReceiver("t1p2", 1)}
-               isTop={false}
-               slot={2}
-             />
+            <PlayerMarker
+              name={names.t1p2}
+              isServing={isServer("t1p2", 1)}
+              isReceiver={isReceiver("t1p2", 1)}
+              isTop={false}
+              slot={2}
+            />
           </div>
         </div>
       </div>
