@@ -97,7 +97,7 @@ export function Court({
   // Xác định bên phát dựa trên điểm số của đội đang phát
   const isT1Serving = serverTeam === 1;
   const currentScore = isT1Serving ? score1 : score2;
-  
+
   // Trong lượt phát đầu tiên, chỉ có slot 1 phát (tay 2)
   // Từ lượt thứ 2 trở đi: slot 1 phát bên phải (even score), slot 2 phát bên trái (odd score)
   const serveSide = serverHand === 1 ? "right" : "left";
@@ -105,7 +105,7 @@ export function Court({
   // Xác định ai là người phát
   const getServerPlayer = (team: 1 | 2) => {
     if (team !== serverTeam) return null;
-    
+
     // Tìm player trong đội đang phát có vị trí trùng với serveSide
     return Object.entries(positions).find(([pid, side]) => 
       pid.startsWith(`t${team}`) && side === serveSide
@@ -115,13 +115,13 @@ export function Court({
   // Xác định ai là người nhận
   const getReceiverPlayer = (team: 1 | 2) => {
     if (team === serverTeam) return null;
-    
+
     // Người nhận là người ở đội đối diện có cùng vị trí với người phát
     const serverPlayer = getServerPlayer(serverTeam);
     if (!serverPlayer) return null;
-    
+
     const serverPosition = positions[serverPlayer];
-    
+
     return Object.entries(positions).find(([pid, side]) => 
       pid.startsWith(`t${team}`) && side === serverPosition
     )?.[0];
@@ -132,7 +132,7 @@ export function Court({
     const teamPrefix = `t${team}`;
     const serverPlayer = getServerPlayer(team);
     const receiverPlayer = getReceiverPlayer(team);
-    
+
     // Lấy tất cả cầu thủ trong đội
     const players = [
       { id: `${teamPrefix}p1`, name: names[`${teamPrefix}p1` as keyof typeof names] },
@@ -141,7 +141,7 @@ export function Court({
 
     // Sắp xếp theo vai trò
     let displayPlayers = [...players];
-    
+
     if (team === serverTeam) {
       // Đội đang phát: slot 1 = người phát, slot 2 = người còn lại
       const serverIndex = displayPlayers.findIndex(p => p.id === serverPlayer);
