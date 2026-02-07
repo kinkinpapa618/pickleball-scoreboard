@@ -28,7 +28,7 @@ export function useGameLogic(
     score1: 0,
     score2: 0,
     serverTeam: initialServer,
-    serverHand: 1,  // Luôn bắt đầu từ slot 1
+    serverHand: 2,  // Luôn bắt đầu từ slot 1
     positions: {
       t1p1: "left",   // Team 1 Player 1: bên trái
       t1p2: "right",  // Team 1 Player 2: bên phải  
