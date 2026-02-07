@@ -33,18 +33,32 @@ const INITIAL_POSITIONS: Record<string, "left" | "right"> = {
 };
 
 export function useGameLogic(
-  winningScore: number,
+  winningScore: number, 
   initialServerTeam: 1 | 2,
-  playerNames: { t1p1: string; t1p2: string; t2p1: string; t2p2: string },
+  playerNames: { t1p1: string; t1p2: string; t2p1: string; t2p2: string }
 ) {
-  const [state, setState] = useState<GameState>({
-    score1: 0,
-    score2: 0,
-    serverTeam: initialServerTeam,
-    serverHand: 2, // Standard start: 0-0-2
-    gameHistory: [],
-    positions: { ...INITIAL_POSITIONS },
-    winner: null,
+  const [state, setState] = useState<GameState>(() => {
+    // Logic khởi tạo an toàn
+    const positions = { ...INITIAL_POSITIONS };
+    
+    // Đảm bảo đội giao bóng đầu tiên có Slot 1 đứng bên PHẢI
+    if (initialServerTeam === 1) {
+      positions.t1p1 = "right";
+      positions.t1p2 = "left";
+    } else {
+      positions.t2p1 = "right";
+      positions.t2p2 = "left";
+    }
+
+    return {
+      score1: 0,
+      score2: 0,
+      serverTeam: initialServerTeam,
+      serverHand: 2, // Luật 0-0-2
+      gameHistory: [],
+      positions: positions,
+      winner: null,
+    };
   });
 
   const checkWin = (s1: number, s2: number) => {
