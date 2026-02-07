@@ -100,7 +100,6 @@ export default function Match() {
         />
 
         {/* Court Visual */}
-        {/* Court Visual */}
         <div className="w-full">
           <Court
             positions={state.positions}

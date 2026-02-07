@@ -105,21 +105,25 @@ export function useGameLogic(
           [player2]: newPositions[player1],
         };
 
-
+        // 7A.3: Nếu đây là lượt phát đầu tiên và được điểm, vẫn giữ firstServe = true
+        // (vì đội vẫn còn lượt phát đầu tiên)
       } 
-
+      // TRƯỜNG HỢP B: Đội phát bóng KHÔNG được điểm
       else {
-
+        // 7B.1: Đánh dấu đã qua lượt phát đầu tiên
         newFirstServe = false;
 
-       
+        // 7B.2: Xử lý theo tình huống bạn mô tả
         if (prev.firstServe) {
-         
+          // TRƯỜNG HỢP ĐẶC BIỆT: Lượt phát đầu tiên của trận
+          // Chỉ có 1 người phát (tay 2), không có tay 1
+          // Khi không được điểm, chuyển quyền phát cho slot 1 đội đối phương
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;  // Slot 1 đội đối phương
           // Vị trí của 4 player GIỮ NGUYÊN
         } else {
-         
+          // TRƯỜNG HỢP THÔNG THƯỜNG (từ lượt thứ 2 trở đi)
+          // Kiểm tra đang là slot nào đang phát
           if (prev.serverHand === 1) {
             // Đang là slot 1 phát → chuyển quyền phát cho slot 2 CÙNG ĐỘI
             newServerHand = 2;
