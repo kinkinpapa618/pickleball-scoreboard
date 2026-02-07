@@ -237,9 +237,6 @@ export function Court({
           <div className="bg-gradient-to-r from-blue-800 to-blue-900 text-white text-sm md:text-lg font-bold px-4 md:px-6 py-2 rounded-lg shadow-lg border-l-4 border-yellow-400">
             ĐỘI 1
           </div>
-          <div className="text-lg md:text-2xl font-bold text-white bg-black/40 px-3 py-1 rounded">
-            {score1}
-          </div>
         </div>
       </div>
 
@@ -247,9 +244,6 @@ export function Court({
         <div className="flex flex-col items-end gap-1">
           <div className="bg-gradient-to-l from-red-800 to-red-900 text-white text-sm md:text-lg font-bold px-4 md:px-6 py-2 rounded-lg shadow-lg border-r-4 border-yellow-400">
             ĐỘI 2
-          </div>
-          <div className="text-lg md:text-2xl font-bold text-white bg-black/40 px-3 py-1 rounded">
-            {score2}
           </div>
         </div>
       </div>
