@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Coins, Settings2 } from "lucide-react";
 import { PlayerSetup } from "@/components/PlayerSetup";
@@ -9,14 +15,14 @@ import { CoinTossModal } from "@/components/CoinTossModal";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  
+
   // Form State
   const [t1p1, setT1p1] = useState("");
   const [t1p2, setT1p2] = useState("");
   const [t2p1, setT2p1] = useState("");
   const [t2p2, setT2p2] = useState("");
   const [winningScore, setWinningScore] = useState("11");
-  
+
   // Coin Toss State
   const [showCoinToss, setShowCoinToss] = useState(false);
   const [firstServer, setFirstServer] = useState<1 | 2>(1); // Default to team 1, updated by coin toss
@@ -30,9 +36,12 @@ export default function Home() {
 
     // Pass data via URL params (simple and stateless)
     const params = new URLSearchParams({
-      t1p1, t1p2, t2p1, t2p2,
+      t1p1,
+      t1p2,
+      t2p1,
+      t2p2,
       win: winningScore,
-      serve: String(firstServer)
+      serve: String(firstServer),
     });
 
     setLocation(`/match?${params.toString()}`);
@@ -50,15 +59,30 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
       <div className="w-full max-w-4xl space-y-8">
-        
         {/* Header */}
         <div className="text-center space-y-2 py-8">
-          <h1 className="text-4xl md:text-6xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
-            Pickleball Pro
+          <h1 className="text-4xl md:text-5xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
+            BMB Pickleball Scoreboard
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Hệ thống quản lý bảng điểm chuyên nghiệp
-          </p>
+          <p className="text-muted-foreground text-lg">BẢNG ĐIỂM PICKLEBALL</p>
+        </div>
+
+        {/* Players Grid */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <PlayerSetup
+            team={1}
+            p1={t1p1}
+            onP1Change={setT1p1}
+            p2={t1p2}
+            onP2Change={setT1p2}
+          />
+          <PlayerSetup
+            team={2}
+            p1={t2p1}
+            onP1Change={setT2p1}
+            p2={t2p2}
+            onP2Change={setT2p2}
+          />
         </div>
 
         {/* Settings Bar */}
@@ -69,10 +93,12 @@ export default function Home() {
               <span>Thiết lập trận đấu</span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4 w-full md:w-auto">
-             <span className="text-sm font-medium whitespace-nowrap">Điểm chiến thắng:</span>
-             <Select value={winningScore} onValueChange={setWinningScore}>
+            <span className="text-sm font-medium whitespace-nowrap">
+              Điểm chiến thắng:
+            </span>
+            <Select value={winningScore} onValueChange={setWinningScore}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Chọn điểm" />
               </SelectTrigger>
@@ -83,8 +109,8 @@ export default function Home() {
               </SelectContent>
             </Select>
 
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={() => setShowCoinToss(true)}
               className="gap-2 font-semibold"
             >
@@ -94,24 +120,10 @@ export default function Home() {
           </div>
         </Card>
 
-        {/* Players Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <PlayerSetup 
-            team={1} 
-            p1={t1p1} onP1Change={setT1p1}
-            p2={t1p2} onP2Change={setT1p2}
-          />
-          <PlayerSetup 
-            team={2} 
-            p1={t2p1} onP1Change={setT2p1}
-            p2={t2p2} onP2Change={setT2p2}
-          />
-        </div>
-
         {/* Start Action */}
         <div className="pt-8 flex justify-center">
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             onClick={handleStart}
             className="
               text-lg px-12 py-8 rounded-2xl shadow-xl shadow-primary/30 
@@ -124,8 +136,8 @@ export default function Home() {
         </div>
       </div>
 
-      <CoinTossModal 
-        open={showCoinToss} 
+      <CoinTossModal
+        open={showCoinToss}
         onOpenChange={setShowCoinToss}
         onComplete={handleCoinTossComplete}
       />
