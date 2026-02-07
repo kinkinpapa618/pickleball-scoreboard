@@ -61,7 +61,7 @@ export default function Home() {
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-2 py-8">
-          <h1 className="text-4xl md:text-5xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
+          <h1 className="text-4xl md:text-4xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
             BMB Pickleball Scoreboard
           </h1>
           <p className="text-muted-foreground text-lg">BẢNG ĐIỂM PICKLEBALL</p>

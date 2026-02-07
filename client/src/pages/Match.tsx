@@ -114,7 +114,7 @@ export default function Match() {
         {/* Control Pad */}
         <div className="grid grid-cols-2 gap-4 mt-auto md:mt-8 mb-8 h-32 md:h-40">
           <Button
-            className="h-full rounded-2xl text-xl md:text-3xl font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] hover:shadow-2xl transition-all bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1"
+            className="h-1/2 rounded-2xl text-xl md:text-3xl font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] hover:shadow-2xl transition-all bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1"
             onClick={scorePoint}
             disabled={!!state.winner}
           >
@@ -126,7 +126,7 @@ export default function Match() {
 
           <Button
             variant="destructive"
-            className="h-full rounded-2xl text-xl md:text-3xl font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] hover:shadow-2xl transition-all border-b-4 border-red-800 active:border-b-0 active:translate-y-1"
+            className="h-1/2 rounded-2xl text-xl md:text-3xl font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] hover:shadow-2xl transition-all border-b-4 border-red-800 active:border-b-0 active:translate-y-1"
             onClick={fault}
             disabled={!!state.winner}
           >
