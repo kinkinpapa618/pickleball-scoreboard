@@ -1,201 +1,243 @@
 import { useState, useCallback } from "react";
-// Giả định import type từ schema của bạn, nếu không có hãy bỏ qua dòng này
-import { type InsertMatch } from "@shared/schema";
 
-// --- TYPES ---
-export type PlayerPosition = {
-  id: string; 
-  name: string;
-  side: "left" | "right";
-  team: 1 | 2;
+type GameState = {
+  score1: number;               // Điểm đội 1
+  score2: number;               // Điểm đội 2
+  serverTeam: 1 | 2;           // Đội đang có quyền giao bóng
+  serverHand: 1 | 2;           // Tay giao (1 = tay 1, 2 = tay 2)
+  positions: Record<string, "left" | "right">; // Vị trí trái/phải của từng cầu thủ
+  winner: null | 1 | 2;        // Đội thắng (null nếu chưa kết thúc)
+  gameHistory: any[];          // Lịch sử để undo
 };
 
-export type GameState = {
-  score1: number;
-  score2: number;
-  serverTeam: 1 | 2;
-  serverHand: 1 | 2; // 1 = 1st server, 2 = 2nd server (Start match is 2)
-  gameHistory: Array<Omit<GameState, "gameHistory">>; // History stores snapshots of state
-  positions: Record<string, "left" | "right">; // Map player ID to side
-  winner: 1 | 2 | null;
-};
-
-// --- CONSTANTS ---
-// Mặc định ban đầu: Slot 1 của cả 2 đội đều đứng bên PHẢI (Right)
-// Để đảm bảo ai giao bóng đầu tiên cũng là Slot 1.
-const INITIAL_POSITIONS: Record<string, "left" | "right"> = {
-  t1p1: "right", 
-  t1p2: "left",  
-  t2p1: "right", 
-  t2p2: "left",  
-};
-
-// --- HOOK ---
+// ==============================================
+// PHẦN 1: HOOK CHÍNH - TẠO LOGIC QUẢN LÝ TRẬN ĐẤU
+// ==============================================
 export function useGameLogic(
-  winningScore: number, 
-  initialServerTeam: 1 | 2,
-  playerNames: { t1p1: string; t1p2: string; t2p1: string; t2p2: string }
+  winningScore: number,        // Điểm cần đạt để thắng (11, 15, 21)
+  initialServer: 1 | 2,        // Đội giao bóng đầu tiên
+  names: { t1p1: string; t1p2: string; t2p1: string; t2p2: string } // Tên cầu thủ
 ) {
-  // KHỞI TẠO STATE
-  const [state, setState] = useState<GameState>(() => {
-    return {
-      score1: 0,
-      score2: 0,
-      serverTeam: initialServerTeam,
-      serverHand: 2, // Luật Pickleball: Bắt đầu trận luôn là Hand 2 (0-0-2)
-      gameHistory: [],
-      // Clone positions ban đầu để không bị tham chiếu
-      positions: { ...INITIAL_POSITIONS },
-      winner: null,
-    };
-  });
+  // ==============================================
+  // PHẦN 2: KHỞI TẠO TRẠNG THÁI BAN ĐẦU
+  // ==============================================
+  const [state, setState] = useState<GameState>(() => ({
+    score1: 0,                // Điểm đội 1 bắt đầu từ 0
+    score2: 0,                // Điểm đội 2 bắt đầu từ 0
+    serverTeam: initialServer, // Đội nào bắt đầu giao bóng
+    serverHand: 1,            // Tay giao đầu tiên là tay 1 (bên phải)
+    positions: {              // Vị trí mặc định của các cầu thủ
+      t1p1: "left",           // Team 1 Player 1: bên trái
+      t1p2: "right",          // Team 1 Player 2: bên phải  
+      t2p1: "left",           // Team 2 Player 1: bên trái
+      t2p2: "right",          // Team 2 Player 2: bên phải
+    },
+    winner: null,             // Chưa có đội thắng
+    gameHistory: [],          // Lịch sử rỗng khi bắt đầu
+  }));
 
-  // LOGIC KIỂM TRA THẮNG
-  const checkWin = (s1: number, s2: number) => {
-    const diff = Math.abs(s1 - s2);
-    // Điểm trần (Cap) để kết thúc trận đấu nếu quá dài (tùy chọn)
-    const cap = winningScore === 11 ? 15 : winningScore === 15 ? 19 : 25;
-
-    // Thắng do chạm trần (không cần cách 2 điểm)
-    if (s1 >= cap && s1 > s2) return 1;
-    if (s2 >= cap && s2 > s1) return 2;
-
-    // Thắng thường (đủ điểm và cách >= 2)
-    if (s1 >= winningScore && diff >= 2) return 1;
-    if (s2 >= winningScore && diff >= 2) return 2;
-
-    return null;
-  };
-
-  // HELPER: LƯU LỊCH SỬ (Snapshot hiện tại trước khi thay đổi)
-  const createHistorySnapshot = (currentState: GameState) => {
-    const { gameHistory, ...snapshot } = currentState;
-    return snapshot;
-  };
-
-  // 1. GHI ĐIỂM (SCORE POINT)
+  // ==============================================
+  // PHẦN 3: HÀM GHI ĐIỂM - CHỨC NĂNG CHÍNH
+  // ==============================================
   const scorePoint = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
+      // 3.1: Kiểm tra nếu trận đã kết thúc thì không làm gì
       if (prev.winner) return prev;
 
-      const isTeam1Serving = prev.serverTeam === 1;
-      const newScore1 = isTeam1Serving ? prev.score1 + 1 : prev.score1;
-      const newScore2 = !isTeam1Serving ? prev.score2 + 1 : prev.score2;
+      // 3.2: Lưu trạng thái hiện tại để có thể undo
+      const history = [...prev.gameHistory, { ...prev }];
 
-      // Logic ĐỔI CHỖ (Swap): Chỉ đội ghi điểm mới đổi chỗ 2 người chơi
-      const newPositions = { ...prev.positions };
-      if (isTeam1Serving) {
-        const temp = newPositions.t1p1;
-        newPositions.t1p1 = newPositions.t1p2;
-        newPositions.t1p2 = temp;
-      } else {
-        const temp = newPositions.t2p1;
-        newPositions.t2p1 = newPositions.t2p2;
-        newPositions.t2p2 = temp;
+      // 3.3: Xác định đội nào ghi điểm (dựa trên đội đang giao)
+      const isTeam1Serving = prev.serverTeam === 1;
+      const scoringTeam = isTeam1Serving ? 1 : 2;
+
+      // 3.4: Cập nhật điểm số cho đội tương ứng
+      const newScore1 = scoringTeam === 1 ? prev.score1 + 1 : prev.score1;
+      const newScore2 = scoringTeam === 2 ? prev.score2 + 1 : prev.score2;
+
+      // 3.5: KIỂM TRA ĐIỀU KIỆN THẮNG
+      const winner =
+        newScore1 >= winningScore && newScore1 - newScore2 >= 2  // Đội 1 thắng nếu đủ điểm và cách biệt 2 điểm
+          ? 1
+          : newScore2 >= winningScore && newScore2 - newScore1 >= 2  // Đội 2 thắng nếu đủ điểm và cách biệt 2 điểm
+          ? 2
+          : null;  // Chưa có đội thắng
+
+      // 3.6: Chuẩn bị các biến thay đổi
+      let newServerTeam = prev.serverTeam;
+      let newServerHand = prev.serverHand;
+      let newPositions = { ...prev.positions };
+
+      // 3.7: Nếu có đội thắng -> kết thúc trận, không thay đổi gì khác
+      if (winner) {
+        return {
+          ...prev,
+          score1: newScore1,
+          score2: newScore2,
+          winner,
+          gameHistory: history,
+        };
       }
 
-      const winner = checkWin(newScore1, newScore2);
+      // ==============================================
+      // PHẦN 4: LOGIC XỬ LÝ THEO YÊU CẦU MỚI
+      // ==============================================
 
+      // TRƯỜNG HỢP 1: Đội phát bóng được điểm
+      if (scoringTeam === prev.serverTeam) {
+        // 4.1: Giữ nguyên quyền phát bóng của player đó
+        // 4.2: Chỉ đổi vị trí đứng (player đó đổi từ trái sang phải hoặc ngược lại)
+        const servingPlayerId = Object.keys(prev.positions).find(
+          pid => pid.startsWith(`t${prev.serverTeam}`) && 
+          prev.positions[pid] === (prev.serverHand === 1 ? "right" : "left")
+        );
+
+        if (servingPlayerId) {
+          // Đổi vị trí của player đang phát
+          newPositions = {
+            ...newPositions,
+            [servingPlayerId]: newPositions[servingPlayerId] === "left" ? "right" : "left",
+          };
+        }
+      } 
+      // TRƯỜNG HỢP 2: Đội phát bóng không được điểm
+      else {
+        // 4.3: Chuyển quyền phát bóng cho player còn lại nếu còn lượt phát
+        if (prev.serverHand === 1) {
+          // Còn lượt phát: đổi sang tay giao 2 (player còn lại)
+          newServerHand = 2;
+
+          // Đổi vị trí của cả đội để player mới phát đứng đúng bên
+          const teamPrefix = `t${prev.serverTeam}`;
+          newPositions = {
+            ...newPositions,
+            [`${teamPrefix}p1`]: "right",  // Player 1 chuyển sang bên phải
+            [`${teamPrefix}p2`]: "left",   // Player 2 chuyển sang bên trái
+          };
+        } else {
+          // Hết lượt phát: chuyển quyền phát cho đội bạn
+          newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+          newServerHand = 1;  // Reset về tay giao 1
+
+          // Đổi vị trí của đội mới phát để player đầu tiên đứng bên phải
+          const newTeamPrefix = `t${newServerTeam}`;
+          newPositions = {
+            ...newPositions,
+            [`${newTeamPrefix}p1`]: "right",  // Player 1 đội mới đứng bên phải
+            [`${newTeamPrefix}p2`]: "left",   // Player 2 đội mới đứng bên trái
+          };
+        }
+      }
+
+      // ==============================================
+      // PHẦN 5: TRẢ VỀ TRẠNG THÁI MỚI
+      // ==============================================
       return {
         ...prev,
         score1: newScore1,
         score2: newScore2,
+        serverTeam: newServerTeam,
+        serverHand: newServerHand,
         positions: newPositions,
         winner,
-        gameHistory: [...prev.gameHistory, createHistorySnapshot(prev)],
+        gameHistory: history,
       };
     });
   }, [winningScore]);
 
-  // 2. LỖI / MẤT LƯỢT (FAULT)
+  // ==============================================
+  // PHẦN 6: HÀM ĐỔI GIAO BÓNG (PHẠM LỖI)
+  // ==============================================
   const fault = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
+      // 6.1: Kiểm tra nếu trận đã kết thúc
       if (prev.winner) return prev;
 
-      let nextServerTeam = prev.serverTeam;
-      let nextServerHand = prev.serverHand;
-      let nextPositions = { ...prev.positions };
+      // 6.2: Lưu trạng thái hiện tại để undo
+      const history = [...prev.gameHistory, { ...prev }];
 
+      // 6.3: Xử lý đổi giao bóng theo yêu cầu mới
+      let newServerTeam = prev.serverTeam;
+      let newServerHand = prev.serverHand;
+      let newPositions = { ...prev.positions };
+
+      // Nếu đang ở tay giao 1: chuyển sang tay giao 2 (player còn lại cùng đội)
       if (prev.serverHand === 1) {
-        // Nếu là người đầu tiên giao lỗi -> Chuyển sang người thứ 2 (cùng đội)
-        nextServerHand = 2;
-        // Vị trí giữ nguyên, không đổi
-      } else {
-        // SIDE OUT: Nếu người thứ 2 giao lỗi -> Đổi quyền giao bóng sang đội kia
-        nextServerTeam = prev.serverTeam === 1 ? 2 : 1;
-        nextServerHand = 1;
+        newServerHand = 2;
 
-        // --- QUAN TRỌNG: RESET VỊ TRÍ KHI ĐỔI ĐỘI ---
-        // Yêu cầu: Người Slot 1 (tXp1) luôn giao quả đầu tiên (Hand 1)
-        // Hành động: Ép Slot 1 về bên PHẢI (Right), Slot 2 về TRÁI (Left)
-        if (nextServerTeam === 1) {
-          nextPositions.t1p1 = "right";
-          nextPositions.t1p2 = "left";
-        } else {
-          nextPositions.t2p1 = "right";
-          nextPositions.t2p2 = "left";
-        }
+        // Đổi vị trí của cả đội
+        const teamPrefix = `t${prev.serverTeam}`;
+        newPositions = {
+          ...newPositions,
+          [`${teamPrefix}p1`]: "right",
+          [`${teamPrefix}p2`]: "left",
+        };
+      } 
+      // Nếu đang ở tay giao 2: chuyển quyền phát cho đội bạn
+      else {
+        newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+        newServerHand = 1;  // Reset về tay giao 1
+
+        // Đổi vị trí của đội mới phát
+        const newTeamPrefix = `t${newServerTeam}`;
+        newPositions = {
+          ...newPositions,
+          [`${newTeamPrefix}p1`]: "right",
+          [`${newTeamPrefix}p2`]: "left",
+        };
       }
 
+      // 6.4: Trả về trạng thái mới
       return {
         ...prev,
-        serverTeam: nextServerTeam,
-        serverHand: nextServerHand,
-        positions: nextPositions,
-        gameHistory: [...prev.gameHistory, createHistorySnapshot(prev)],
+        serverTeam: newServerTeam,
+        serverHand: newServerHand,
+        positions: newPositions,
+        gameHistory: history,
       };
     });
   }, []);
 
-  // 3. HOÀN TÁC (UNDO)
+  // ==============================================
+  // PHẦN 7: HÀM HOÀN TÁC
+  // ==============================================
   const undo = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
+      // 7.1: Kiểm tra nếu không có lịch sử để undo
       if (prev.gameHistory.length === 0) return prev;
 
-      const lastSnapshot = prev.gameHistory[prev.gameHistory.length - 1];
-      const newHistory = prev.gameHistory.slice(0, -1);
+      // 7.2: Lấy trạng thái trước đó
+      const lastState = prev.gameHistory[prev.gameHistory.length - 1];
 
+      // 7.3: Trả về trạng thái trước đó, xóa khỏi lịch sử
       return {
-        ...prev, // Giữ các method hoặc property khác nếu có
-        ...lastSnapshot, // Ghi đè state bằng snapshot cũ
-        gameHistory: newHistory, // Cập nhật danh sách history mới
-        winner: null, // Reset winner nếu undo từ trạng thái thắng
+        ...lastState,
+        gameHistory: prev.gameHistory.slice(0, -1),
       };
     });
   }, []);
 
-  // 4. LẤY ID NGƯỜI ĐANG GIAO BÓNG (Để hiển thị UI)
-  const getCurrentServerId = useCallback(() => {
-    // Trong Pickleball, người giao bóng LUÔN là người đứng bên PHẢI
-    // (Trừ trường hợp đánh đơn lẻ loi, nhưng đây là logic đôi chuẩn)
-    if (state.serverTeam === 1) {
-      return state.positions.t1p1 === "right" ? "t1p1" : "t1p2";
-    } else {
-      return state.positions.t2p1 === "right" ? "t2p1" : "t2p2";
-    }
-  }, [state.serverTeam, state.positions]);
-
-  // 5. XUẤT DỮ LIỆU TRẬN ĐẤU
-  const getMatchData = (): Omit<InsertMatch, "id" | "date"> | null => {
-    if (!state.winner) return null;
+  // ==============================================
+  // PHẦN 8: HÀM LẤY DỮ LIỆU TRẬN ĐẤU ĐỂ LƯU
+  // ==============================================
+  const getMatchData = useCallback(() => {
     return {
-      team1Player1: playerNames.t1p1,
-      team1Player2: playerNames.t1p2,
-      team2Player1: playerNames.t2p1,
-      team2Player2: playerNames.t2p2,
-      scoreTeam1: state.score1,
-      scoreTeam2: state.score2,
-      winningScore,
-      winnerTeam: state.winner,
+      team1Score: state.score1,      // Điểm đội 1
+      team2Score: state.score2,      // Điểm đội 2
+      winner: state.winner,          // Đội thắng
+      date: new Date().toISOString(), // Thời gian kết thúc
+      players: names,                // Tên các cầu thủ
     };
-  };
+  }, [state.score1, state.score2, state.winner, names]);
 
+  // ==============================================
+  // PHẦN 9: TRẢ VỀ CÁC HÀM VÀ TRẠNG THÁI
+  // ==============================================
   return {
-    state,
-    scorePoint,
-    fault,
-    undo,
-    getMatchData,
-    getCurrentServerId,
+    state,        // Trạng thái hiện tại của trận đấu
+    scorePoint,   // Hàm ghi điểm
+    fault,        // Hàm đổi giao bóng khi phạm lỗi
+    undo,         // Hàm hoàn tác
+    getMatchData, // Hàm lấy dữ liệu để lưu vào database
   };
 }
