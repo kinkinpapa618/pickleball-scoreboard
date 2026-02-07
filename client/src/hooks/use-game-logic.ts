@@ -1,34 +1,28 @@
 import { useState, useCallback } from "react";
 
 type GameState = {
+  firstServe: any;
   score1: number;               // Điểm đội 1
   score2: number;               // Điểm đội 2
   serverTeam: 1 | 2;           // Đội đang có quyền phát bóng
-  serverHand: 1 | 2;           // Tay giao (1 = slot 1, 2 = slot 2)
+  serverHand: 1 | 2;           // Tay giao (1 = Server 1, 2 = Server 2)
   positions: Record<string, "left" | "right">; // Vị trí trái/phải
   winner: null | 1 | 2;        // Đội thắng
   gameHistory: any[];          // Lịch sử để undo
-  firstServe: boolean;         // Cờ đánh dấu lượt phát đầu tiên của trận
+  isFirstServeOfMatch: boolean; // Cờ đánh dấu lượt phát đầu tiên của TRẬN ĐẤU
 };
-
-// ==============================================
-// LOGIC CẬP NHẬT VỚI TRƯỜNG HỢP ĐẶC BIỆT:
-// ==============================================
-// 1. Lượt phát đầu tiên của trận: chỉ có 1 người phát (tay 2)
-// 2. Từ lượt thứ 2 trở đi: có 2 người phát (tay 1 và tay 2)
-// ==============================================
 
 export function useGameLogic(
   winningScore: number,
   initialServer: 1 | 2,
   names: { t1p1: string; t1p2: string; t2p1: string; t2p2: string }
 ) {
-  // KHỞI TẠO TRẠNG THÁI BAN ĐẦU VỚI TRƯỜNG HỢP ĐẶC BIỆT
+  // KHỞI TẠO TRẠNG THÁI BAN ĐẦU
   const [state, setState] = useState<GameState>(() => ({
     score1: 0,
     score2: 0,
     serverTeam: initialServer,
-    serverHand: 1,  // Luôn bắt đầu từ slot 1
+    serverHand: 2,  // Luôn bắt đầu từ Server 2 (bên phải) ở lượt đầu tiên
     positions: {
       t1p1: "left",   // Team 1 Player 1: bên trái
       t1p2: "right",  // Team 1 Player 2: bên phải  
@@ -37,11 +31,11 @@ export function useGameLogic(
     },
     winner: null,
     gameHistory: [],
-    firstServe: true,  // Đánh dấu đây là lượt phát đầu tiên của trận
+    isFirstServeOfMatch: true,  // Đây là lượt phát đầu tiên của trận
   }));
 
   // ==============================================
-  // HÀM GHI ĐIỂM - ĐÃ CẬP NHẬT VỚI FIRST_SERVE
+  // HÀM GHI ĐIỂM - ĐÃ SỬA THEO QUY TẮC MỚI
   // ==============================================
   const scorePoint = useCallback(() => {
     setState((prev) => {
@@ -71,7 +65,7 @@ export function useGameLogic(
       let newServerTeam = prev.serverTeam;
       let newServerHand = prev.serverHand;
       let newPositions = { ...prev.positions };
-      let newFirstServe = prev.firstServe;
+      let newIsFirstServeOfMatch = prev.isFirstServeOfMatch;
 
       // 7. Nếu có đội thắng -> kết thúc
       if (winner) {
@@ -85,54 +79,49 @@ export function useGameLogic(
       }
 
       // ==============================================
-      // LOGIC CHÍNH DỰA TRÊN TÌNH HUỐNG:
+      // LOGIC CHÍNH DỰA TRÊN QUY TẮC MỚI
       // ==============================================
 
-      // TRƯỜNG HỢP A: Đội phát bóng ĐƯỢC điểm
+      // TRƯỜNG HỢP A: Đội phát bóng THẮNG pha cầu (được điểm)
       if (scoringTeam === prev.serverTeam) {
-        // 7A.1: Giữ nguyên quyền phát bóng của player đó
-        // Không thay đổi newServerTeam và newServerHand
-
-        // 7A.2: Đổi vị trí GIỮA HAI NGƯỜI TRONG ĐỘI ĐANG PHÁT
+        // A1: Đội phát ghi điểm -> người vừa phát đổi bên
         const teamPrefix = `t${prev.serverTeam}`;
-        const player1 = `${teamPrefix}p1`;
-        const player2 = `${teamPrefix}p2`;
+        const servingPlayer = `${teamPrefix}p${prev.serverHand}`;
+        const otherPlayer = `${teamPrefix}p${prev.serverHand === 1 ? 2 : 1}`;
 
-        // Đổi chỗ vị trí của 2 người trong đội
+        // Chỉ đổi vị trí của người vừa phát
         newPositions = {
           ...newPositions,
-          [player1]: newPositions[player2],
-          [player2]: newPositions[player1],
+          [servingPlayer]: newPositions[servingPlayer] === "left" ? "right" : "left",
         };
 
-        // 7A.3: Nếu đây là lượt phát đầu tiên và được điểm, vẫn giữ firstServe = true
-        // (vì đội vẫn còn lượt phát đầu tiên)
+        // A2: Giữ nguyên quyền phát cho người đó (serverTeam và serverHand không đổi)
+        // A3: Nếu đây là lượt phát đầu tiên của trận, vẫn giữ cờ isFirstServeOfMatch
+        // (vì đội vẫn còn đang trong lượt phát đầu tiên của trận)
       } 
-      // TRƯỜNG HỢP B: Đội phát bóng KHÔNG được điểm
+      // TRƯỜNG HỢP B: Đội phát bóng THUA pha cầu (không được điểm)
       else {
-        // 7B.1: Đánh dấu đã qua lượt phát đầu tiên
-        newFirstServe = false;
+        // B1: Đội phát thua -> không đổi vị trí của ai cả
 
-        // 7B.2: Xử lý theo tình huống bạn mô tả
-        if (prev.firstServe) {
+        // B2: Xử lý chuyển lượt phát
+        if (prev.isFirstServeOfMatch) {
           // TRƯỜNG HỢP ĐẶC BIỆT: Lượt phát đầu tiên của trận
-          // Chỉ có 1 người phát (tay 2), không có tay 1
-          // Khi không được điểm, chuyển quyền phát cho slot 1 đội đối phương
+          // Chỉ có Server 2 phát một lần duy nhất
+          // Khi thua -> Side Out ngay lập tức
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-          newServerHand = 1;  // Slot 1 đội đối phương
-          // Vị trí của 4 player GIỮ NGUYÊN
+          newServerHand = 1;  // Đội mới, Server 1 bắt đầu phát
+          newIsFirstServeOfMatch = false; // Đã qua lượt phát đầu tiên của trận
         } else {
           // TRƯỜNG HỢP THÔNG THƯỜNG (từ lượt thứ 2 trở đi)
-          // Kiểm tra đang là slot nào đang phát
           if (prev.serverHand === 1) {
-            // Đang là slot 1 phát → chuyển quyền phát cho slot 2 CÙNG ĐỘI
+            // Server 1 thua -> chuyển quyền phát cho Server 2 CÙNG ĐỘI
             newServerHand = 2;
-            // Vị trí của 4 player GIỮ NGUYÊN
+            // Vị trí của tất cả players giữ nguyên
           } else {
-            // Đang là slot 2 phát → chuyển quyền phát cho slot 1 ĐỘI ĐỐI PHƯƠNG
+            // Server 2 thua -> Side Out, chuyển quyền phát cho đội đối phương
             newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-            newServerHand = 1;  // Slot 1 đội đối phương
-            // Vị trí của 4 player GIỮ NGUYÊN
+            newServerHand = 1;  // Server 1 của đội đối phương bắt đầu phát
+            // Vị trí của tất cả players giữ nguyên
           }
         }
       }
@@ -146,14 +135,14 @@ export function useGameLogic(
         serverHand: newServerHand,
         positions: newPositions,
         winner,
-        firstServe: newFirstServe,
+        isFirstServeOfMatch: newIsFirstServeOfMatch,
         gameHistory: history,
       };
     });
   }, [winningScore]);
 
   // ==============================================
-  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - ĐÃ CẬP NHẬT
+  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI) - ĐÃ SỬA
   // ==============================================
   const fault = useCallback(() => {
     setState((prev) => {
@@ -163,23 +152,23 @@ export function useGameLogic(
       // 2. Lưu lịch sử
       const history = [...prev.gameHistory, { ...prev }];
 
-      // 3. Xử lý đổi giao bóng
+      // 3. Xử lý đổi giao bóng (xử lý giống như thua pha cầu)
       let newServerTeam = prev.serverTeam;
       let newServerHand = prev.serverHand;
-      let newFirstServe = prev.firstServe;
+      let newIsFirstServeOfMatch = prev.isFirstServeOfMatch;
 
-      if (prev.firstServe) {
+      if (prev.isFirstServeOfMatch) {
         // TRƯỜNG HỢP ĐẶC BIỆT: Lượt phát đầu tiên của trận
-        newFirstServe = false;
+        newIsFirstServeOfMatch = false;
         newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-        newServerHand = 1;  // Slot 1 đội đối phương
+        newServerHand = 1;  // Server 1 đội đối phương
       } else {
         // TRƯỜNG HỢP THÔNG THƯỜNG
         if (prev.serverHand === 1) {
-          // Đang là slot 1 phát → chuyển cho slot 2 CÙNG ĐỘI
+          // Đang là Server 1 phát -> chuyển cho Server 2 CÙNG ĐỘI
           newServerHand = 2;
         } else {
-          // Đang là slot 2 phát → chuyển cho slot 1 ĐỘI ĐỐI PHƯƠNG
+          // Đang là Server 2 phát -> Side Out
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
         }
@@ -190,7 +179,7 @@ export function useGameLogic(
         ...prev,
         serverTeam: newServerTeam,
         serverHand: newServerHand,
-        firstServe: newFirstServe,
+        isFirstServeOfMatch: newIsFirstServeOfMatch,
         gameHistory: history,
       };
     });
@@ -213,6 +202,19 @@ export function useGameLogic(
   }, []);
 
   // ==============================================
+  // HÀM TÍNH SỐ LƯỢT PHÁT CÒN LẠI
+  // ==============================================
+  const getRemainingServes = useCallback(() => {
+    if (state.isFirstServeOfMatch) {
+      return 1; // Chỉ có 1 lượt phát đầu tiên
+    } else if (state.serverHand === 1) {
+      return 2; // Server 1 đang phát -> còn 2 lượt (Server 1 và Server 2)
+    } else {
+      return 1; // Server 2 đang phát -> còn 1 lượt (chỉ Server 2)
+    }
+  }, [state.isFirstServeOfMatch, state.serverHand]);
+
+  // ==============================================
   // HÀM LẤY DỮ LIỆU
   // ==============================================
   const getMatchData = useCallback(() => {
@@ -222,9 +224,10 @@ export function useGameLogic(
       winner: state.winner,
       date: new Date().toISOString(),
       players: names,
-      firstServe: state.firstServe,  // Thêm thông tin về lượt phát đầu tiên
+      isFirstServeOfMatch: state.isFirstServeOfMatch,
+      remainingServes: getRemainingServes(),
     };
-  }, [state.score1, state.score2, state.winner, state.firstServe, names]);
+  }, [state.score1, state.score2, state.winner, state.isFirstServeOfMatch, names, getRemainingServes]);
 
   // ==============================================
   // TRẢ VỀ KẾT QUẢ
@@ -235,5 +238,6 @@ export function useGameLogic(
     fault,
     undo,
     getMatchData,
+    getRemainingServes,
   };
 }
