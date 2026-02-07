@@ -4,6 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["zip", "zip"]
 
 [[ports]]
 localPort = 5000
@@ -37,3 +38,6 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[objectStorage]
+defaultBucketID = "replit-objstore-92062b9d-a996-4b1b-9987-ea2fa90697ea"
