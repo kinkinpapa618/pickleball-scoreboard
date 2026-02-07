@@ -1,142 +1,168 @@
-import { useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { User } from "lucide-react";
 
-type GameState = {
+type Position = "left" | "right";
+
+interface CourtProps {
+  positions: Record<string, Position>;
+  serverTeam: 1 | 2;
+  names: { t1p1: string; t1p2: string; t2p1: string; t2p2: string };
+  serverHand: 1 | 2;
   score1: number;
   score2: number;
-  serverTeam: 1 | 2;
-  serverHand: 1 | 2; // Tay giao: 1 hoặc 2
-  positions: Record<string, "left" | "right">;
-  winner: null | 1 | 2;
-  gameHistory: any[];
-  firstServe: boolean; // Cờ lượt phát đầu tiên của trận (0-0-2)
-};
+}
 
-export function useGameLogic(
-  winningScore: number,
-  initialServer: 1 | 2,
-  names: { t1p1: string; t1p2: string; t2p1: string; t2p2: string }
-) {
-  const [state, setState] = useState<GameState>(() => ({
-    score1: 0,
-    score2: 0,
-    serverTeam: initialServer,
-    serverHand: 2, // Quy tắc: Trận đấu bắt đầu từ Server 2 (0-0-2)
-    positions: {
-      t1p1: "left",
-      t1p2: "right",
-      t2p1: "left",
-      t2p2: "right",
-    },
-    winner: null,
-    gameHistory: [],
-    firstServe: true,
-  }));
+function PlayerMarker({
+  name,
+  isServing,
+  isReceiver,
+  isTop,
+  slot,
+}: {
+  name: string;
+  isServing: boolean;
+  isReceiver: boolean;
+  isTop: boolean;
+  slot: number;
+}) {
+  return (
+    <motion.div
+      layout
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className={`absolute left-0 right-0 flex justify-center items-center ${isTop ? "top-4" : "bottom-8"}`}
+    >
+      <div
+        className={`
+        flex flex-col items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300
+        ${isServing ? "scale-110" : "opacity-80 scale-95"}
+      `}
+      >
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex gap-2">
+            {isServing && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-9 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] font-bold text-yellow-900"
+              >
+                PHÁT
+              </motion.div>
+            )}
+            {isReceiver && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-6 h-6 bg-gray-400 rounded-full shadow-[0_0_10px_rgba(156,163,175,0.6)] flex items-center justify-center text-[10px] font-bold text-gray-900"
+              >
+                ĐỠ
+              </motion.div>
+            )}
+          </div>
+          <div className="bg-white/80 text-[10px] font-bold px-1.5 rounded-full text-blue-900 border border-blue-200">
+            SLOT {slot}
+          </div>
+        </div>
+        <div
+          className={`
+          flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm md:text-base shadow-lg backdrop-blur-sm
+          ${
+            isServing
+              ? "bg-white text-blue-900 border-2 border-yellow-400"
+              : isReceiver
+                ? "bg-white/90 text-gray-900 border-2 border-gray-400"
+                : "bg-black/40 text-white border border-white/20"
+          }
+        `}
+        >
+          <User className="w-4 h-4" />
+          {name || "Player"}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
-  // ==============================================
-  // HÀM GHI ĐIỂM (Chỉ dành cho đội đang giao bóng)
-  // ==============================================
-  const scorePoint = useCallback(() => {
-    setState((prev) => {
-      if (prev.winner) return prev;
+export function Court({
+  positions,
+  serverTeam,
+  names,
+  score1,
+  score2,
+}: CourtProps) {
+  const isT1Serving = serverTeam === 1;
+  const currentScore = isT1Serving ? score1 : score2;
+  const serveSide = currentScore % 2 === 0 ? "right" : "left";
 
-      const history = [...prev.gameHistory, { ...prev }];
+  const isServer = (pid: string, team: 1 | 2) => {
+    if (team !== serverTeam) return false;
+    return positions[pid] === serveSide;
+  };
 
-      // 1. Cộng điểm cho đội đang giao bóng
-      const isTeam1 = prev.serverTeam === 1;
-      const newScore1 = isTeam1 ? prev.score1 + 1 : prev.score1;
-      const newScore2 = !isTeam1 ? prev.score2 + 1 : prev.score2;
+  const isReceiver = (pid: string, team: 1 | 2) => {
+    if (team === serverTeam) return false;
+    return positions[pid] === serveSide;
+  };
 
-      // 2. Kiểm tra điều kiện thắng
-      const winner =
-        newScore1 >= winningScore && newScore1 - newScore2 >= 2 ? 1 :
-        newScore2 >= winningScore && newScore2 - newScore1 >= 2 ? 2 : null;
+  return (
+    <div className="relative w-full aspect-[16/9] max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 select-none">
+      {/* Court Surface */}
+      <div className="absolute inset-0 bg-blue-600 flex flex-col">
+        {/* Top Side (Team 2) */}
+        <div className="flex-1 relative border-b-2 border-white/30 flex">
+          {/* Top Left (Slot 1 Player C from their view is Right, but following image: Slot 1 is Top-Left) */}
+          <div className="flex-1 border-r border-white/20 relative">
+            <PlayerMarker
+              name={names.t2p1}
+              isServing={isServer("t2p1", 2)}
+              isReceiver={isReceiver("t2p1", 2)}
+              isTop={true}
+              slot={1}
+            />
+          </div>
+          {/* Top Right (Slot 2 Player D) */}
+          <div className="flex-1 relative">
+            <PlayerMarker
+              name={names.t2p2}
+              isServing={isServer("t2p2", 2)}
+              isReceiver={isReceiver("t2p2", 2)}
+              isTop={true}
+              slot={1}
+            />
+          </div>
+          <div className="absolute bottom-0 w-full h-1/4 bg-blue-500/30 border-t border-dashed border-white/20"></div>
+        </div>
 
-      if (winner) {
-        return { ...prev, score1: newScore1, score2: newScore2, winner, gameHistory: history };
-      }
+        {/* Net */}
+        <div className="h-2 bg-white/90 w-full shadow-sm z-10 relative flex items-center justify-center">
+          <div className="h-full w-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzjIHFBmAAxxGMCAIg0VAABm6gwVd0K0ZAAAAABJRU5ErkJggg==')] opacity-50"></div>
+        </div>
 
-      // 3. ĐỔI VỊ TRÍ: Trong Pickleball, khi ghi điểm, 2 người đội phát bóng đổi chỗ cho nhau
-      const teamPrefix = `t${prev.serverTeam}`;
-      const p1 = `${teamPrefix}p1`;
-      const p2 = `${teamPrefix}p2`;
+        {/* Bottom Side (Team 1) */}
+        <div className="flex-1 relative border-t-2 border-white/30 flex">
+          <div className="absolute top-0 w-full h-1/4 bg-blue-500/30 border-b border-dashed border-white/20 pointer-events-none"></div>
 
-      const newPositions = {
-        ...prev.positions,
-        [p1]: prev.positions[p2],
-        [p2]: prev.positions[p1],
-      };
-
-      return {
-        ...prev,
-        score1: newScore1,
-        score2: newScore2,
-        positions: newPositions,
-        gameHistory: history,
-      };
-    });
-  }, [winningScore]);
-
-  // ==============================================
-  // HÀM LỖI / MẤT LƯỢT (FAULT)
-  // ==============================================
-  const fault = useCallback(() => {
-    setState((prev) => {
-      if (prev.winner) return prev;
-      const history = [...prev.gameHistory, { ...prev }];
-
-      // Trường hợp 1: Đang là lượt phát đầu tiên của trận (0-0-2)
-      if (prev.firstServe) {
-        return {
-          ...prev,
-          serverTeam: prev.serverTeam === 1 ? 2 : 1,
-          serverHand: 1, // Chuyển sang đội kia, người thứ nhất phát
-          firstServe: false,
-          gameHistory: history,
-        };
-      }
-
-      // Trường hợp 2: Đang là Server 1 của lượt bình thường
-      if (prev.serverHand === 1) {
-        return {
-          ...prev,
-          serverHand: 2, // Chuyển sang người thứ hai trong đội
-          gameHistory: history,
-        };
-      }
-
-      // Trường hợp 3: Đang là Server 2 và phạm lỗi (SIDE OUT)
-      return {
-        ...prev,
-        serverTeam: prev.serverTeam === 1 ? 2 : 1,
-        serverHand: 1, // Đổi đội, bắt đầu từ Server 1
-        gameHistory: history,
-      };
-    });
-  }, []);
-
-  // ==============================================
-  // HÀM HOÀN TÁC (UNDO)
-  // ==============================================
-  const undo = useCallback(() => {
-    setState((prev) => {
-      if (prev.gameHistory.length === 0) return prev;
-      const lastState = prev.gameHistory[prev.gameHistory.length - 1];
-      return {
-        ...lastState,
-        gameHistory: prev.gameHistory.slice(0, -1),
-      };
-    });
-  }, []);
-
-  const getMatchData = useCallback(() => {
-    return {
-      team1Score: state.score1,
-      team2Score: state.score2,
-      winner: state.winner,
-      server: `${state.serverTeam}-${state.serverHand}`,
-      positions: state.positions
-    };
-  }, [state]);
-
-  return { state, scorePoint, fault, undo, getMatchData };
+          {/* Bottom Left (Slot 1 Player A) */}
+          <div className="flex-1 border-r border-white/20 relative pt-12">
+            <PlayerMarker
+              name={names.t1p1}
+              isServing={isServer("t1p1", 1)}
+              isReceiver={isReceiver("t1p1", 1)}
+              isTop={false}
+              slot={1}
+            />
+          </div>
+          {/* Bottom Right (Slot 2 Player B) */}
+          <div className="flex-1 relative pt-12">
+            <PlayerMarker
+              name={names.t1p2}
+              isServing={isServer("t1p2", 1)}
+              isReceiver={isReceiver("t1p2", 1)}
+              isTop={false}
+              slot={2}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
