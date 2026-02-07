@@ -46,23 +46,20 @@ function PlayerMarker({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-9 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] font-bold text-yellow-900"
+                className="w-12 h-4 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)] flex items-center justify-center text-[8px] font-bold text-yellow-900"
               >
-                 SLOT {slot} PHÁT
+                 SLOT {slot}-PHÁT
               </motion.div>
             )}
             {isReceiver && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-6 h-6 bg-gray-400 rounded-full shadow-[0_0_10px_rgba(156,163,175,0.6)] flex items-center justify-center text-[10px] font-bold text-gray-900"
+                className="w-12 h-4 bg-gray-400 rounded-full shadow-[0_0_8px_rgba(156,163,175,0.6)] flex items-center justify-center text-[8px] font-bold text-gray-900"
               >
-                 SLOT {slot} ĐỠ
+                 SLOT {slot}-ĐỠ
               </motion.div>
             )}
-          </div>
-          <div className="bg-white/80 text-[10px] font-bold px-1.5 rounded-full text-blue-900 border border-blue-200">
-            SLOT {slot}
           </div>
         </div>
         <div
@@ -220,7 +217,7 @@ export function Court({
       {firstServe && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
           <div className="bg-yellow-500/90 text-yellow-900 text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-pulse">
-            ⚠️ 0-0-2 - Lượt phát đầu tiên
+            0-0-2 - Lượt phát đầu tiên
           </div>
         </div>
       )}
