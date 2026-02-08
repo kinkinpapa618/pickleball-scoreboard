@@ -144,7 +144,7 @@ export default function Home() {
           disabled={!t1p1 || !t1p2 || !t2p1 || !t2p2}
           className={`w-full py-7 rounded-2xl font-black italic text-lg shadow-[0_10px_30px_rgba(204,255,0,0.2)] gap-2 transition-all ${!t1p1 || !t1p2 || !t2p1 || !t2p2 ? "bg-slate-800 text-white/20" : "bg-[#ccff00] text-black hover:scale-[1.02]"}`}
         >
-          READY TO PLAY <ArrowRight className="w-6 h-6" />
+          BẮT ĐẦU TRẬN ĐẤU <ArrowRight className="w-6 h-6" />
         </Button>
       </div>
 
