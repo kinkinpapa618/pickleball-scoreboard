@@ -136,7 +136,7 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
       </div>
 
       {/* MATCH STATUS HEADER */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-7 bg-slate-900/80 backdrop-blur-2xl px-5 py-2 rounded-full border border-white/10 shadow-2xl">
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 bg-slate-900/80 backdrop-blur-2xl px-5 py-2 rounded-full border border-white/10 shadow-2xl">
         <div className="flex flex-col items-center">
           <span className="text-[10px] font-black text-cyan-400 tracking-widest uppercase">Team1</span>
           <span className="text-3xl font-black text-white italic">{score1}</span>
