@@ -116,7 +116,7 @@ import { motion } from "framer-motion";
                 <div className="flex items-center gap-2">
                   <Zap className="w-3 h-3 text-[#ccff00]" />
                   <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
-                    Lượt phát: <span className="text-white italic">Team {state.serverTeam} (Hand {state.serverHand})</span>
+                    Lượt phát: <span className="text-white italic">TEAM {state.serverTeam} (TAY {state.serverHand})</span>
                   </span>
                 </div>
                 {/* SỬA LỖI 2: Dùng biến đã kiểm tra ở trên */}
