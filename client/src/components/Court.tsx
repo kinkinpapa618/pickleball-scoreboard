@@ -31,7 +31,7 @@ function PlayerMarker({
   return (
     <div className="flex flex-col items-center gap-1">
       {/* Badge cho người phát/người nhận */}
-      <div className="flex flex-col items-center gap-1 mb-1 w-full">
+      <div className="flex flex-col items-center gap-0 mb-1 w-full">
         {isServing && (
           <motion.div
             key={`serve-${name}-${Date.now()}`}
@@ -257,7 +257,7 @@ export function Court({
       {/* Trung tâm sân */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
         <div className="text-[10px] md:text-xs text-white/40 font-bold">
-          MBM PICKLEBALL SCOREPRO 2 VS 2
+          MBM P.SCOREPRO 2 VS 2
         </div>
       </div>
     </div>
