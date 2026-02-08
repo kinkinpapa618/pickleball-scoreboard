@@ -1,125 +1,91 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { Trophy, ArrowLeftRight } from "lucide-react";
-import confetti from "canvas-confetti";
+  import React, { useState } from "react";
+  import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+  import { Button } from "@/components/ui/button";
+  import { Coins } from "lucide-react";
+  import { motion, AnimatePresence } from "framer-motion";
 
-interface CoinTossModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onComplete: (winner: 1 | 2, choice: "serve" | "side") => void;
-}
+  interface CoinTossModalProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onComplete: (winner: 1 | 2, choice: "serve" | "side") => void;
+    compact?: boolean;
+  }
 
-export function CoinTossModal({ open, onOpenChange, onComplete }: CoinTossModalProps) {
-  const [step, setStep] = useState<"tossing" | "result" | "choice">("tossing");
-  const [winner, setWinner] = useState<1 | 2 | null>(null);
+  export function CoinTossModal({ open, onOpenChange, onComplete }: CoinTossModalProps) {
+    const [isSpinning, setIsSpinning] = useState(false);
+    const [result, setResult] = useState<1 | 2 | null>(null);
 
-  const startToss = () => {
-    setStep("tossing");
-    
-    // Simulate coin spin duration
-    setTimeout(() => {
-      const result = Math.random() > 0.5 ? 1 : 2;
-      setWinner(result);
-      setStep("result");
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ['#FACC15', '#A855F7']
-      });
-    }, 1500);
-  };
+    const handleToss = () => {
+      setIsSpinning(true);
+      setResult(null);
 
-  const handleChoice = (choice: "serve" | "side") => {
-    if (winner) {
-      onComplete(winner, choice);
-      onOpenChange(false);
-      // Reset state after a delay for next time
       setTimeout(() => {
-        setStep("tossing");
-        setWinner(null);
-      }, 500);
-    }
-  };
+        const winner = Math.random() > 0.5 ? 1 : 2;
+        setResult(winner);
+        setIsSpinning(false);
+      }, 2000);
+    };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md text-center">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-display uppercase tracking-wider">
-            {step === "tossing" ? "Đang tung đồng xu..." : step === "result" ? "Kết quả" : "Lựa chọn"}
-          </DialogTitle>
-        </DialogHeader>
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-slate-950 border-white/10 text-white max-w-[320px] rounded-[2.5rem]">
+          <DialogHeader>
+            <DialogTitle className="text-center font-black italic uppercase tracking-tighter text-[#ccff00]">
+              Coin Toss
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="py-8 flex flex-col items-center justify-center min-h-[200px]">
-          {step === "tossing" && (
-            <motion.div
-              animate={{ rotateY: 3600 }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              onAnimationComplete={() => { /* Handled by setTimeout above */ }}
-            >
-              <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-yellow-400 to-yellow-600 shadow-xl border-4 border-yellow-200 flex items-center justify-center">
-                <span className="text-4xl font-bold text-white">$</span>
-              </div>
-            </motion.div>
-          )}
+          <div className="py-8 flex flex-col items-center gap-6">
+            {/* Animation Đồng xu */}
+            <div className="relative w-24 h-24">
+              <motion.div
+                animate={isSpinning ? { rotateY: 1800 } : { rotateY: result === 2 ? 180 : 0 }}
+                transition={{ duration: 2, ease: "easeOut" }}
+                className="w-full h-full relative preserve-3d"
+              >
+                {/* Mặt trước - Đội 1 */}
+                <div className="absolute inset-0 bg-cyan-500 rounded-full border-4 border-white/20 flex items-center justify-center font-black text-2xl backface-hidden">
+                  T1
+                </div>
+                {/* Mặt sau - Đội 2 */}
+                <div className="absolute inset-0 bg-rose-500 rounded-full border-4 border-white/20 flex items-center justify-center font-black text-2xl backface-hidden [transform:rotateY(180deg)]">
+                  T2
+                </div>
+              </motion.div>
+            </div>
 
-          {step === "result" && winner && (
-            <motion.div 
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="space-y-6"
-            >
-              <div className="text-lg text-muted-foreground">Đội chiến thắng là</div>
-              <div className="text-5xl font-black text-primary font-display">
-                ĐỘI {winner}
-              </div>
-              <Button size="lg" className="w-full mt-4" onClick={() => setStep("choice")}>
-                Tiếp tục
+            {!result && !isSpinning && (
+              <Button 
+                onClick={handleToss}
+                className="bg-[#ccff00] text-black font-black italic w-full rounded-xl"
+              >
+                <Coins className="w-4 h-4 mr-2" /> TUNG XU
               </Button>
-            </motion.div>
-          )}
+            )}
 
-          {step === "choice" && winner && (
-            <div className="space-y-4 w-full">
-              <p className="text-muted-foreground mb-4">
-                Đội {winner} muốn chọn quyền gì?
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="h-24 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
-                  onClick={() => handleChoice("serve")}
-                >
-                  <Trophy className="w-8 h-8 text-yellow-500" />
-                  <span className="font-bold">Phát Bóng</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="h-24 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
-                  onClick={() => handleChoice("side")}
-                >
-                  <ArrowLeftRight className="w-8 h-8 text-blue-500" />
-                  <span className="font-bold">Chọn Sân</span>
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {step === "tossing" && (
-            <div className="mt-8 text-sm text-muted-foreground animate-pulse">
-              Đang quyết định ngẫu nhiên...
-            </div>
-          )}
-          
-          {step === "tossing" && !winner && (
-             // Trigger effect on mount effectively
-             <div ref={() => startToss()} /> 
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+            {result && !isSpinning && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full space-y-3">
+                <p className="text-center text-[10px] font-bold uppercase text-white/40 tracking-widest">
+                  Team {result} thắng! Chọn quyền:
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    onClick={() => onComplete(result, "serve")}
+                    className="bg-white/5 border border-white/10 hover:bg-[#ccff00] hover:text-black text-[10px] font-black italic rounded-xl py-6"
+                  >
+                    GIAO BÓNG
+                  </Button>
+                  <Button 
+                    onClick={() => onComplete(result, "side")}
+                    className="bg-white/5 border border-white/10 hover:bg-[#ccff00] hover:text-black text-[10px] font-black italic rounded-xl py-6"
+                  >
+                    CHỌN SÂN
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  } // ĐÂY CHÍNH LÀ DẤU NGOẶC BẠN ĐANG THIẾU

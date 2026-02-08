@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Match from "@/pages/Match";
+import { TournamentProvider } from "./context/TournamentContext";
 
 function Router() {
   return (
@@ -17,14 +18,16 @@ function Router() {
   );
 }
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+    function App() {
+      return (
+      <TournamentProvider>
+        <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
         <Toaster />
         <Router />
       </TooltipProvider>
     </QueryClientProvider>
+    </TournamentProvider>
   );
 }
 
