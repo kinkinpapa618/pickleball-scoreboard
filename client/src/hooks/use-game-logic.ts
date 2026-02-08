@@ -27,18 +27,22 @@ export function useGameLogic(
     };
 
     // Điều chỉnh cho đội phát đầu tiên: 
+    // Người phát đầu tiên (Server 1) đứng Ô 1 (bên phải)
     let adjustedPositions = { ...positions };
 
+    // Nếu đội 2 phát đầu tiên, đảm bảo t2p1 đứng bên phải, t2p2 đứng bên trái
+    // Đội 1 giữ nguyên: t1p1 bên phải, t1p2 bên trái
     if (initialServer === 2) {
       adjustedPositions.t2p1 = "right";
       adjustedPositions.t2p2 = "left";
+      // Đội 1 không phát nên giữ nguyên vị trí mặc định
     }
 
     return {
       score1: 0,
       score2: 0,
       serverTeam: initialServer,
-      serverHand: 1,
+      serverHand: 1,  // Server 1 (Ô 1) phát ở lượt đầu tiên
       positions: adjustedPositions,
       winner: null,
       gameHistory: [],
@@ -47,57 +51,7 @@ export function useGameLogic(
   });
 
   // ==============================================
-  // HÀM ĐỔI SÂN - HOÁN ĐỔI VỊ TRÍ TEAM1 VÀ TEAM2
-  // ==============================================
-  const switchSides = useCallback(() => {
-    setState((prev) => {
-      if (prev.winner) return prev; // Không đổi sân nếu trận đã kết thúc
-
-      // Lưu lịch sử để undo
-      const history = [...prev.gameHistory, { ...prev }];
-
-      // Tạo bản sao mới của positions
-      const newPositions = { ...prev.positions };
-
-      // Hoán đổi vị trí giữa team1 và team2
-      // Giữ nguyên vị trí left/right, chỉ hoán đổi team
-      const tempT1P1 = newPositions.t1p1;
-      const tempT1P2 = newPositions.t1p2;
-
-      newPositions.t1p1 = newPositions.t2p1;
-      newPositions.t1p2 = newPositions.t2p2;
-      newPositions.t2p1 = tempT1P1;
-      newPositions.t2p2 = tempT1P2;
-
-      // Hoán đổi điểm số
-      const newScore1 = prev.score2;
-      const newScore2 = prev.score1;
-
-      // Hoán đổi đội đang phát (nếu có)
-      const newServerTeam = prev.serverTeam === 1 ? 2 : 1;
-
-      // Hoán đổi tên players (names) - cần tạo object names mới
-      const newNames = {
-        t1p1: names.t2p1,
-        t1p2: names.t2p2,
-        t2p1: names.t1p1,
-        t2p2: names.t1p2,
-      };
-
-      return {
-        ...prev,
-        score1: newScore1,
-        score2: newScore2,
-        serverTeam: newServerTeam,
-        positions: newPositions,
-        gameHistory: history,
-        // Lưu ý: names không được lưu trong state, nên cần xử lý riêng
-      };
-    });
-  }, [names]);
-
-  // ==============================================
-  // HÀM GHI ĐIỂM
+  // HÀM GHI ĐIỂM - SỬA LẠI THEO YÊU CẦU
   // ==============================================
   const scorePoint = useCallback(() => {
     setState((prev) => {
@@ -143,14 +97,19 @@ export function useGameLogic(
         const temp = newPositions[player1];
         newPositions[player1] = newPositions[player2];
         newPositions[player2] = temp;
+
+        // Giữ nguyên người phát (cùng serverTeam và serverHand)
+        // Không cần đảm bảo người phát đứng bên phải
       } 
       // TRƯỜNG HỢP B: Đội phát bóng THUA (không được điểm)
       else {
         if (prev.isFirstServeOfMatch) {
+          // Lượt phát đầu tiên của trận: chỉ có 1 người phát
           newIsFirstServeOfMatch = false;
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
 
+          // Đội mới bắt đầu phát: Server 1 phải đứng bên phải (Ô 1)
           const newTeamPrefix = `t${newServerTeam}`;
           const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
 
@@ -162,22 +121,20 @@ export function useGameLogic(
           }
         } else {
           if (prev.serverHand === 1) {
+            // Server 1 thua -> chuyển cho Server 2 cùng đội
             newServerHand = 2;
 
-            const teamPrefix = `t${prev.serverTeam}`;
-            const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
-            if (newPositions[newServerPlayerId] !== "right") {
-              const otherPlayerId = `${teamPrefix}p1`;
-              const temp = newPositions[newServerPlayerId];
-              newPositions[newServerPlayerId] = newPositions[otherPlayerId];
-              newPositions[otherPlayerId] = temp;
-            }
+            // KHÔNG đổi vị trí, giữ nguyên vị trí hiện tại
+            // Server 2 sẽ phát từ vị trí hiện tại của mình (không cần đứng bên phải)
           } else {
+            // Server 2 thua -> Side Out, chuyển đội
             newServerTeam = prev.serverTeam === 1 ? 2 : 1;
             newServerHand = 1;
 
+            // Đội mới bắt đầu phát: Server 1 phải đứng bên phải (Ô 1)
             const newTeamPrefix = `t${newServerTeam}`;
             const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
+
             if (newPositions[newServerPlayerId] !== "right") {
               const otherPlayerId = `${newTeamPrefix}p2`;
               const temp = newPositions[newServerPlayerId];
@@ -232,15 +189,7 @@ export function useGameLogic(
       } else {
         if (prev.serverHand === 1) {
           newServerHand = 2;
-
-          const teamPrefix = `t${prev.serverTeam}`;
-          const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
-          if (newPositions[newServerPlayerId] !== "right") {
-            const otherPlayerId = `${teamPrefix}p1`;
-            const temp = newPositions[newServerPlayerId];
-            newPositions[newServerPlayerId] = newPositions[otherPlayerId];
-            newPositions[otherPlayerId] = temp;
-          }
+          // KHÔNG đổi vị trí, Server 2 phát từ vị trí hiện tại
         } else {
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
@@ -262,6 +211,45 @@ export function useGameLogic(
         serverHand: newServerHand,
         positions: newPositions,
         isFirstServeOfMatch: newIsFirstServeOfMatch,
+        gameHistory: history,
+      };
+    });
+  }, []);
+
+  // ==============================================
+  // HÀM ĐỔI SÂN - HOÁN ĐỔI VỊ TRÍ TEAM1 VÀ TEAM2
+  // ==============================================
+  const switchSides = useCallback(() => {
+    setState((prev) => {
+      if (prev.winner) return prev;
+
+      const history = [...prev.gameHistory, { ...prev }];
+
+      // Tạo bản sao mới của positions
+      const newPositions = { ...prev.positions };
+
+      // Hoán đổi vị trí giữa team1 và team2
+      const tempT1P1 = newPositions.t1p1;
+      const tempT1P2 = newPositions.t1p2;
+
+      newPositions.t1p1 = newPositions.t2p1;
+      newPositions.t1p2 = newPositions.t2p2;
+      newPositions.t2p1 = tempT1P1;
+      newPositions.t2p2 = tempT1P2;
+
+      // Hoán đổi điểm số
+      const newScore1 = prev.score2;
+      const newScore2 = prev.score1;
+
+      // Hoán đổi đội đang phát (nếu có)
+      const newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+
+      return {
+        ...prev,
+        score1: newScore1,
+        score2: newScore2,
+        serverTeam: newServerTeam,
+        positions: newPositions,
         gameHistory: history,
       };
     });
