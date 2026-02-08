@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Coins } from "lucide-react";
+import { ArrowRight, Coins, Users, Settings2 } from "lucide-react";
 import { CoinTossModal } from "@/components/CoinTossModal";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-
-  // Form State
   const [t1p1, setT1p1] = useState("");
   const [t1p2, setT1p2] = useState("");
   const [t2p1, setT2p1] = useState("");
@@ -18,110 +17,95 @@ export default function Home() {
   const [showCoinToss, setShowCoinToss] = useState(false);
 
   const handleStart = () => {
-    if (!t1p1 || !t1p2 || !t2p1 || !t2p2) {
-      alert("Nhập tên đủ 4 người chơi!");
-      return;
-    }
-
-    const params = new URLSearchParams({
-      t1p1,
-      t1p2,
-      t2p1,
-      t2p2,
-      win: winningScore,
-      serve: String(firstServer),
-    });
-
+    if (!t1p1 || !t1p2 || !t2p1 || !t2p2) return;
+    const params = new URLSearchParams({ t1p1, t1p2, t2p1, t2p2, win: winningScore, serve: String(firstServer) });
     setLocation(`/match?${params.toString()}`);
   };
-
   const handleCoinTossComplete = (winner: 1 | 2, choice: "serve" | "side") => {
-    setFirstServer(choice === "serve" ? winner : (winner === 1 ? 2 : 1));
+    // Logic: Nếu thắng xu chọn 'phát' thì đội đó phát, nếu chọn 'sân' thì đội kia phát
+    const server = choice === "serve" ? winner : (winner === 1 ? 2 : 1);
+    setFirstServer(server);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-2 flex flex-col">
-      {/* Header - Mini */}
-      <div className="text-center py-1 mb-1">
-        <h3 className="text-lg font-black text-primary uppercase">
-          PICKLEBALL
-        </h3>
-        <p className="text-gray-600 text-xs">Scoreboard</p>
+    <div className="min-h-screen bg-[#050505] text-white p-4 flex flex-col font-sans">
+      {/* Brand Header */}
+      <div className="text-center py-6">
+        <motion.h3 
+          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-black italic tracking-tighter text-[#ccff00]"
+        >
+          BMB PICKLEBALL
+        </motion.h3>
+        <p className="text-white/40 text-[10px] tracking-[0.4em] uppercase font-bold">Championship Series</p>
       </div>
 
-      {/* Main Content - Ultra Compact */}
-      <div className="flex-1 space-y-2">
-        {/* Players Section - Ultra Compact */}
-        <Card className="p-2 border border-gray-300">
-          <div className="mb-2">
-            <div className="flex items-center gap-1 mb-1">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-              <span className="text-xs font-medium text-blue-700">Đội 1</span>
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-              <input
-                type="text"
-                value={t1p1}
-                onChange={(e) => setT1p1(e.target.value)}
-                placeholder="Trái"
-                className="w-full h-8 text-xs px-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={t1p2}
-                onChange={(e) => setT1p2(e.target.value)}
-                placeholder="Phải"
-                className="w-full h-8 text-xs px-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+      <div className="flex-1 max-w-md mx-auto w-full space-y-4">
+        {/* Teams Input Section */}
+        <Card className="p-4 bg-slate-900/50 border-white/5 backdrop-blur-xl rounded-3xl space-y-4">
+          <div className="flex items-center gap-2 text-[#ccff00] mb-2">
+            <Users className="w-4 h-4" />
+            <span className="text-xs font-black italic uppercase tracking-widest">Roster Selection</span>
           </div>
 
-          <div className="text-center my-1">
-            <span className="text-xs font-bold text-gray-500">VS</span>
-          </div>
-
-          <div className="mt-2">
-            <div className="flex items-center gap-1 mb-1">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-              <span className="text-xs font-medium text-red-700">Đội 2</span>
+          <div className="space-y-4">
+            {/* Team 1 */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black text-cyan-400 uppercase italic">Team Alpha</span>
+                <div className="h-[1px] flex-1 mx-3 bg-cyan-400/20" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text" value={t1p1} onChange={(e) => setT1p1(e.target.value)}
+                  placeholder="Player 1"
+                  className="bg-white/5 border border-white/10 rounded-xl h-10 px-3 text-sm focus:border-cyan-400 outline-none transition-all placeholder:text-white/20"
+                />
+                <input
+                  type="text" value={t1p2} onChange={(e) => setT1p2(e.target.value)}
+                  placeholder="Player 2"
+                  className="bg-white/5 border border-white/10 rounded-xl h-10 px-3 text-sm focus:border-cyan-400 outline-none transition-all placeholder:text-white/20"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-1">
-              <input
-                type="text"
-                value={t2p1}
-                onChange={(e) => setT2p1(e.target.value)}
-                placeholder="Trái"
-                className="w-full h-8 text-xs px-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={t2p2}
-                onChange={(e) => setT2p2(e.target.value)}
-                placeholder="Phải"
-                className="w-full h-8 text-xs px-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-              />
+
+            {/* Team 2 */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black text-rose-500 uppercase italic">Team Bravo</span>
+                <div className="h-[1px] flex-1 mx-3 bg-rose-500/20" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text" value={t2p1} onChange={(e) => setT2p1(e.target.value)}
+                  placeholder="Player 3"
+                  className="bg-white/5 border border-white/10 rounded-xl h-10 px-3 text-sm focus:border-rose-500 outline-none transition-all placeholder:text-white/20"
+                />
+                <input
+                  type="text" value={t2p2} onChange={(e) => setT2p2(e.target.value)}
+                  placeholder="Player 4"
+                  className="bg-white/5 border border-white/10 rounded-xl h-10 px-3 text-sm focus:border-rose-500 outline-none transition-all placeholder:text-white/20"
+                />
+              </div>
             </div>
           </div>
         </Card>
 
-        {/* Settings - Ultra Compact */}
-        <Card className="p-2 border border-gray-300">
-          <div className="grid grid-cols-2 gap-2">
-            {/* Winning Score */}
+        {/* Match Settings */}
+        <Card className="p-4 bg-slate-900/50 border-white/5 backdrop-blur-xl rounded-3xl space-y-4">
+          <div className="flex items-center gap-2 text-[#ccff00]">
+            <Settings2 className="w-4 h-4" />
+            <span className="text-xs font-black italic uppercase tracking-widest">Match Rules</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-0.5">
-                Điểm thắng
-              </label>
-              <div className="flex gap-0.5">
+              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">Win Condition</label>
+              <div className="flex gap-1 bg-black/40 p-1 rounded-xl">
                 {["11", "15", "21"].map((score) => (
                   <button
-                    key={score}
-                    onClick={() => setWinningScore(score)}
-                    className={`flex-1 h-7 text-xs rounded ${
-                      winningScore === score
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
+                    key={score} onClick={() => setWinningScore(score)}
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all ${winningScore === score ? "bg-[#ccff00] text-black" : "text-white/60 hover:text-white"}`}
                   >
                     {score}
                   </button>
@@ -129,71 +113,46 @@ export default function Home() {
               </div>
             </div>
 
-            {/* First Server */}
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-0.5">
-                Phát đầu
-              </label>
-              <div className="flex gap-0.5">
-                <button
-                  onClick={() => setFirstServer(1)}
-                  className={`flex-1 h-7 text-xs rounded ${
-                    firstServer === 1
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  Đội 1
-                </button>
-                <button
-                  onClick={() => setFirstServer(2)}
-                  className={`flex-1 h-7 text-xs rounded ${
-                    firstServer === 2
-                      ? "bg-red-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  Đội 2
-                </button>
+              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">Initial Service</label>
+              <div className="flex gap-1 bg-black/40 p-1 rounded-xl">
+                {[1, 2].map((team) => (
+                  <button
+                    key={team} onClick={() => setFirstServer(team as 1 | 2)}
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all ${firstServer === team ? (team === 1 ? "bg-cyan-500" : "bg-rose-500") : "text-white/60"}`}
+                  >
+                    T{team}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Coin Toss */}
-          <button
+          <Button
             onClick={() => setShowCoinToss(true)}
-            className="w-full mt-2 h-7 bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs rounded flex items-center justify-center gap-1"
+            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-[#ccff00] font-black italic text-xs py-5 rounded-xl gap-2"
           >
-            <Coins className="w-3 h-3" />
-            TUNG XU
-          </button>
+            <Coins className="w-4 h-4" /> TUNG XU PHÂN ĐỊNH
+          </Button>
         </Card>
-
-        {/* Info - Tiny */}
-        <div className="bg-blue-50 border border-blue-200 rounded p-1 text-center">
-          <p className="text-xs text-blue-700">
-            Phát đầu: <span className="font-bold">0-0-2</span>
-          </p>
-        </div>
       </div>
 
-      {/* Start Button - Compact */}
-      <div className="mt-2">
+      {/* Action Footer */}
+      <div className="mt-auto py-6 max-w-md mx-auto w-full">
         <Button
           onClick={handleStart}
-          className="w-full h-10 text-sm font-bold rounded gap-1"
           disabled={!t1p1 || !t1p2 || !t2p1 || !t2p2}
+          className={`w-full py-7 rounded-2xl font-black italic text-lg shadow-[0_10px_30px_rgba(204,255,0,0.2)] gap-2 transition-all ${!t1p1 || !t1p2 || !t2p1 || !t2p2 ? "bg-slate-800 text-white/20" : "bg-[#ccff00] text-black hover:scale-[1.02]"}`}
         >
-          {!t1p1 || !t1p2 || !t2p1 || !t2p2 ? "NHẬP TÊN" : "BẮT ĐẦU"}
-          <ArrowRight className="w-4 h-4" />
+          READY TO PLAY <ArrowRight className="w-6 h-6" />
         </Button>
       </div>
 
-      <CoinTossModal
-        open={showCoinToss}
-        onOpenChange={setShowCoinToss}
-        onComplete={handleCoinTossComplete}
-        compact
+      <CoinTossModal 
+        open={showCoinToss} 
+        onOpenChange={setShowCoinToss} 
+        onComplete={(winner: any, choice: any) => handleCoinTossComplete(winner, choice)} 
+        
       />
     </div>
   );
