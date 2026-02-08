@@ -127,15 +127,6 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
         </div>
       )}
 
-      {/* BALL */}
-      {server && receiver && (
-        <Ball 
-          fromX={server.x} fromY={server.y} 
-          toX={receiver.x} toY={receiver.y} 
-          serverId={server.id} 
-        />
-      )}
-
       {/* PLAYERS */}
       {players.map((p) => (
         <motion.div
