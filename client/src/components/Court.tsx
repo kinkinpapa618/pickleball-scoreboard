@@ -46,13 +46,13 @@ function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: {
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[9px] font-black italic tracking-tighter shadow-md"
           >
-            <Zap className="w-2.5 h-2.5 inline mr-1 fill-current" /> SERVING
+            <Zap className="w-2.5 h-2.5 inline mr-1 fill-current" /> PHÁT
           </motion.div>
         ) : isReceiver ? (
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-slate-800 text-white px-3 py-0.5 rounded-full text-[9px] font-black italic tracking-tighter shadow-md"
           >
-            <ShieldCheck className="w-2.5 h-2.5 inline mr-1" /> RECEIVING
+            <ShieldCheck className="w-2.5 h-2.5 inline mr-1" /> ĐỠ
           </motion.div>
         ) : <div className="h-4" />}
       </AnimatePresence>
@@ -159,7 +159,7 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
       <div className="absolute bottom-6 left-8 flex items-center gap-3">
         {firstServe && (
           <div className="bg-[#ccff00] text-black px-4 py-1 rounded-full font-black text-[9px] italic shadow-md">
-            STARTING 0-0-2
+            BẮT ĐẦU: 0-0-2
           </div>
         )}
         <div className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-white font-black text-[9px] italic border border-white/20">

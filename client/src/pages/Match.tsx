@@ -1,100 +1,156 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useGameLogic } from "@/hooks/use-game-logic";
+import { useCreateMatch } from "@/hooks/use-api";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { Court } from "@/components/Court";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Trophy, CheckCircle2, AlertOctagon, Undo2, Home, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import confetti from "canvas-confetti";
-import { useTournament } from "@/context/TournamentContext";
+import { motion } from "framer-motion";
 
-export default function Match() {
-  const [, setLocation] = useLocation();
-  const { updateTournamentStats } = useTournament();
-  const [isLogged, setIsLogged] = useState(false);
+      export default function Match() {
+        // SỬA LỖI 1: Thêm dấu phẩy để bỏ qua 'location'
+        const [, setLocation] = useLocation(); 
 
-  const search = new URLSearchParams(window.location.search);
-  const names = { 
-    t1p1: search.get("t1p1") || "P1", t1p2: search.get("t1p2") || "P2", 
-    t2p1: search.get("t2p1") || "P3", t2p2: search.get("t2p2") || "P4" 
-  };
-  const winningScore = parseInt(search.get("win") || "11");
-  const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
+        const search = new URLSearchParams(window.location.search);
+        const names = { 
+          t1p1: search.get("t1p1") || "P1", t1p2: search.get("t1p2") || "P2", 
+          t2p1: search.get("t2p1") || "P3", t2p2: search.get("t2p2") || "P4" 
+        };
+        const winningScore = parseInt(search.get("win") || "11");
+        const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
 
-  const { state, scorePoint, fault, undo } = useGameLogic(winningScore, initialServer, names);
+        const { state, scorePoint, fault, undo, getMatchData } = useGameLogic(winningScore, initialServer, names);
+        const createMatch = useCreateMatch();
+        const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (state.winner && !isLogged) {
-      confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
-      updateTournamentStats({
-        team1: `${names.t1p1} & ${names.t1p2}`,
-        team2: `${names.t2p1} & ${names.t2p2}`,
-        score1: state.score1,
-        score2: state.score2,
-        winner: state.winner
-      });
-      setIsLogged(true);
-    }
-  }, [state.winner, isLogged, state.score1, state.score2, names, updateTournamentStats]);
+        // Kiểm tra biến firstServe: 
+        // Nếu hook dùng tên khác, hãy sửa 'state.firstServe' thành 'state.isFirstServe'
+        const isFirstServeActive = (state as any).firstServe || (state as any).isFirstServe;
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans overflow-hidden text-slate-900">
-      {/* Header Sáng */}
-      <header className="px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between sticky top-0 z-50">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-slate-400 hover:text-indigo-600">
+        useEffect(() => {
+          if (state.winner && !saved) {
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 9999 });
+            const data = getMatchData();
+            if (data) { createMatch.mutate(data); setSaved(true); }
+          }
+        }, [state.winner, saved, getMatchData, createMatch]);
+
+        return (
+          <div className="min-h-screen bg-[#050505] flex flex-col font-sans overflow-hidden">
+      {/* High-Tech Header */}
+      <header className="px-4 py-3 bg-slate-900/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between sticky top-0 z-50">
+        <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-white/40 hover:text-white">
           <Home className="w-5 h-5" />
         </Button>
-        <div className="px-4 py-1.5 bg-slate-100 rounded-2xl border border-slate-200 shadow-sm">
-          <span className="text-lg font-black italic text-indigo-600">
-            {state.serverTeam === 1 ? state.score1 : state.score2}-{state.serverTeam === 1 ? state.score2 : state.score1}-{state.serverHand}
-          </span>
+
+        <div className="flex items-center gap-3">
+          <div className="px-3 py-1 bg-black rounded-lg border border-white/10 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full animate-pulse ${state.serverTeam === 1 ? "bg-cyan-400" : "bg-rose-500"}`} />
+            <span className="text-lg font-black italic text-white leading-none">
+              {state.serverTeam === 1 ? state.score1 : state.score2}-{state.serverTeam === 1 ? state.score2 : state.score1}-{state.serverHand}
+            </span>
+          </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={undo} disabled={state.gameHistory.length === 0} className="text-slate-400 hover:text-rose-500">
+
+        <Button variant="ghost" size="icon" onClick={undo} disabled={state.gameHistory.length === 0} className="text-white/40 hover:text-[#ccff00]">
           <Undo2 className="w-5 h-5" />
         </Button>
       </header>
 
       <main className="flex-1 flex flex-col p-4 space-y-4 max-w-3xl mx-auto w-full">
-        <ScoreBoard score1={state.score1} score2={state.score2} serverTeam={state.serverTeam} serverHand={state.serverHand} compact />
-
-        <div className="flex-1">
-          <Court 
-            positions={state.positions} serverTeam={state.serverTeam} serverHand={state.serverHand}
-            names={names} score1={state.score1} score2={state.score2}
-            firstServe={(state as any).isFirstServe} compact 
-          />
+        {/* ScoreBoard - Đồng bộ style mới */}
+        <div className="bg-slate-900/40 border border-white/5 rounded-3xl p-4 backdrop-blur-md">
+           <ScoreBoard 
+              score1={state.score1} score2={state.score2} 
+              serverTeam={state.serverTeam} serverHand={state.serverHand} 
+              compact 
+           />
         </div>
 
-        {/* Nút bấm Ghi điểm & Đổi giao - Style sáng */}
+        
+          {/* Court Section */}
+          <div className="flex-1">
+            <Court
+              positions={state.positions} 
+              serverTeam={state.serverTeam} 
+              serverHand={state.serverHand}
+              names={names} 
+              score1={state.score1} 
+              score2={state.score2}
+              // SỬA LỖI 2: Dùng biến đã kiểm tra ở trên
+              firstServe={isFirstServeActive} 
+              compact
+            />
+          </div>
+
+        {/* PRO CONTROL PAD */}
         <div className="grid grid-cols-2 gap-4 pb-4">
-          <Button onClick={scorePoint} disabled={!!state.winner} className="h-24 rounded-[2rem] bg-indigo-600 hover:bg-indigo-700 text-white font-black italic shadow-lg shadow-indigo-200 flex flex-col gap-1 transition-all active:scale-95">
-            <CheckCircle2 className="w-7 h-7" /> GHI ĐIỂM
-          </Button>
-          <Button onClick={fault} disabled={!!state.winner} className="h-24 rounded-[2rem] bg-white border border-slate-200 font-black italic text-slate-600 shadow-sm flex flex-col gap-1 transition-all active:scale-95">
-            <AlertOctagon className="w-7 h-7 text-rose-500" /> ĐỔI GIAO
-          </Button>
-        </div>
-
-        <div className="flex items-center justify-center gap-4 bg-white py-3 rounded-2xl border border-slate-200 shadow-sm">
-          <Zap className="w-3 h-3 text-indigo-500" />
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            SERVER: TEAM {state.serverTeam} - HAND {state.serverHand}
-          </span>
-        </div>
-      </main>
-
-      {/* Dialog chiến thắng - Light mode */}
-      <Dialog open={!!state.winner}>
-        <DialogContent className="max-w-xs bg-white border-slate-200 rounded-[3rem] p-10 shadow-2xl">
-          <div className="text-center">
-            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Trophy className="w-10 h-10 text-indigo-600" />
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={scorePoint} disabled={!!state.winner}
+            className="group relative h-20 rounded-3xl bg-[#ccff00] overflow-hidden transition-all shadow-[0_20px_40px_rgba(204,255,0,0.15)]"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent" />
+            <div className="relative flex flex-col items-center justify-center text-black">
+              <CheckCircle2 className="w-6 h-6 mb-1" />
+              <span className="text-xs font-black italic uppercase tracking-widest">Ghi Điểm</span>
             </div>
-            <DialogTitle className="text-2xl font-black italic mb-6 text-slate-900 uppercase">Victory!</DialogTitle>
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={fault} disabled={!!state.winner}
+            className="group relative h-20 rounded-3xl bg-slate-800 border border-white/10 overflow-hidden transition-all"
+          >
+            <div className="relative flex flex-col items-center justify-center text-white">
+              <AlertOctagon className="w-6 h-6 mb-1 text-rose-500" />
+              <span className="text-xs font-black italic uppercase tracking-widest text-white/60">Đổi Giao</span>
+            </div>
+          </motion.button>
+        </div>
+
+            {/* Live Status Bar */}
+              <div className="flex items-center justify-center gap-4 bg-white/5 py-3 px-6 rounded-2xl border border-white/5">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-3 h-3 text-[#ccff00]" />
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                    Lượt phát: <span className="text-white italic">Team {state.serverTeam} (Hand {state.serverHand})</span>
+                  </span>
+                </div>
+                {/* SỬA LỖI 2: Dùng biến đã kiểm tra ở trên */}
+                {isFirstServeActive && (
+                  <div className="text-[#ccff00] text-[10px] font-black italic animate-pulse tracking-tighter">
+                    [ FIRST SERVE 0-0-2 ]
+                  </div>
+                )}
+              </div>
+            </main>
+
+      {/* WINNER MODAL - PREMIUM LOOK */}
+      <Dialog open={!!state.winner}>
+        <DialogContent className="max-w-xs bg-slate-900 border-white/10 rounded-[2rem] p-8">
+          <div className="text-center">
+            <div className="relative inline-block mb-4">
+               <Trophy className="w-20 h-20 text-[#ccff00] relative z-10" />
+               <div className="absolute inset-0 bg-[#ccff00] blur-[40px] opacity-20" />
+            </div>
+            <DialogTitle className="text-2xl font-black italic text-white mb-2 tracking-tighter">
+              CHIẾN THẮNG!
+            </DialogTitle>
+            <p className={`text-xl font-black italic mb-6 ${state.winner === 1 ? "text-cyan-400" : "text-rose-500"}`}>
+              TEAM {state.winner === 1 ? "01" : "02"}
+            </p>
+
             <div className="space-y-3">
-              <Button onClick={() => window.location.reload()} className="w-full h-12 bg-indigo-600 text-white font-black italic rounded-2xl shadow-lg shadow-indigo-100">REMATCH</Button>
-              <Button variant="ghost" onClick={() => setLocation("/")} className="w-full text-slate-400 font-bold hover:text-slate-600">BACK TO HOME</Button>
+              <Button onClick={() => window.location.reload()} className="w-full bg-[#ccff00] text-black font-black italic h-12 rounded-xl">
+                <RotateCcw className="mr-2 w-4 h-4" /> ĐẤU LẠI
+              </Button>
+              <Button variant="ghost" onClick={() => setLocation("/")} className="w-full text-white/40 font-bold h-12">
+                MENU CHÍNH
+              </Button>
             </div>
           </div>
         </DialogContent>
