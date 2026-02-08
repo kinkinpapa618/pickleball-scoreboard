@@ -1,3 +1,4 @@
+      import TournamentManager from "@/components/TournamentManager";
       import { useState } from "react";
       import { useLocation } from "wouter";
       import { Button } from "@/components/ui/button";
@@ -26,8 +27,8 @@
           setLocation(`/match?${params.toString()}`);
         };
 
-        return (
-          <div className="min-h-screen bg-[#050505] text-white p-4 flex flex-col font-sans">
+            return (
+              <div className="min-h-screen bg-[#050505] text-white p-4 flex flex-col font-sans">
             {/* Brand Header */}
             <div className="text-center py-6">
               <motion.h3 
@@ -150,6 +151,9 @@
               >
                 BẮT ĐẦU TRẬN ĐẤU <ArrowRight className="w-6 h-6" />
               </Button>
+              <div className="max-w-md mx-auto w-full mt-12">
+                <TournamentManager />
+              </div>
             </div>
 
             {/* Modal nằm ngoài cùng nhưng vẫn trong div bao */}

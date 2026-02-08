@@ -13,7 +13,12 @@ interface Match {
   p2: string;
   round: string;
   group?: string;
+  court?: number; // Thêm dòng này: Số sân (1, 2, 3...)
+  status?: "waiting" | "playing" | "finished"; // Thêm trạng thái
 }
+
+// Thêm danh sách sân có sẵn (Ví dụ sân 1 đến sân 4)
+const AVAILABLE_COURTS = [1, 2, 3, 4];
 
 export default function TournamentManager() {
   // Lấy thêm showToast từ Context
@@ -58,6 +63,26 @@ export default function TournamentManager() {
           group: groupLabel
         });
       });
+      // Hàm gán sân đấu
+      const assignCourt = (matchId: string, courtNumber: string) => {
+        const court = parseInt(courtNumber);
+        setMatches((prev) =>
+          prev.map((m) => {
+            if (m.id === matchId) {
+              // Nếu chọn "0" hoặc rỗng -> Hủy gán sân
+              if (!court) return { ...m, court: undefined, status: "waiting" };
+
+              // Gán sân và chuyển trạng thái sang Đang thi đấu
+              return { ...m, court: court, status: "playing" };
+            }
+            return m;
+          })
+        );
+
+        if (court) {
+          showToast(`Đã đẩy trận đấu sang SÂN ${court}`, "success");
+        }
+      };
     }
 
     setMatches(newMatches);
