@@ -100,7 +100,7 @@ export default function Match() {
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col p-2 space-y-2">
+      <main className="flex-1 flex flex-col p-4.5 space-y-1">
         {/* Score Display - Compact */}
         <div className="bg-white border border-gray-300 rounded-lg p-2">
           <ScoreBoard
@@ -135,7 +135,7 @@ export default function Match() {
           >
             <div className="flex flex-col items-center gap-0.5">
               <CheckCircle2 className="w-5 h-5" />
-              <span>Ghi Điểm</span>
+              <span>GHI ĐIỂM</span>
             </div>
           </Button>
 
@@ -147,7 +147,7 @@ export default function Match() {
           >
             <div className="flex flex-col items-center gap-0.5">
               <AlertOctagon className="w-5 h-5" />
-              <span>Đổi Giao</span>
+              <span>ĐỔI GIAO</span>
             </div>
           </Button>
         </div>
