@@ -49,13 +49,13 @@ function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: {
           <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             className="bg-[#ccff00] text-black px-3 py-0.5 rounded-sm text-[9px] font-black italic tracking-tighter shadow-[0_0_15px_#ccff00]"
           >
-            <Zap className="w-3 h-3 inline mr-1 fill-current" /> SERVICE
+            <Zap className="w-3 h-3 inline mr-1 fill-current" /> PHÁT BÓNG
           </motion.div>
         ) : isReceiver ? (
           <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
             className="bg-white text-black px-3 py-0.5 rounded-sm text-[9px] font-black italic tracking-tighter"
           >
-            <ShieldCheck className="w-3 h-3 inline mr-1" /> RECEIVE
+            <ShieldCheck className="w-3 h-3 inline mr-1" /> ĐỠ BÓNG
           </motion.div>
         ) : <div className="h-4" />}
       </AnimatePresence>
@@ -136,14 +136,14 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
       </div>
 
       {/* MATCH STATUS HEADER */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-8 bg-slate-900/80 backdrop-blur-2xl px-8 py-3 rounded-full border border-white/10 shadow-2xl">
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-7 bg-slate-900/80 backdrop-blur-2xl px-5 py-2 rounded-full border border-white/10 shadow-2xl">
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-black text-cyan-400 tracking-widest uppercase">Team 01</span>
+          <span className="text-[10px] font-black text-cyan-400 tracking-widest uppercase">Team 1</span>
           <span className="text-3xl font-black text-white italic">{score1}</span>
         </div>
         <div className="h-10 w-px bg-white/10" />
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-black text-rose-500 tracking-widest uppercase">Team 02</span>
+          <span className="text-[10px] font-black text-rose-500 tracking-widest uppercase">Team 2</span>
           <span className="text-3xl font-black text-white italic">{score2}</span>
         </div>
       </div>
@@ -174,13 +174,13 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
           </div>
         )}
         <div className="bg-white/5 backdrop-blur px-4 py-1 rounded-sm border border-white/10 text-white/40 font-black text-[10px] italic">
-          BMB CHAMPIONSHIP 2024
+          CHAMPIONSHIP 2026
         </div>
       </div>
 
       <div className="absolute bottom-6 right-10 flex items-center gap-2 opacity-30">
         <Trophy className="w-4 h-4 text-white" />
-        <span className="text-white font-black italic text-sm tracking-tighter">LEADERBOARD</span>
+        <span className="text-white font-black italic text-sm tracking-tighter">BMB SCOREPRO</span>
       </div>
     </div>
   );
