@@ -60,7 +60,7 @@ export default function Home() {
     <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
-        <div className="text-center space-y-2 py-8">
+        <div className="text-center space-y- py-8">
           <h3 className="text-4xl md:text-xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
             BẢNG ĐIỂM BMB PICKLEBALL
           </h3>
@@ -126,7 +126,7 @@ export default function Home() {
             onClick={handleStart}
             className="
               text-lg px-12 py-8 rounded-2xl shadow-xl shadow-primary/30 
-              hover:scale-105 transition-all duration-300 gap-1 font-display uppercase tracking-widest
+              hover:scale-105 transition-all duration-3space-y-1 font-display uppercase tracking-widest
             "
           >
             Bắt đầu trận đấu
