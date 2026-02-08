@@ -256,25 +256,7 @@ export function Court({
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/20"></div>
         <div className="absolute top-1/2 left-0 right-0 h-px bg-white/20"></div>
       </div>
-// Trong component chứa các nút điều khiển
-<div className="flex flex-wrap justify-center gap-4">
-  <button onClick={scorePoint} className="btn btn-success">
-    ĐIỂM (+1)
-  </button>
-  <button onClick={fault} className="btn btn-danger">
-    LỖI
-  </button>
-  <button onClick={undo} className="btn btn-warning">
-    HOÀN TÁC
-  </button>
-  {/* Thêm nút ĐỔI SÂN */}
-  <button 
-    onClick={switchSides} 
-    className="btn btn-purple"
-  >
-    ĐỔI SÂN
-  </button>
-</div>
+
       {/* Trung tâm sân */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
         <div className="text-[10px] md:text-xs text-white/40 font-bold">
