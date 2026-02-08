@@ -98,7 +98,7 @@ export default function Match() {
           serverTeam={state.serverTeam}
           serverHand={state.serverHand}
         />
-
+ 
         {/* Court Visual */}
         <div className="w-full">
           <Court

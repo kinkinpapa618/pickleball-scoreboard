@@ -27,22 +27,18 @@ export function useGameLogic(
     };
 
     // Điều chỉnh cho đội phát đầu tiên: 
-    // Người phát đầu tiên (Server 1) đứng Ô 1 (bên phải)
     let adjustedPositions = { ...positions };
-    
-    // Nếu đội 2 phát đầu tiên, đảm bảo t2p1 đứng bên phải, t2p2 đứng bên trái
-    // Đội 1 giữ nguyên: t1p1 bên phải, t1p2 bên trái
+
     if (initialServer === 2) {
       adjustedPositions.t2p1 = "right";
       adjustedPositions.t2p2 = "left";
-      // Đội 1 không phát nên giữ nguyên vị trí mặc định
     }
 
     return {
       score1: 0,
       score2: 0,
       serverTeam: initialServer,
-      serverHand: 1,  // Server 1 (Ô 1) phát ở lượt đầu tiên
+      serverHand: 1,
       positions: adjustedPositions,
       winner: null,
       gameHistory: [],
@@ -51,7 +47,57 @@ export function useGameLogic(
   });
 
   // ==============================================
-  // HÀM GHI ĐIỂM - SỬA LẠI THEO YÊU CẦU
+  // HÀM ĐỔI SÂN - HOÁN ĐỔI VỊ TRÍ TEAM1 VÀ TEAM2
+  // ==============================================
+  const switchSides = useCallback(() => {
+    setState((prev) => {
+      if (prev.winner) return prev; // Không đổi sân nếu trận đã kết thúc
+
+      // Lưu lịch sử để undo
+      const history = [...prev.gameHistory, { ...prev }];
+
+      // Tạo bản sao mới của positions
+      const newPositions = { ...prev.positions };
+
+      // Hoán đổi vị trí giữa team1 và team2
+      // Giữ nguyên vị trí left/right, chỉ hoán đổi team
+      const tempT1P1 = newPositions.t1p1;
+      const tempT1P2 = newPositions.t1p2;
+
+      newPositions.t1p1 = newPositions.t2p1;
+      newPositions.t1p2 = newPositions.t2p2;
+      newPositions.t2p1 = tempT1P1;
+      newPositions.t2p2 = tempT1P2;
+
+      // Hoán đổi điểm số
+      const newScore1 = prev.score2;
+      const newScore2 = prev.score1;
+
+      // Hoán đổi đội đang phát (nếu có)
+      const newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+
+      // Hoán đổi tên players (names) - cần tạo object names mới
+      const newNames = {
+        t1p1: names.t2p1,
+        t1p2: names.t2p2,
+        t2p1: names.t1p1,
+        t2p2: names.t1p2,
+      };
+
+      return {
+        ...prev,
+        score1: newScore1,
+        score2: newScore2,
+        serverTeam: newServerTeam,
+        positions: newPositions,
+        gameHistory: history,
+        // Lưu ý: names không được lưu trong state, nên cần xử lý riêng
+      };
+    });
+  }, [names]);
+
+  // ==============================================
+  // HÀM GHI ĐIỂM
   // ==============================================
   const scorePoint = useCallback(() => {
     setState((prev) => {
@@ -93,26 +139,21 @@ export function useGameLogic(
         const teamPrefix = `t${prev.serverTeam}`;
         const player1 = `${teamPrefix}p1`;
         const player2 = `${teamPrefix}p2`;
-        
+
         const temp = newPositions[player1];
         newPositions[player1] = newPositions[player2];
         newPositions[player2] = temp;
-        
-        // Giữ nguyên người phát (cùng serverTeam và serverHand)
-        // Không cần đảm bảo người phát đứng bên phải
       } 
       // TRƯỜNG HỢP B: Đội phát bóng THUA (không được điểm)
       else {
         if (prev.isFirstServeOfMatch) {
-          // Lượt phát đầu tiên của trận: chỉ có 1 người phát
           newIsFirstServeOfMatch = false;
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
-          
-          // Đội mới bắt đầu phát: Server 1 phải đứng bên phải
+
           const newTeamPrefix = `t${newServerTeam}`;
           const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
-          
+
           if (newPositions[newServerPlayerId] !== "right") {
             const otherPlayerId = `${newTeamPrefix}p2`;
             const temp = newPositions[newServerPlayerId];
@@ -121,10 +162,8 @@ export function useGameLogic(
           }
         } else {
           if (prev.serverHand === 1) {
-            // Server 1 thua -> chuyển cho Server 2 cùng đội
             newServerHand = 2;
-            
-            // Đảm bảo Server 2 đứng bên phải khi bắt đầu phát
+
             const teamPrefix = `t${prev.serverTeam}`;
             const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
             if (newPositions[newServerPlayerId] !== "right") {
@@ -134,11 +173,9 @@ export function useGameLogic(
               newPositions[otherPlayerId] = temp;
             }
           } else {
-            // Server 2 thua -> Side Out, chuyển đội
             newServerTeam = prev.serverTeam === 1 ? 2 : 1;
             newServerHand = 1;
-            
-            // Đội mới bắt đầu phát: Server 1 phải đứng bên phải
+
             const newTeamPrefix = `t${newServerTeam}`;
             const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
             if (newPositions[newServerPlayerId] !== "right") {
@@ -165,7 +202,9 @@ export function useGameLogic(
     });
   }, [winningScore]);
 
-  // Hàm fault và các hàm khác giữ nguyên...
+  // ==============================================
+  // HÀM ĐỔI GIAO BÓNG (PHẠM LỖI)
+  // ==============================================
   const fault = useCallback(() => {
     setState((prev) => {
       if (prev.winner) return prev;
@@ -181,7 +220,7 @@ export function useGameLogic(
         newIsFirstServeOfMatch = false;
         newServerTeam = prev.serverTeam === 1 ? 2 : 1;
         newServerHand = 1;
-        
+
         const newTeamPrefix = `t${newServerTeam}`;
         const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
         if (newPositions[newServerPlayerId] !== "right") {
@@ -193,7 +232,7 @@ export function useGameLogic(
       } else {
         if (prev.serverHand === 1) {
           newServerHand = 2;
-          
+
           const teamPrefix = `t${prev.serverTeam}`;
           const newServerPlayerId = `${teamPrefix}p${newServerHand}`;
           if (newPositions[newServerPlayerId] !== "right") {
@@ -205,7 +244,7 @@ export function useGameLogic(
         } else {
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
-          
+
           const newTeamPrefix = `t${newServerTeam}`;
           const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
           if (newPositions[newServerPlayerId] !== "right") {
@@ -228,6 +267,9 @@ export function useGameLogic(
     });
   }, []);
 
+  // ==============================================
+  // HÀM HOÀN TÁC
+  // ==============================================
   const undo = useCallback(() => {
     setState((prev) => {
       if (prev.gameHistory.length === 0) return prev;
@@ -239,6 +281,9 @@ export function useGameLogic(
     });
   }, []);
 
+  // ==============================================
+  // HÀM TÍNH SỐ LƯỢT PHÁT CÒN LẠI
+  // ==============================================
   const getRemainingServes = useCallback(() => {
     if (state.isFirstServeOfMatch) {
       return 1;
@@ -249,10 +294,13 @@ export function useGameLogic(
     }
   }, [state.isFirstServeOfMatch, state.serverHand]);
 
+  // ==============================================
+  // HÀM KIỂM TRA VỊ TRÍ CHÉO NHAU
+  // ==============================================
   const checkDiagonalPositions = useCallback(() => {
     const serverPlayerId = `t${state.serverTeam}p${state.serverHand}`;
     const serverPosition = state.positions[serverPlayerId];
-    
+
     const receiverTeam = state.serverTeam === 1 ? 2 : 1;
     const receiverPlayerId = Object.keys(state.positions).find(
       pid => pid.startsWith(`t${receiverTeam}`) && state.positions[pid] === serverPosition
@@ -267,6 +315,9 @@ export function useGameLogic(
     };
   }, [state.serverTeam, state.serverHand, state.positions]);
 
+  // ==============================================
+  // HÀM LẤY DỮ LIỆU
+  // ==============================================
   const getMatchData = useCallback(() => {
     return {
       team1Score: state.score1,
@@ -280,11 +331,15 @@ export function useGameLogic(
     };
   }, [state.score1, state.score2, state.winner, state.isFirstServeOfMatch, names, getRemainingServes, checkDiagonalPositions]);
 
+  // ==============================================
+  // TRẢ VỀ KẾT QUẢ
+  // ==============================================
   return {
     state,
     scorePoint,
     fault,
     undo,
+    switchSides, // Thêm hàm switchSides vào return
     getMatchData,
     getRemainingServes,
     checkDiagonalPositions,
