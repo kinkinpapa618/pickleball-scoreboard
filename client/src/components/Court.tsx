@@ -14,7 +14,6 @@ interface CourtProps {
   compact?: boolean;
 }
 
-// --- High-End Ball Effect ---
 function Ball({ fromX, fromY, toX, toY, serverId }: { fromX: string, fromY: string, toX: string, toY: string, serverId: string }) {
   return (
     <motion.div
@@ -25,18 +24,16 @@ function Ball({ fromX, fromY, toX, toY, serverId }: { fromX: string, fromY: stri
         top: [fromY, "30%", toY], 
         scale: [1, 1.8, 1],
         opacity: [1, 1, 1],
-        rotate: 360
       }}
-      transition={{ duration: 1.4, ease: "circOut", repeat: Infinity, repeatDelay: 1 }}
-      className="absolute z-50 w-5 h-5 bg-[#ccff00] rounded-full shadow-[0_0_25px_#ccff00] border-2 border-white/30 flex items-center justify-center"
+      transition={{ duration: 1.2, ease: "circOut", repeat: Infinity, repeatDelay: 1 }}
+      className="absolute z-50 w-5 h-5 bg-[#ccff00] rounded-full shadow-[0_0_20px_rgba(204,255,0,0.8)] border-2 border-white flex items-center justify-center"
       style={{ x: "-50%", y: "-50%" }}
     >
-      <div className="w-full h-px bg-black/20 rotate-45" />
+      <div className="w-full h-px bg-black/10 rotate-45" />
     </motion.div>
   );
 }
 
-// --- Premium Player Card ---
 function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: { 
   name: string; isServing: boolean; isReceiver: boolean; slot: number; side: "team1" | "team2"; compact: boolean; 
 }) {
@@ -46,16 +43,16 @@ function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: {
     <div className="flex flex-col items-center gap-2">
       <AnimatePresence mode="wait">
         {isServing ? (
-          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="bg-[#ccff00] text-black px-3 py-0.5 rounded-sm text-[9px] font-black italic tracking-tighter shadow-[0_0_15px_#ccff00]"
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[9px] font-black italic tracking-tighter shadow-md"
           >
-            <Zap className="w-3 h-3 inline mr-1 fill-current" /> PHÁT BÓNG
+            <Zap className="w-2.5 h-2.5 inline mr-1 fill-current" /> SERVING
           </motion.div>
         ) : isReceiver ? (
-          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-white text-black px-3 py-0.5 rounded-sm text-[9px] font-black italic tracking-tighter"
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-800 text-white px-3 py-0.5 rounded-full text-[9px] font-black italic tracking-tighter shadow-md"
           >
-            <ShieldCheck className="w-3 h-3 inline mr-1" /> ĐỠ BÓNG
+            <ShieldCheck className="w-2.5 h-2.5 inline mr-1" /> RECEIVING
           </motion.div>
         ) : <div className="h-4" />}
       </AnimatePresence>
@@ -63,27 +60,23 @@ function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: {
       <div className={`
         relative transition-all duration-500 overflow-hidden
         ${compact ? "w-16 h-20" : "w-28 h-32"}
-        rounded-tr-2xl rounded-bl-2xl border-2 flex flex-col items-center justify-center
+        rounded-2xl border-2 flex flex-col items-center justify-center
         ${isServing 
-          ? "bg-slate-900 border-[#ccff00] shadow-[0_0_30px_rgba(204,255,0,0.2)] scale-110 z-30" 
-          : "bg-slate-900/40 backdrop-blur-xl border-white/10 shadow-2xl"
+          ? "bg-white border-indigo-500 shadow-xl shadow-indigo-100 scale-110 z-30" 
+          : "bg-white/90 backdrop-blur-md border-slate-200 shadow-md"
         }
       `}>
-        {/* Slot Ribbon */}
-        <div className={`absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black ${isTeam1 ? "bg-cyan-500" : "bg-rose-500"} text-white`}>
+        <div className={`absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black ${isTeam1 ? "bg-cyan-500" : "bg-rose-500"} text-white rounded-br-lg`}>
           P{slot}
         </div>
 
-        <div className={`mb-1 p-2 rounded-full ${isServing ? "bg-[#ccff00]/10" : "bg-white/5"}`}>
-          <User className={`${compact ? "w-5 h-5" : "w-8 h-8"} ${isServing ? "text-[#ccff00]" : "text-white/60"}`} />
+        <div className={`mb-1 p-2 rounded-full ${isServing ? "bg-indigo-50" : "bg-slate-50"}`}>
+          <User className={`${compact ? "w-5 h-5" : "w-8 h-8"} ${isServing ? "text-indigo-600" : "text-slate-300"}`} />
         </div>
 
-        <span className={`px-2 w-full text-center truncate font-black italic tracking-tight uppercase ${compact ? "text-[10px]" : "text-xs"} ${isServing ? "text-white" : "text-white/40"}`}>
-          {name || "ATHLETE"}
+        <span className={`px-2 w-full text-center truncate font-black italic tracking-tight uppercase ${compact ? "text-[10px]" : "text-xs"} ${isServing ? "text-slate-900" : "text-slate-400"}`}>
+          {name || "PLAYER"}
         </span>
-
-        {/* Dynamic Bottom Bar */}
-        <div className={`absolute bottom-0 left-0 right-0 h-1 ${isServing ? "bg-[#ccff00]" : isTeam1 ? "bg-cyan-500/50" : "bg-rose-500/50"}`} />
       </div>
     </div>
   );
@@ -115,72 +108,63 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
   const activeRcv = players.find(p => p.isReceiver);
 
   return (
-    <div className={`relative w-full bg-[#050505] overflow-hidden border-[6px] border-slate-800 ${compact ? "aspect-[4/3] rounded-2xl" : "aspect-[16/9] rounded-[3rem]"}`}>
+    <div className={`relative w-full bg-slate-200 overflow-hidden border-[4px] border-white shadow-inner ${compact ? "aspect-[4/3] rounded-[2rem]" : "aspect-[16/9] rounded-[3rem]"}`}>
 
-      {/* PROFESSIONAL COURT SURFACE */}
-      <div className="absolute inset-0 bg-[#0f172a]">
-        <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+      {/* PROFESSIONAL LIGHT COURT SURFACE */}
+      <div className="absolute inset-0 bg-indigo-500/90">
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
-        {/* Kitchen (Non-Volley Zone) */}
-
+        {/* Kitchen Area - Lighter contrast */}
         <div className="absolute inset-0 flex justify-center pointer-events-none">
-          <div className="w-[30%] h-full bg-slate-800/60 border-x-[3px] border-white/20" />
+          <div className="w-[30%] h-full bg-indigo-600/40 border-x-[3px] border-white/40" />
         </div>
 
-        {/* Boundary Lines with Glow */}
-        <div className="absolute inset-[3%] border-[3px] border-white/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]" />
-        <div className="absolute top-1/2 left-[3%] right-[3%] h-[2px] bg-white/20 -translate-y-1/2" />
+        {/* Boundary Lines - White & Sharp */}
+        <div className="absolute inset-[3%] border-[3px] border-white/60" />
+        <div className="absolute top-1/2 left-[3%] right-[3%] h-[2px] bg-white/40 -translate-y-1/2" />
 
-        {/* Center Net */}
-        <div className="absolute top-0 bottom-0 left-1/2 w-1 bg-gradient-to-b from-transparent via-white/80 to-transparent z-10" />
+        {/* Net Shadow & Net */}
+        <div className="absolute top-0 bottom-0 left-1/2 w-1.5 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)] z-10" />
       </div>
 
-      {/* MATCH STATUS HEADER */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 bg-slate-900/80 backdrop-blur-2xl px-5 py-2 rounded-full border border-white/10 shadow-2xl">
+      {/* Score Header - Floating Light Style */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 bg-white/90 backdrop-blur-xl px-6 py-2 rounded-full shadow-xl border border-white">
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-black text-cyan-400 tracking-widest uppercase">Team1</span>
-          <span className="text-3xl font-black text-white italic">{score1}</span>
+          <span className="text-[9px] font-black text-cyan-500 uppercase">T1</span>
+          <span className="text-3xl font-black text-slate-900 italic">{score1}</span>
         </div>
-        <div className="h-10 w-px bg-white/10" />
+        <div className="h-8 w-px bg-slate-100" />
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-black text-rose-500 tracking-widest uppercase">Team2</span>
-          <span className="text-3xl font-black text-white italic">{score2}</span>
+          <span className="text-[9px] font-black text-rose-500 uppercase">T2</span>
+          <span className="text-3xl font-black text-slate-900 italic">{score2}</span>
         </div>
       </div>
 
-      {/* BALL SYSTEM */}
       {activeSrv && activeRcv && (
         <Ball fromX={activeSrv.x} fromY={activeSrv.y} toX={activeRcv.x} toY={activeRcv.y} serverId={activeSrv.id} />
       )}
 
-      {/* ATHLETES */}
       {players.map((p) => (
         <motion.div
-          key={p.id}
-          className="absolute z-20"
+          key={p.id} className="absolute z-20"
           animate={{ left: p.x, top: p.y }}
-          transition={{ type: "spring", stiffness: 80, damping: 15 }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
           style={{ x: "-50%", y: "-50%" }}
         >
           <PlayerMarker {...p} compact={compact} />
         </motion.div>
       ))}
 
-      {/* MATCH INFO FOOTER */}
-      <div className="absolute bottom-6 left-10 flex items-center gap-3">
+      {/* Footer Info */}
+      <div className="absolute bottom-6 left-8 flex items-center gap-3">
         {firstServe && (
-          <div className="bg-[#ccff00] text-black px-4 py-1 rounded-sm font-black text-[10px] italic shadow-lg">
-            FIRST SERVE 0-0-2
+          <div className="bg-[#ccff00] text-black px-4 py-1 rounded-full font-black text-[9px] italic shadow-md">
+            STARTING 0-0-2
           </div>
         )}
-        <div className="bg-white/5 backdrop-blur px-4 py-1 rounded-sm border border-white/10 text-white/40 font-black text-[10px] italic">
-          CHAMPIONSHIP 2026
+        <div className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-white font-black text-[9px] italic border border-white/20">
+          PRO SERIES 2026
         </div>
-      </div>
-
-      <div className="absolute bottom-6 right-10 flex items-center gap-2 opacity-30">
-        <Trophy className="w-4 h-4 text-white" />
-        <span className="text-white font-black italic text-sm tracking-tighter">BMB SCOREPRO</span>
       </div>
     </div>
   );
