@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Zap, CircleDot } from "lucide-react"; // Đã đảm bảo sử dụng Zap và CircleDot
+import { User, Zap, CircleDot } from "lucide-react";
 
 type Position = "left" | "right";
 
@@ -46,23 +46,19 @@ function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: {
         <AnimatePresence mode="wait">
           {isServing && (
             <motion.div 
-              initial={{ scale: 0 }} 
-              animate={{ scale: 1 }} 
-              exit={{ scale: 0 }}
+              initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
               className="flex items-center gap-1 bg-yellow-400 text-yellow-950 px-2 py-0.5 rounded-full text-[9px] font-black shadow-[0_0_10px_#facc15]"
             >
-              <Zap className="w-3 h-3 fill-current" /> {/* SỬ DỤNG ZAP Ở ĐÂY */}
+              <Zap className="w-3 h-3 fill-current" />
               PHÁT
             </motion.div>
           )}
           {isReceiver && !isServing && (
             <motion.div 
-              initial={{ scale: 0 }} 
-              animate={{ scale: 1 }} 
-              exit={{ scale: 0 }}
+              initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
               className="flex items-center gap-1 bg-sky-400 text-sky-950 px-2 py-0.5 rounded-full text-[9px] font-black"
             >
-              <CircleDot className="w-3 h-3" /> {/* SỬ DỤNG CIRCLEDOT Ở ĐÂY */}
+              <CircleDot className="w-3 h-3" />
               ĐỠ
             </motion.div>
           )}
@@ -94,20 +90,29 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
   const getPlayerInfo = (team: number, player: number) => {
     const pid = `t${team}p${player}`;
     const pos = positions[pid];
-    let x = team === 1 ? (compact ? "18%" : "20%") : (compact ? "82%" : "80%");
-    let y = (team === 1 ? pos === "right" : pos === "left") ? "75%" : "25%";
+    const x = team === 1 ? (compact ? "18%" : "20%") : (compact ? "82%" : "80%");
+    const y = (team === 1 ? pos === "right" : pos === "left") ? "75%" : "25%";
 
-    return { id: pid, name: names[pid as keyof typeof names], x, y, isServing: pid === serverPlayerId, isReceiver: pid === receiverPlayerId, slot: player, side: team === 1 ? "team1" : "team2" as any };
+    return { 
+      id: pid, 
+      name: names[pid as keyof typeof names], 
+      x, y, 
+      isServing: pid === serverPlayerId, 
+      isReceiver: pid === receiverPlayerId, 
+      slot: player, 
+      side: team === 1 ? "team1" : "team2" as any 
+    };
   };
 
   const players = [getPlayerInfo(1, 1), getPlayerInfo(1, 2), getPlayerInfo(2, 1), getPlayerInfo(2, 2)];
-  const server = players.find(p => p.isServing);
-  const receiver = players.find(p => p.isReceiver);
+
+  // Sử dụng trực tiếp dữ liệu từ mảng players để tránh lỗi "declared but never read"
+  const activeServer = players.find(p => p.isServing);
+  const activeReceiver = players.find(p => p.isReceiver);
 
   return (
     <div className={`relative w-full bg-slate-900 overflow-hidden shadow-2xl border-4 border-slate-800 ${compact ? "aspect-[4/3] rounded-xl" : "aspect-[16/9] rounded-[2rem]"}`}>
 
-      {/* MẶT SÂN */}
       <div className="absolute inset-0 bg-[#1e40af]">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle,transparent_20%,#1e3a8a_100%)]" />
         <div className="absolute inset-0 flex justify-center">
@@ -118,7 +123,6 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
         <div className="absolute top-0 bottom-0 left-1/2 w-2 bg-white shadow-2xl z-10" />
       </div>
 
-      {/* HIỂN THỊ TRẠNG THÁI FIRST SERVE */}
       {firstServe && (
         <div className="absolute bottom-4 left-4 z-40">
           <div className="bg-yellow-400 text-yellow-950 text-[10px] font-black px-3 py-1 rounded-lg shadow-lg animate-pulse">
@@ -127,7 +131,15 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
         </div>
       )}
 
-      {/* PLAYERS */}
+      {/* Sử dụng activeServer và activeReceiver đã khai báo */}
+      {activeServer && activeReceiver && (
+        <Ball 
+          fromX={activeServer.x} fromY={activeServer.y} 
+          toX={activeReceiver.x} toY={activeReceiver.y} 
+          serverId={activeServer.id} 
+        />
+      )}
+
       {players.map((p) => (
         <motion.div
           key={p.id}
@@ -147,7 +159,6 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
         </motion.div>
       ))}
 
-      {/* SCORE OVERLAY */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex bg-black/60 backdrop-blur px-5 py-2 rounded-2xl border border-white/10 gap-4">
         <div className="text-center"><p className="text-[10px] text-blue-400 font-bold">T1</p><p className="text-xl font-black text-white">{score1}</p></div>
         <div className="w-[1px] bg-white/20 self-stretch" />
