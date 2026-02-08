@@ -5,78 +5,113 @@ interface ScoreBoardProps {
   score2: number;
   serverTeam: 1 | 2;
   serverHand: 1 | 2;
+  compact?: boolean;
 }
 
-export function ScoreBoard({ score1, score2, serverTeam, serverHand }: ScoreBoardProps) {
-  return (
-    <div className="w-full flex items-center justify-center gap-4 md:gap-8 py-6">
-      <div className="flex items-center gap-4 md:gap-8">
-        <div className="text-7xl md:text-9xl font-display font-bold text-primary drop-shadow-2xl">
-          {score1}
+export function ScoreBoard({ score1, score2, serverTeam, serverHand, compact }: ScoreBoardProps) {
+  if (compact) {
+    return (
+      <div className="flex justify-between items-center">
+        <div className={`text-center ${serverTeam === 1 ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-gray-100'} p-2 rounded-lg flex-1`}>
+          <div className="text-xs text-gray-600">ĐỘI 1</div>
+          <div className="text-2xl font-bold">{score1}</div>
+          {serverTeam === 1 && (
+            <div className="text-xs font-bold text-yellow-700">
+              ĐANG PHÁT (Tay {serverHand})
+            </div>
+          )}
         </div>
-        <div className="text-4xl md:text-6xl font-display font-bold opacity-30">
-          -
-        </div>
-        <div className="text-7xl md:text-9xl font-display font-bold text-primary drop-shadow-2xl">
-          {score2}
-        </div>
-        <div className="text-4xl md:text-6xl font-display font-bold opacity-30">
-          -
-        </div>
-        <div className="bg-accent text-accent-foreground text-xl md:text-3xl font-bold px-4 py-2 rounded-xl shadow-lg whitespace-nowrap">
-          TAY {serverHand}
+        <div className="px-2 text-xl font-bold">-</div>
+
+        <div className={`text-center ${serverTeam === 2 ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-gray-100'} p-2 rounded-lg flex-1`}>
+          <div className="text-xs text-gray-600">ĐỘI 2</div>
+          <div className="text-2xl font-bold">{score2}</div>
+          {serverTeam === 2 && (
+            <div className="text-xs font-bold text-yellow-700">
+              ĐANG PHÁT (Tay {serverHand})
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function TeamScore({ 
-  score, 
-  label, 
-  isActive, 
-  hand, 
-  align 
-}: { 
-  score: number; 
-  label: string; 
-  isActive: boolean; 
-  hand: 1 | 2;
-  align: "left" | "right";
-}) {
-  return (
-    <div className={`flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
-      <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
-        {label}
-      </span>
-      
-      <div className="relative">
-        <motion.div 
-          key={score}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={`
-            text-7xl md:text-9xl font-display font-bold leading-none tracking-tighter
-            ${isActive ? 'text-primary drop-shadow-2xl' : 'text-foreground/30'}
-          `}
-        >
-          {score}
-        </motion.div>
+  // ... (giữ nguyên phần trên cho đến hết hàm TeamScore)
 
-        {isActive && (
+    return (
+      <div className="flex justify-between items-center w-full max-w-4xl mx-auto bg-background/50 backdrop-blur-sm p-8 rounded-3xl border shadow-2xl">
+        <TeamScore
+          score={score1}
+          label="Đội 1"
+          isActive={serverTeam === 1}
+          hand={serverHand}
+          align="left"
+        />
+
+        <div className="flex flex-col items-center px-4">
+          <div className="h-20 w-[2px] bg-border/50 hidden md:block" />
+          <span className="text-4xl md:text-6xl font-light text-muted-foreground/20 my-4">VS</span>
+          <div className="h-20 w-[2px] bg-border/50 hidden md:block" />
+        </div>
+
+        <TeamScore
+          score={score2}
+          label="Đội 2"
+          isActive={serverTeam === 2}
+          hand={serverHand}
+          align="right"
+        />
+      </div>
+    );
+  } // <--- Đóng hàm ScoreBoard
+
+  // Hàm TeamScore này nên được đặt RA NGOÀI hàm ScoreBoard hoặc giữ nguyên nếu bạn muốn nó là hàm con
+  function TeamScore({ 
+    score, 
+    label, 
+    isActive, 
+    hand, 
+    align 
+  }: { 
+    score: number; 
+    label: string; 
+    isActive: boolean; 
+    hand: 1 | 2;
+    align: "left" | "right";
+  }) {
+    return (
+      <div className={`flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
+        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          {label}
+        </span>
+
+        <div className="relative">
           <motion.div 
-            initial={{ opacity: 0, x: align === 'left' ? -20 : 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            key={score}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             className={`
-              absolute top-0 ${align === 'left' ? '-left-6 md:-left-8' : '-right-6 md:-right-8'}
+              text-7xl md:text-9xl font-display font-bold leading-none tracking-tighter
+              ${isActive ? 'text-primary drop-shadow-2xl' : 'text-foreground/30'}
             `}
           >
-            <div className="bg-accent text-accent-foreground text-xs md:text-sm font-bold px-2 py-1 rounded-full shadow-lg whitespace-nowrap">
-              TAY {hand}
-            </div>
+            {score}
           </motion.div>
-        )}
+
+          {isActive && (
+            <motion.div 
+              initial={{ opacity: 0, x: align === 'left' ? -20 : 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={`
+                absolute top-0 ${align === 'left' ? '-left-6 md:-left-8' : '-right-6 md:-right-8'}
+              `}
+            >
+              <div className="bg-accent text-accent-foreground text-xs md:text-sm font-bold px-2 py-1 rounded-full shadow-lg whitespace-nowrap">
+                TAY {hand}
+              </div>
+            </motion.div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

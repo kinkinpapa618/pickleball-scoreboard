@@ -62,45 +62,58 @@ export default function Match() {
     }
   }, [state.winner, saved, getMatchData, createMatch]);
 
+  // Hiển thị tỷ số theo đúng logic mới: Điểm Team Phát Bóng đứng trước
+  const getDisplayScore = () => {
+    if (state.serverTeam === 1) {
+      return `${state.score1}-${state.score2}-${state.serverHand}`;
+    } else {
+      return `${state.score2}-${state.score1}-${state.serverHand}`;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Bar */}
-      <header className="px-4 py-3 border-b flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
+      {/* Compact Top Bar */}
+      <header className="px-2 py-1 border-b border-gray-300 bg-white/90 flex items-center justify-between sticky top-0 z-50">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setLocation("/")}
-          className="gap-2"
+          className="h-8 px-2"
         >
           <Home className="w-4 h-4" />
-          Trang chủ
         </Button>
-        <div className="font-display font-bold text-lg text-primary">
-          BMB Pickleball Scoreboard
+
+        <div className="text-center flex-1">
+          <div className="text-xs font-bold text-primary">PICKLEBALL</div>
+          <div className="text-sm font-bold text-gray-800">{getDisplayScore()}</div>
         </div>
+
         <Button
           variant="ghost"
           size="sm"
           onClick={undo}
           disabled={state.gameHistory.length === 0}
-          className="gap-2"
+          className="h-8 px-2"
         >
           <Undo2 className="w-4 h-4" />
-          Hoàn tác
         </Button>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-8 flex flex-col gap-5">
-        {/* Score Display */}
-        <ScoreBoard
-          score1={state.score1}
-          score2={state.score2}
-          serverTeam={state.serverTeam}
-          serverHand={state.serverHand}
-        />
- 
-        {/* Court Visual */}
-        <div className="w-full">
+      <main className="flex-1 flex flex-col p-2 space-y-2">
+        {/* Score Display - Compact */}
+        <div className="bg-white border border-gray-300 rounded-lg p-2">
+          <ScoreBoard
+            score1={state.score1}
+            score2={state.score2}
+            serverTeam={state.serverTeam}
+            serverHand={state.serverHand}
+            compact
+          />
+        </div>
+
+        {/* Court Visual - Reduced margin */}
+        <div className="flex-1 min-h-0">
           <Court
             positions={state.positions}
             serverTeam={state.serverTeam}
@@ -108,78 +121,93 @@ export default function Match() {
             names={names}
             score1={state.score1}
             score2={state.score2}
-            firstServe={state.firstServe} // Thêm dòng này
+            firstServe={state.firstServe}
+            compact
           />
         </div>
 
-        {/* Control Pad */}
-        <div className="grid grid-cols-2 gap-4 mt-auto md:mt-8 mb-8 h-32 md:h-40">
+        {/* Control Pad - Compact */}
+        <div className="grid grid-cols-2 gap-2">
           <Button
-            className="h-1/2 rounded-2xl text-xl md:text-3xl font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] hover:shadow-2xl transition-all bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1"
             onClick={scorePoint}
             disabled={!!state.winner}
+            className="h-12 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md"
           >
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle2 className="w-8 h-8 md:w-12 md:h-12" />
-              Ghi Điểm
+            <div className="flex flex-col items-center gap-0.5">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Ghi Điểm</span>
             </div>
           </Button>
 
           <Button
             variant="destructive"
-            className="h-1/2 rounded-2xl text-xl md:text-3xl font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] hover:shadow-2xl transition-all border-b-4 border-red-800 active:border-b-0 active:translate-y-1"
             onClick={fault}
             disabled={!!state.winner}
+            className="h-12 rounded-lg font-bold text-sm shadow-md"
           >
-            <div className="flex flex-col items-center gap-2">
-              <AlertOctagon className="w-8 h-8 md:w-12 md:h-12" />
-              Đổi Giao Bóng
+            <div className="flex flex-col items-center gap-0.5">
+              <AlertOctagon className="w-5 h-5" />
+              <span>Đổi Giao</span>
             </div>
           </Button>
         </div>
+
+        {/* Quick Info Bar */}
+        <div className="text-center text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded p-1">
+          <div className="flex justify-between">
+            <span className="font-medium">Đội 1: {state.score1}</span>
+            <span>|</span>
+            <span className="font-medium">Đội 2: {state.score2}</span>
+            <span>|</span>
+            <span>Phát: Đội {state.serverTeam}-{state.serverHand}</span>
+          </div>
+          {state.firstServe && (
+            <div className="text-yellow-600 font-bold mt-0.5 animate-pulse">
+              ⚠️ Lượt phát đầu tiên (0-0-2)
+            </div>
+          )}
+        </div>
       </main>
 
-      {/* Winner Modal */}
+      {/* Compact Winner Modal */}
       <Dialog open={!!state.winner}>
-        <DialogContent className="sm:max-w-md text-center border-none shadow-none bg-transparent">
-          <div className="bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/40">
-            <Trophy className="w-24 h-24 text-yellow-500 mx-auto mb-6 drop-shadow-lg" />
-            <DialogTitle className="text-4xl font-black text-foreground mb-2">
+        <DialogContent className="max-w-xs mx-auto p-0 border-none">
+          <div className="bg-white p-4 rounded-lg shadow-xl">
+            <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-3" />
+            <DialogTitle className="text-xl font-black text-center mb-1">
               CHIẾN THẮNG!
             </DialogTitle>
-            <p className="text-2xl text-primary font-bold mb-8">
+            <p className="text-lg font-bold text-center text-primary mb-3">
               ĐỘI {state.winner === 1 ? "1" : "2"}
             </p>
 
-            <div className="text-lg text-muted-foreground mb-8">
+            <div className="text-center text-gray-600 mb-4">
               Tỉ số:{" "}
-              <span className="font-bold text-foreground">
+              <span className="font-bold text-gray-800">
                 {state.score1} - {state.score2}
               </span>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="space-y-2">
               <Button
-                size="lg"
-                className="w-full font-bold text-lg h-14"
                 onClick={() => window.location.reload()}
+                className="w-full h-10 text-sm font-bold"
               >
-                <RotateCcw className="mr-2 w-5 h-5" />
+                <RotateCcw className="mr-2 w-4 h-4" />
                 Chơi lại
               </Button>
               <Button
                 variant="outline"
-                size="lg"
-                className="w-full font-bold h-14"
                 onClick={() => setLocation("/")}
+                className="w-full h-10 text-sm"
               >
-                Về trang chủ
+                Trang chủ
               </Button>
             </div>
 
             {saved && (
-              <p className="mt-4 text-xs text-green-600 font-medium flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Kết quả đã được lưu
+              <p className="mt-3 text-xs text-green-600 font-medium text-center">
+                <CheckCircle2 className="w-3 h-3 inline mr-1" /> Đã lưu kết quả
               </p>
             )}
           </div>
