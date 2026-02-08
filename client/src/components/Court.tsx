@@ -37,7 +37,7 @@ function PlayerMarker({
             key={`serve-${name}-${Date.now()}`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="w-full px-2 py-1 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] md:text-xs font-bold text-yellow-900"
+            className="w-full px-1 py-0 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] md:text-xs font-bold text-yellow-900"
           >
             PHÁT
           </motion.div>
@@ -83,10 +83,7 @@ function PlayerMarker({
           <div className={`px-2 py-0.5 rounded-full font-medium ${
             position === "right" ? "bg-blue-500/20 text-blue-700" : "bg-green-500/20 text-green-700"
           }`}>
-            {position === "right" ? "Ô 1" : "Ô 2"}
-          </div>
-          <div className="text-gray-600 font-medium">
-            SLOT {slot}
+            {position === "right" ? "Ô-1" : "Ô-2"}
           </div>
         </div>
       </div>
