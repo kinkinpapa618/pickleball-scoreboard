@@ -61,10 +61,9 @@ export default function Home() {
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-2 py-8">
-          <h1 className="text-4xl md:text-xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
-            BMB Pickleball Scoreboard
-          </h1>
-          <p className="text-muted-foreground text-lg">BẢNG ĐIỂM PICKLEBALL</p>
+          <h3 className="text-4xl md:text-xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
+            BẢNG ĐIỂM BMB PICKLEBALL
+          </h3>
         </div>
 
         {/* Players Grid */}
@@ -115,7 +114,7 @@ export default function Home() {
               className="gap-2 font-semibold"
             >
               <Coins className="w-4 h-4 text-yellow-600" />
-              Tung Đồng Xu
+              TUNG XU
             </Button>
           </div>
         </Card>
@@ -127,7 +126,7 @@ export default function Home() {
             onClick={handleStart}
             className="
               text-lg px-12 py-8 rounded-2xl shadow-xl shadow-primary/30 
-              hover:scale-105 transition-all duration-300 gap-3 font-display uppercase tracking-widest
+              hover:scale-105 transition-all duration-300 gap-1 font-display uppercase tracking-widest
             "
           >
             Bắt đầu trận đấu

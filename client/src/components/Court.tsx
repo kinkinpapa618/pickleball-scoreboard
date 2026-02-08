@@ -37,7 +37,7 @@ function PlayerMarker({
             key={`serve-${name}-${Date.now()}`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="w-full px-1 py-0 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)] flex items-center justify-center text-[10px] md:text-xs font-bold text-yellow-900"
+            className="w-full px-1 py-0 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)] flex items-center justify-center text-[8px] md:text-xs font-bold text-yellow-900"
           >
             PHÁT
           </motion.div>
@@ -47,7 +47,7 @@ function PlayerMarker({
             key={`receive-${name}-${Date.now()}`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="w-full px-2 py-1 bg-gray-400 rounded-full shadow-[0_0_8px_rgba(156,163,175,0.6)] flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-900"
+            className="w-full px-2 py-1 bg-gray-400 rounded-full shadow-[0_0_8px_rgba(156,163,175,0.6)] flex items-center justify-center text-[8px] md:text-xs font-bold text-gray-900"
           >
             ĐỠ
           </motion.div>
@@ -257,7 +257,7 @@ export function Court({
       {/* Trung tâm sân */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
         <div className="text-[10px] md:text-xs text-white/40 font-bold">
-          PICKLEBALL 2 VS 2
+          MBM PICKLEBALL SCOREPRO 2 VS 2
         </div>
       </div>
     </div>
