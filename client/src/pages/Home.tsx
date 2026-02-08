@@ -60,9 +60,9 @@ export default function Home() {
     <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
-        <div className="text-center space-y- py-8">
-          <h3 className="text-4xl md:text-xl font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
-            BẢNG ĐIỂM BMB PICKLEBALL
+        <div className="text-center space-y-2 py-8">
+          <h3 className="text-4xl md:text-l font-display font-black text-primary tracking-tighter uppercase drop-shadow-sm">
+            BMB PICKLEBALL
           </h3>
         </div>
 
@@ -120,13 +120,13 @@ export default function Home() {
         </Card>
 
         {/* Start Action */}
-        <div className="pt-8 flex justify-center">
+        <div className="pt-5 flex justify-center">
           <Button
             size="lg"
             onClick={handleStart}
             className="
-              text-lg px-12 py-8 rounded-2xl shadow-xl shadow-primary/30 
-              hover:scale-105 transition-all duration-3space-y-1 font-display uppercase tracking-widest
+              text-lg px-8 py-6 rounded-2xl shadow-xl shadow-primary/30 
+              hover:scale-105 transition-all duration-300 gap-1 font-display uppercase tracking-widest
             "
           >
             Bắt đầu trận đấu
