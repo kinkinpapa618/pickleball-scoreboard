@@ -52,7 +52,7 @@ export default function Home() {
             {/* Team 1 */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-cyan-400 uppercase italic">Team Alpha</span>
+                <span className="text-[10px] font-black text-cyan-400 uppercase italic">Team 1</span>
                 <div className="h-[1px] flex-1 mx-3 bg-cyan-400/20" />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -72,7 +72,7 @@ export default function Home() {
             {/* Team 2 */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-rose-500 uppercase italic">Team Bravo</span>
+                <span className="text-[10px] font-black text-rose-500 uppercase italic">Team 2</span>
                 <div className="h-[1px] flex-1 mx-3 bg-rose-500/20" />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -95,12 +95,12 @@ export default function Home() {
         <Card className="p-4 bg-slate-900/50 border-white/5 backdrop-blur-xl rounded-3xl space-y-4">
           <div className="flex items-center gap-2 text-[#ccff00]">
             <Settings2 className="w-4 h-4" />
-            <span className="text-xs font-black italic uppercase tracking-widest">Match Rules</span>
+            <span className="text-xs font-black italic uppercase tracking-widest">CÀI ĐẶT TRẬN ĐẤU</span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">Win Condition</label>
+              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">ĐIỂM WIN</label>
               <div className="flex gap-1 bg-black/40 p-1 rounded-xl">
                 {["11", "15", "21"].map((score) => (
                   <button
@@ -114,7 +114,7 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">Initial Service</label>
+              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">PHÁT BÓNG TRƯỚC</label>
               <div className="flex gap-1 bg-black/40 p-1 rounded-xl">
                 {[1, 2].map((team) => (
                   <button

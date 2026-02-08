@@ -95,7 +95,7 @@ import { motion } from "framer-motion";
             <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent" />
             <div className="relative flex flex-col items-center justify-center text-black">
               <CheckCircle2 className="w-6 h-6 mb-1" />
-              <span className="text-xs font-black italic uppercase tracking-widest">Ghi Điểm</span>
+              <span className="text-xs font-black italic uppercase tracking-widest">GHI ĐIỂM</span>
             </div>
           </motion.button>
 
@@ -106,7 +106,7 @@ import { motion } from "framer-motion";
           >
             <div className="relative flex flex-col items-center justify-center text-white">
               <AlertOctagon className="w-6 h-6 mb-1 text-rose-500" />
-              <span className="text-xs font-black italic uppercase tracking-widest text-white/60">Đổi Giao</span>
+              <span className="text-xs font-black italic uppercase tracking-widest text-white/60">ĐỔI GIAO</span>
             </div>
           </motion.button>
         </div>
@@ -122,7 +122,7 @@ import { motion } from "framer-motion";
                 {/* SỬA LỖI 2: Dùng biến đã kiểm tra ở trên */}
                 {isFirstServeActive && (
                   <div className="text-[#ccff00] text-[10px] font-black italic animate-pulse tracking-tighter">
-                    [ FIRST SERVE 0-0-2 ]
+                    [ LƯỢT PHÁT ĐẦU TIÊN 0-0-2 ]
                   </div>
                 )}
               </div>
@@ -137,7 +137,7 @@ import { motion } from "framer-motion";
                <div className="absolute inset-0 bg-[#ccff00] blur-[40px] opacity-20" />
             </div>
             <DialogTitle className="text-2xl font-black italic text-white mb-2 tracking-tighter">
-              VICTORY DECLARED!
+              CHIẾN THẮNG!
             </DialogTitle>
             <p className={`text-xl font-black italic mb-6 ${state.winner === 1 ? "text-cyan-400" : "text-rose-500"}`}>
               TEAM {state.winner === 1 ? "01" : "02"}
@@ -145,10 +145,10 @@ import { motion } from "framer-motion";
 
             <div className="space-y-3">
               <Button onClick={() => window.location.reload()} className="w-full bg-[#ccff00] text-black font-black italic h-12 rounded-xl">
-                <RotateCcw className="mr-2 w-4 h-4" /> REMATCH
+                <RotateCcw className="mr-2 w-4 h-4" /> ĐẤU LẠI
               </Button>
               <Button variant="ghost" onClick={() => setLocation("/")} className="w-full text-white/40 font-bold h-12">
-                MAIN MENU
+                MENU CHÍNH
               </Button>
             </div>
           </div>
