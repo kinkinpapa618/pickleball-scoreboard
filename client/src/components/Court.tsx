@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Zap, CircleDot } from "lucide-react";
+import { User, Zap, ShieldCheck, Trophy } from "lucide-react";
 
 type Position = "left" | "right";
 
@@ -14,6 +14,7 @@ interface CourtProps {
   compact?: boolean;
 }
 
+// --- High-End Ball Effect ---
 function Ball({ fromX, fromY, toX, toY, serverId }: { fromX: string, fromY: string, toX: string, toY: string, serverId: string }) {
   return (
     <motion.div
@@ -21,58 +22,68 @@ function Ball({ fromX, fromY, toX, toY, serverId }: { fromX: string, fromY: stri
       initial={{ left: fromX, top: fromY, scale: 0, opacity: 0 }}
       animate={{ 
         left: [fromX, "50%", toX], 
-        top: [fromY, "35%", toY], 
-        scale: [1, 1.5, 1],
-        opacity: [1, 1, 1]
+        top: [fromY, "30%", toY], 
+        scale: [1, 1.8, 1],
+        opacity: [1, 1, 1],
+        rotate: 360
       }}
-      transition={{ 
-        duration: 1.5, 
-        ease: "easeInOut",
-        repeat: Infinity,
-        repeatDelay: 1
-      }}
-      className="absolute z-50 w-4 h-4 md:w-5 md:h-5 bg-[#d9f99d] rounded-full shadow-[0_0_20px_#bef264] border border-black/20"
+      transition={{ duration: 1.4, ease: "circOut", repeat: Infinity, repeatDelay: 1 }}
+      className="absolute z-50 w-5 h-5 bg-[#ccff00] rounded-full shadow-[0_0_25px_#ccff00] border-2 border-white/30 flex items-center justify-center"
       style={{ x: "-50%", y: "-50%" }}
-    />
+    >
+      <div className="w-full h-px bg-black/20 rotate-45" />
+    </motion.div>
   );
 }
 
+// --- Premium Player Card ---
 function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: { 
   name: string; isServing: boolean; isReceiver: boolean; slot: number; side: "team1" | "team2"; compact: boolean; 
 }) {
-  return (
-    <div className="flex flex-col items-center gap-1 md:gap-2">
-      <div className="h-6 flex items-end justify-center">
-        <AnimatePresence mode="wait">
-          {isServing && (
-            <motion.div 
-              initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
-              className="flex items-center gap-1 bg-yellow-400 text-yellow-950 px-2 py-0.5 rounded-full text-[9px] font-black shadow-[0_0_10px_#facc15]"
-            >
-              <Zap className="w-3 h-3 fill-current" />
-              PHÁT
-            </motion.div>
-          )}
-          {isReceiver && !isServing && (
-            <motion.div 
-              initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
-              className="flex items-center gap-1 bg-sky-400 text-sky-950 px-2 py-0.5 rounded-full text-[9px] font-black"
-            >
-              <CircleDot className="w-3 h-3" />
-              ĐỠ
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+  const isTeam1 = side === "team1";
 
-      <div className={`relative transition-all duration-500 ${compact ? "w-14 h-16" : "w-24 h-28"} rounded-2xl border-2 flex flex-col items-center justify-center ${isServing ? "bg-white border-yellow-400 shadow-xl scale-110 z-30" : "bg-white/10 backdrop-blur-md border-white/20"}`}>
-        <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${side === "team1" ? "bg-blue-600" : "bg-red-600"} text-white`}>
-          {slot}
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <AnimatePresence mode="wait">
+        {isServing ? (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="bg-[#ccff00] text-black px-3 py-0.5 rounded-sm text-[9px] font-black italic tracking-tighter shadow-[0_0_15px_#ccff00]"
+          >
+            <Zap className="w-3 h-3 inline mr-1 fill-current" /> SERVICE
+          </motion.div>
+        ) : isReceiver ? (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-white text-black px-3 py-0.5 rounded-sm text-[9px] font-black italic tracking-tighter"
+          >
+            <ShieldCheck className="w-3 h-3 inline mr-1" /> RECEIVE
+          </motion.div>
+        ) : <div className="h-4" />}
+      </AnimatePresence>
+
+      <div className={`
+        relative transition-all duration-500 overflow-hidden
+        ${compact ? "w-16 h-20" : "w-28 h-32"}
+        rounded-tr-2xl rounded-bl-2xl border-2 flex flex-col items-center justify-center
+        ${isServing 
+          ? "bg-slate-900 border-[#ccff00] shadow-[0_0_30px_rgba(204,255,0,0.2)] scale-110 z-30" 
+          : "bg-slate-900/40 backdrop-blur-xl border-white/10 shadow-2xl"
+        }
+      `}>
+        {/* Slot Ribbon */}
+        <div className={`absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black ${isTeam1 ? "bg-cyan-500" : "bg-rose-500"} text-white`}>
+          P{slot}
         </div>
-        <User className={`${compact ? "w-4 h-4" : "w-8 h-8"} ${isServing ? "text-yellow-600" : "text-white"}`} />
-        <span className={`px-1 w-full text-center truncate font-bold ${compact ? "text-[10px]" : "text-xs"} ${isServing ? "text-slate-900" : "text-white"}`}>
-          {name.split(" ")[0]}
+
+        <div className={`mb-1 p-2 rounded-full ${isServing ? "bg-[#ccff00]/10" : "bg-white/5"}`}>
+          <User className={`${compact ? "w-5 h-5" : "w-8 h-8"} ${isServing ? "text-[#ccff00]" : "text-white/60"}`} />
+        </div>
+
+        <span className={`px-2 w-full text-center truncate font-black italic tracking-tight uppercase ${compact ? "text-[10px]" : "text-xs"} ${isServing ? "text-white" : "text-white/40"}`}>
+          {name || "ATHLETE"}
         </span>
+
+        {/* Dynamic Bottom Bar */}
+        <div className={`absolute bottom-0 left-0 right-0 h-1 ${isServing ? "bg-[#ccff00]" : isTeam1 ? "bg-cyan-500/50" : "bg-rose-500/50"}`} />
       </div>
     </div>
   );
@@ -81,7 +92,6 @@ function PlayerMarker({ name, isServing, isReceiver, slot, side, compact }: {
 export function Court({ positions, serverTeam, names, score1, score2, serverHand, firstServe, compact = false }: CourtProps) {
   const serverPlayerId = `t${serverTeam}p${serverHand}`;
   const serverPosition = positions[serverPlayerId];
-
   const receiverTeam = serverTeam === 1 ? 2 : 1;
   const receiverPlayerId = Object.keys(positions).find(
     (pid) => pid.startsWith(`t${receiverTeam}`) && positions[pid] === serverPosition
@@ -94,75 +104,83 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
     const y = (team === 1 ? pos === "right" : pos === "left") ? "75%" : "25%";
 
     return { 
-      id: pid, 
-      name: names[pid as keyof typeof names], 
-      x, y, 
-      isServing: pid === serverPlayerId, 
-      isReceiver: pid === receiverPlayerId, 
-      slot: player, 
-      side: team === 1 ? "team1" : "team2" as any 
+      id: pid, name: names[pid as keyof typeof names], x, y, 
+      isServing: pid === serverPlayerId, isReceiver: pid === receiverPlayerId, 
+      slot: player, side: team === 1 ? "team1" : "team2" as any 
     };
   };
 
   const players = [getPlayerInfo(1, 1), getPlayerInfo(1, 2), getPlayerInfo(2, 1), getPlayerInfo(2, 2)];
-
-  // Sử dụng trực tiếp dữ liệu từ mảng players để tránh lỗi "declared but never read"
-  const activeServer = players.find(p => p.isServing);
-  const activeReceiver = players.find(p => p.isReceiver);
+  const activeSrv = players.find(p => p.isServing);
+  const activeRcv = players.find(p => p.isReceiver);
 
   return (
-    <div className={`relative w-full bg-slate-900 overflow-hidden shadow-2xl border-4 border-slate-800 ${compact ? "aspect-[4/3] rounded-xl" : "aspect-[16/9] rounded-[2rem]"}`}>
+    <div className={`relative w-full bg-[#050505] overflow-hidden border-[6px] border-slate-800 ${compact ? "aspect-[4/3] rounded-2xl" : "aspect-[16/9] rounded-[3rem]"}`}>
 
-      <div className="absolute inset-0 bg-[#1e40af]">
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle,transparent_20%,#1e3a8a_100%)]" />
-        <div className="absolute inset-0 flex justify-center">
-          <div className="w-[28%] h-full bg-blue-900/40 border-x-4 border-white/50" />
+      {/* PROFESSIONAL COURT SURFACE */}
+      <div className="absolute inset-0 bg-[#0f172a]">
+        <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+
+        {/* Kitchen (Non-Volley Zone) */}
+
+        <div className="absolute inset-0 flex justify-center pointer-events-none">
+          <div className="w-[30%] h-full bg-slate-800/60 border-x-[3px] border-white/20" />
         </div>
-        <div className="absolute inset-[3%] border-[4px] border-white/80" />
-        <div className="absolute top-1/2 left-[3%] right-[3%] h-1 bg-white/60 -translate-y-1/2" />
-        <div className="absolute top-0 bottom-0 left-1/2 w-2 bg-white shadow-2xl z-10" />
+
+        {/* Boundary Lines with Glow */}
+        <div className="absolute inset-[3%] border-[3px] border-white/30 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]" />
+        <div className="absolute top-1/2 left-[3%] right-[3%] h-[2px] bg-white/20 -translate-y-1/2" />
+
+        {/* Center Net */}
+        <div className="absolute top-0 bottom-0 left-1/2 w-1 bg-gradient-to-b from-transparent via-white/80 to-transparent z-10" />
       </div>
 
-      {firstServe && (
-        <div className="absolute bottom-4 left-4 z-40">
-          <div className="bg-yellow-400 text-yellow-950 text-[10px] font-black px-3 py-1 rounded-lg shadow-lg animate-pulse">
-            LƯỢT PHÁT ĐẦU (0-0-2)
-          </div>
+      {/* MATCH STATUS HEADER */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-8 bg-slate-900/80 backdrop-blur-2xl px-8 py-3 rounded-full border border-white/10 shadow-2xl">
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] font-black text-cyan-400 tracking-widest uppercase">Team 01</span>
+          <span className="text-3xl font-black text-white italic">{score1}</span>
         </div>
+        <div className="h-10 w-px bg-white/10" />
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] font-black text-rose-500 tracking-widest uppercase">Team 02</span>
+          <span className="text-3xl font-black text-white italic">{score2}</span>
+        </div>
+      </div>
+
+      {/* BALL SYSTEM */}
+      {activeSrv && activeRcv && (
+        <Ball fromX={activeSrv.x} fromY={activeSrv.y} toX={activeRcv.x} toY={activeRcv.y} serverId={activeSrv.id} />
       )}
 
-      {/* Sử dụng activeServer và activeReceiver đã khai báo */}
-      {activeServer && activeReceiver && (
-        <Ball 
-          fromX={activeServer.x} fromY={activeServer.y} 
-          toX={activeReceiver.x} toY={activeReceiver.y} 
-          serverId={activeServer.id} 
-        />
-      )}
-
+      {/* ATHLETES */}
       {players.map((p) => (
         <motion.div
           key={p.id}
           className="absolute z-20"
           animate={{ left: p.x, top: p.y }}
-          transition={{ type: "spring", stiffness: 100, damping: 20 }}
+          transition={{ type: "spring", stiffness: 80, damping: 15 }}
           style={{ x: "-50%", y: "-50%" }}
         >
-          <PlayerMarker 
-            name={p.name}
-            isServing={p.isServing}
-            isReceiver={p.isReceiver}
-            slot={p.slot}
-            side={p.side}
-            compact={compact}
-          />
+          <PlayerMarker {...p} compact={compact} />
         </motion.div>
       ))}
 
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex bg-black/60 backdrop-blur px-5 py-2 rounded-2xl border border-white/10 gap-4">
-        <div className="text-center"><p className="text-[10px] text-blue-400 font-bold">T1</p><p className="text-xl font-black text-white">{score1}</p></div>
-        <div className="w-[1px] bg-white/20 self-stretch" />
-        <div className="text-center"><p className="text-[10px] text-red-400 font-bold">T2</p><p className="text-xl font-black text-white">{score2}</p></div>
+      {/* MATCH INFO FOOTER */}
+      <div className="absolute bottom-6 left-10 flex items-center gap-3">
+        {firstServe && (
+          <div className="bg-[#ccff00] text-black px-4 py-1 rounded-sm font-black text-[10px] italic shadow-lg">
+            FIRST SERVE 0-0-2
+          </div>
+        )}
+        <div className="bg-white/5 backdrop-blur px-4 py-1 rounded-sm border border-white/10 text-white/40 font-black text-[10px] italic">
+          BMB CHAMPIONSHIP 2024
+        </div>
+      </div>
+
+      <div className="absolute bottom-6 right-10 flex items-center gap-2 opacity-30">
+        <Trophy className="w-4 h-4 text-white" />
+        <span className="text-white font-black italic text-sm tracking-tighter">LEADERBOARD</span>
       </div>
     </div>
   );
