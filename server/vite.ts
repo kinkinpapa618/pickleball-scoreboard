@@ -1,55 +1,62 @@
-import { type Express } from "express";
-import { createServer as createViteServer, createLogger } from "vite";
-import { type Server } from "http";
-import viteConfig from "../vite.config";
+import { Express, static as expressStatic } from "express";
 import fs from "fs";
-import path from "path";
-import { nanoid } from "nanoid";
-import { fileURLToPath } from 'url';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+import { type Server } from "http";
 
-const viteLogger = createLogger();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-export async function setupVite(server: Server, app: Express) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server, path: "/vite-hmr" },
-    allowedHosts: true as const,
-  };
+export function log(message: string) {
+  const time = new Date().toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  console.log(`[${time}] ${message}`);
+}
 
+export async function setupVite(app: Express, server: Server) {
+  const { createServer: createViteServer } = await import("vite");
   const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
-    server: serverOptions,
+    server: { middlewareMode: true, hmr: { server } },
     appType: "custom",
   });
 
   app.use(vite.middlewares);
 
-  app.use("/{*path}", async (req, res, next) => {
-    const url = req.originalUrl;
-
+  // Sử dụng app ở đây để bắt lỗi request không khớp
+  app.use("*", async (req, res, next) => {
     try {
-      const clientTemplate = path.resolve(__dirname, "..", "index.html");
-
-      // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+      const url = req.originalUrl;
+      const template = fs.readFileSync(
+        path.resolve(__dirname, "..", "client", "index.html"),
+        "utf-8",
       );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      const html = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(html);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
+  });
+}
+
+export function serveStatic(app: Express) {
+  const distPath = path.resolve(__dirname, "public");
+
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      "Could not find build directory. Run 'npm run build' first.",
+    );
+  }
+
+  // SỬA LỖI: Sử dụng 'app' để serve các file tĩnh từ thư mục dist
+  app.use(expressStatic(distPath));
+
+  // Trả về index.html cho mọi route không phải API (Single Page Application)
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

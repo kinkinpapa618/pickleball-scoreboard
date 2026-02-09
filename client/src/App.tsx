@@ -21,15 +21,15 @@ function Router() {
   );
 }
 
-    function App() {
-      return (
-      <TournamentProvider>
-        <QueryClientProvider client={queryClient}>
+function App() {
+  return (
+    <TournamentProvider>
+      <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
     </TournamentProvider>
   );
 }

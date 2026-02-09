@@ -1,101 +1,73 @@
 import type { Express } from "express";
-import type { Server } from "http";
+import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { api } from "@shared/routes";
-import { z } from "zod";
+import { insertMatchSchema, insertPlayerSchema } from "@shared/schema";
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express
-): Promise<Server> {
-  
-  // Players
-  app.get(api.players.list.path, async (req, res) => {
+export async function registerRoutes(app: Express): Promise<Server> {
+  // 1. Lấy danh sách người chơi
+  // Sửa lỗi: Thay 'req' bằng '_' để báo hiệu biến này không dùng đến
+  app.get("/api/players", async (_, res) => {
     const players = await storage.getPlayers();
     res.json(players);
   });
 
-  app.post(api.players.create.path, async (req, res) => {
-    try {
-      const input = api.players.create.input.parse(req.body);
-      const player = await storage.createPlayer(input);
-      res.status(201).json(player);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
-      }
-      throw err;
+  // 2. Tạo người chơi mới
+  app.post("/api/players", async (req, res) => {
+    const result = insertPlayerSchema.safeParse(req.body);
+    if (!result.success) {
+      return res
+        .status(400)
+        .json({ message: "Dữ liệu người chơi không hợp lệ" });
     }
+    const player = await storage.createPlayer(result.data);
+    res.json(player);
   });
 
-  // Matches
-  app.get(api.matches.list.path, async (req, res) => {
+  // 3. Lấy danh sách trận đấu
+  app.get("/api/matches", async (_, res) => {
     const matches = await storage.getMatches();
     res.json(matches);
   });
 
-  app.get(api.matches.get.path, async (req, res) => {
-    const id = parseInt(req.params.id);
+  // 4. Lấy chi tiết 1 trận đấu (Dành cho MatchView)
+  app.get("/api/matches/:id", async (req, res) => {
+    // Sửa lỗi ép kiểu: Đảm bảo id là string trước khi parseInt
+    const id = parseInt(req.params.id as string);
     const match = await storage.getMatch(id);
     if (!match) {
-      return res.status(404).json({ message: "Trận đấu không tồn tại" });
+      return res.status(404).json({ message: "Không tìm thấy trận đấu" });
     }
     res.json(match);
   });
 
-  app.patch(api.matches.update.path, async (req, res) => {
+  // 5. Cập nhật trận đấu (Dành cho Livestream/Scoreboard)
+  app.patch("/api/matches/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    // Dùng .partial() để cho phép gửi lên chỉ 1 vài trường cần update
+    const result = insertMatchSchema.partial().safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({ message: "Dữ liệu cập nhật không hợp lệ" });
+    }
+
     try {
-      const id = parseInt(req.params.id);
-      const input = api.matches.update.input.parse(req.body);
-      const match = await storage.updateMatch(id, input);
-      res.json(match);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
-      }
-      res.status(500).json({ message: err instanceof Error ? err.message : "Internal Server Error" });
+      const updated = await storage.updateMatch(id, result.data);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(404).json({ message: error.message });
     }
   });
 
-  app.post(api.matches.create.path, async (req, res) => {
-    try {
-      const input = api.matches.create.input.parse(req.body);
-      const match = await storage.createMatch(input);
-      res.status(201).json(match);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
-      }
-      throw err;
+  // 6. Tạo trận đấu mới
+  app.post("/api/matches", async (req, res) => {
+    const result = insertMatchSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: "Dữ liệu trận đấu không hợp lệ" });
     }
+    const match = await storage.createMatch(result.data);
+    res.json(match);
   });
 
-  // Seed default players if none exist
-  const existingPlayers = await storage.getPlayers();
-  if (existingPlayers.length === 0) {
-    console.log("Seeding default players...");
-    const seedPlayers = [
-      { name: "Mạnh" }, 
-      { name: "Thanh" }, 
-      { name: "Đạt" }, 
-      { name: "Thúy" },
-      { name: "Nam" },
-      { name: "Hương" }
-    ];
-    for (const p of seedPlayers) {
-      await storage.createPlayer(p);
-    }
-    console.log("Seeding complete.");
-  }
-
+  const httpServer = createServer(app);
   return httpServer;
 }

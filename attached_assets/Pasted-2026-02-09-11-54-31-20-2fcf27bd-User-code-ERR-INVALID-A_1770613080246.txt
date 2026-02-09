@@ -1,0 +1,160 @@
+2026-02-09 11:54:31.20
+2fcf27bd
+User
+code: 'ERR_INVALID_ARG_TYPE'
+2026-02-09 11:54:31.20
+2fcf27bd
+User
+at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-09 11:54:31.20
+2fcf27bd
+User
+}
+2026-02-09 11:54:31.20
+2fcf27bd
+User
+at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-09 11:54:31.20
+2fcf27bd
+User
+at fileURLToPath (node:internal/url:1487:11)
+2026-02-09 11:54:31.20
+2fcf27bd
+User
+at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-09 11:54:31.20
+2fcf27bd
+System
+command finished with error [node ./dist/index.cjs]: exit status 1
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+node:internal/url:1487
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+Node.js v20.20.0
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at Object. (/home/runner/workspace/dist/index.cjs:58:101957)
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+^
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+code: 'ERR_INVALID_ARG_TYPE'
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at fileURLToPath (node:internal/url:1487:11)
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+}
+2026-02-09 11:54:36.30
+2fcf27bd
+User
+at node:internal/main/run_main_module:28:49 {
+2026-02-09 11:54:36.30
+2fcf27bd
+System
+command finished with error [node ./dist/index.cjs]: exit status 1
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at Object. (/home/runner/workspace/dist/index.cjs:58:101957)
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+code: 'ERR_INVALID_ARG_TYPE'
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at node:internal/main/run_main_module:28:49 {
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+}
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+node:internal/url:1487
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+Node.js v20.20.0
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at fileURLToPath (node:internal/url:1487:11)
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
+2026-02-09 11:54:38.50
+2fcf27bd
+User
+^
+2026-02-09 11:54:38.51
+2fcf27bd
+System
+command finished with error [node ./dist/index.cjs]: exit status 1
+2026-02-09 11:54:43.41
+2fcf27bd
+System
+crash loop detected

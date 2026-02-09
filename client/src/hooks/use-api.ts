@@ -1,7 +1,12 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 // SỬA LỖI 1: Import đúng đường dẫn từ schema, không phải routes
-import { CreatePlayerRequest, CreateMatchRequest, InsertMatch, Match } from "@shared/schema";
+import {
+  CreatePlayerRequest,
+  CreateMatchRequest,
+  InsertMatch,
+  Match,
+} from "@shared/schema";
 
 // 1. Hook tạo Player
 export function useCreatePlayer() {
@@ -46,7 +51,13 @@ export function useUpdateMatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertMatch> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<InsertMatch>;
+    }) => {
       // Gọi method PATCH để cập nhật điểm số
       const res = await apiRequest("PATCH", `/api/matches/${id}`, data);
       return res.json();
@@ -58,6 +69,6 @@ export function useUpdateMatch() {
     },
     onError: (error) => {
       console.error("Lỗi cập nhật trận đấu:", error);
-    }
+    },
   });
 }
