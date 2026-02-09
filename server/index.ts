@@ -6,57 +6,43 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Middleware log request (Tùy chọn)
+// Middleware log request
 app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let resBody: any;
-
-  const oldJson = res.json;
-  res.json = (body) => {
-    resBody = body;
-    return oldJson.call(res, body);
-  };
-
   res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (resBody) {
-        logLine += ` :: ${JSON.stringify(resBody)}`;
-      }
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-      log(logLine);
+    if (req.path.startsWith("/api")) {
+      log(`${req.method} ${req.path} ${res.statusCode}`);
     }
   });
-
   next();
 });
 
 (async () => {
-  // 1. Đăng ký routes và nhận về HTTP Server
-  const server = await registerRoutes(app);
+  try {
+    // 1. Đăng ký các API Routes (Quan trọng: Phải chạy trước Vite)
+    const server = await registerRoutes(app);
 
-  // 2. Middleware xử lý lỗi
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-  });
+    // 2. Cấu hình giao diện (Vite cho dev, Static cho prod)
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
 
-  // 3. Cấu hình Vite hoặc Serve Static
-  if (app.get("env") === "development") {
-    // Truyền cả app và server vào setupVite
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+    // 3. Middleware xử lý lỗi tập trung (Đặt sau cùng)
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      // Log lỗi chi tiết ra console để dễ debug
+      if (status >= 500) console.error(err);
+      res.status(status).json({ message });
+    });
+
+    const PORT = 5000;
+    server.listen(PORT, "0.0.0.0", () => {
+      log(`Server đang chạy tại port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Lỗi khởi động server:", error);
+    process.exit(1);
   }
-
-  // 4. Lắng nghe trên cổng 5000
-  const PORT = 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
-  });
 })();
