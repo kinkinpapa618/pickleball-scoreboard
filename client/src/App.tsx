@@ -7,12 +7,15 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Match from "@/pages/Match";
 import { TournamentProvider } from "./context/TournamentContext";
+import MatchView from "@/pages/MatchView";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/match" component={Match} />
+      <Route path="/match-view/:id" component={MatchView} />
+
       <Route component={NotFound} />
     </Switch>
   );

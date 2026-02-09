@@ -37,6 +37,32 @@ export async function registerRoutes(
     res.json(matches);
   });
 
+  app.get(api.matches.get.path, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const match = await storage.getMatch(id);
+    if (!match) {
+      return res.status(404).json({ message: "Trận đấu không tồn tại" });
+    }
+    res.json(match);
+  });
+
+  app.patch(api.matches.update.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const input = api.matches.update.input.parse(req.body);
+      const match = await storage.updateMatch(id, input);
+      res.json(match);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      res.status(500).json({ message: err instanceof Error ? err.message : "Internal Server Error" });
+    }
+  });
+
   app.post(api.matches.create.path, async (req, res) => {
     try {
       const input = api.matches.create.input.parse(req.body);

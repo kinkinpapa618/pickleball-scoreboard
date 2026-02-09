@@ -50,6 +50,27 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    // === BỔ SUNG: Lấy chi tiết 1 trận đấu (Dùng cho MatchView Livestream) ===
+    get: {
+      method: 'GET' as const,
+      path: '/api/matches/:id',
+      responses: {
+        200: z.custom<typeof matches.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    // === BỔ SUNG: Cập nhật trận đấu (Dùng cho ScoreBoard cập nhật điểm/lượt giao) ===
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/matches/:id',
+      // Dùng .partial() để cho phép gửi lên chỉ 1 vài trường (ví dụ chỉ gửi điểm số)
+      input: insertMatchSchema.partial(), 
+      responses: {
+        200: z.custom<typeof matches.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
   }
 };
 

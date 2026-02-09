@@ -16,18 +16,24 @@ export const matches = pgTable("matches", {
   team1Player2: text("team1_player2").notNull(),
   team2Player1: text("team2_player1").notNull(),
   team2Player2: text("team2_player2").notNull(),
-  
-  scoreTeam1: integer("score_team1").notNull(),
-  scoreTeam2: integer("score_team2").notNull(),
-  
+
+  scoreTeam1: integer("score_team1").notNull().default(0),
+  scoreTeam2: integer("score_team2").notNull().default(0),
+
+  // Trạng thái giao bóng cho Livestream
+  isServer1: boolean("is_server1").default(false).notNull(),
+  isServer2: boolean("is_server2").default(false).notNull(),
+  serverNumber: integer("server_number").default(1).notNull(), // 1 hoặc 2
+
   winningScore: integer("winning_score").notNull(),
   winnerTeam: integer("winner_team"),
-  
+
   date: timestamp("date").defaultNow(),
 });
 
 // === SCHEMAS ===
 export const insertPlayerSchema = createInsertSchema(players).omit({ id: true, totalMatches: true, wins: true });
+// Lưu ý: Cho phép insertMatchSchema bao gồm cả trạng thái giao bóng
 export const insertMatchSchema = createInsertSchema(matches).omit({ id: true, date: true });
 
 // === TYPES ===

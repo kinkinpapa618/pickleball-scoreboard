@@ -1,62 +1,63 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type CreatePlayerRequest, type CreateMatchRequest } from "@shared/routes";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+// SỬA LỖI 1: Import đúng đường dẫn từ schema, không phải routes
+import { CreatePlayerRequest, CreateMatchRequest, InsertMatch, Match } from "@shared/schema";
 
-// Players Hooks
-export function usePlayers() {
-  return useQuery({
-    queryKey: [api.players.list.path],
-    queryFn: async () => {
-      const res = await fetch(api.players.list.path);
-      if (!res.ok) throw new Error("Failed to fetch players");
-      return api.players.list.responses[200].parse(await res.json());
-    },
-  });
-}
-
+// 1. Hook tạo Player
 export function useCreatePlayer() {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (data: CreatePlayerRequest) => {
-      const res = await fetch(api.players.create.path, {
-        method: api.players.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed to create player");
-      return api.players.create.responses[201].parse(await res.json());
+    mutationFn: async (player: CreatePlayerRequest) => {
+      const res = await apiRequest("POST", "/api/players", player);
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.players.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/players"] });
     },
   });
 }
 
-// Matches Hooks
-export function useMatches() {
+// 2. Hook lấy danh sách Players
+export function usePlayers() {
   return useQuery({
-    queryKey: [api.matches.list.path],
-    queryFn: async () => {
-      const res = await fetch(api.matches.list.path);
-      if (!res.ok) throw new Error("Failed to fetch matches");
-      return api.matches.list.responses[200].parse(await res.json());
-    },
+    queryKey: ["/api/players"],
   });
 }
 
+// 3. Hook tạo Match mới
 export function useCreateMatch() {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (data: CreateMatchRequest) => {
-      const res = await fetch(api.matches.create.path, {
-        method: api.matches.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed to save match");
-      return api.matches.create.responses[201].parse(await res.json());
+    mutationFn: async (match: CreateMatchRequest) => {
+      const res = await apiRequest("POST", "/api/matches", match);
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.matches.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },
+  });
+}
+
+// 4. Hook cập nhật Match (Dùng cho Livestream / Scoreboard)
+// SỬA LỖI 2: Đã thêm export function này và sửa lỗi duplicate import
+export function useUpdateMatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertMatch> }) => {
+      // Gọi method PATCH để cập nhật điểm số
+      const res = await apiRequest("PATCH", `/api/matches/${id}`, data);
+      return res.json();
+    },
+    onSuccess: (data: Match) => {
+      // Cập nhật lại cache để giao diện MatchView tự động nhận điểm mới
+      queryClient.invalidateQueries({ queryKey: [`/api/matches/${data.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+    },
+    onError: (error) => {
+      console.error("Lỗi cập nhật trận đấu:", error);
+    }
   });
 }
