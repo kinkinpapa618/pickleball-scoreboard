@@ -16,10 +16,8 @@ export async function setupVite(app: Express, server: Server) {
 
   app.use(vite.middlewares);
 
-  // Dùng Regex để tránh lỗi PathError và catch-all route
   app.get(/^((?!\/api).)*$/, async (req, res, next) => {
     try {
-      // Đường dẫn file index.html chuẩn từ gốc dự án
       const templatePath = path.resolve(process.cwd(), "client", "index.html");
       const template = fs.readFileSync(templatePath, "utf-8");
       const html = await vite.transformIndexHtml(req.originalUrl, template);
@@ -31,11 +29,20 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(process.cwd(), "dist", "public");
-  if (fs.existsSync(distPath)) {
+  // Dựa trên kết quả 'ls -R dist' của bạn:
+  const distPath = path.resolve(process.cwd(), "dist");
+
+  if (fs.existsSync(path.resolve(distPath, "index.html"))) {
+    // 1. Phục vụ các file tĩnh trong thư mục dist (js, css, v.v.)
     app.use(expressStatic(distPath));
-    app.get(/^((?!\/api).)*$/, (_req, res) =>
-      res.sendFile(path.resolve(distPath, "index.html")),
-    );
+
+    // 2. Với mọi request không phải API, trả về file index.html
+    app.get(/^((?!\/api).)*$/, (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
+
+    log("Server: Đang chạy giao diện từ thư mục dist");
+  } else {
+    log("Server: LỖI! Không tìm thấy dist/index.html");
   }
 }

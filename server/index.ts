@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -18,24 +19,22 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    // 1. Đăng ký các API Routes (Quan trọng: Phải chạy trước Vite)
+    // 1. Đăng ký API routes
     const server = await registerRoutes(app);
 
-    // 2. Cấu hình giao diện (Vite cho dev, Static cho prod)
-    if (app.get("env") === "development") {
+    // 2. Xử lý lỗi tập trung
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+    });
+
+    // 3. Cấu hình giao diện (Sửa lỗi logic try-catch ở đây)
+    if (process.env.NODE_ENV !== "production") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
-
-    // 3. Middleware xử lý lỗi tập trung (Đặt sau cùng)
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      // Log lỗi chi tiết ra console để dễ debug
-      if (status >= 500) console.error(err);
-      res.status(status).json({ message });
-    });
 
     const PORT = 5000;
     server.listen(PORT, "0.0.0.0", () => {
@@ -45,4 +44,5 @@ app.use((req, res, next) => {
     console.error("Lỗi khởi động server:", error);
     process.exit(1);
   }
+  
 })();
