@@ -1,4 +1,11 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -25,6 +32,9 @@ export const matches = pgTable("matches", {
   isServer2: boolean("is_server2").default(false).notNull(),
   serverNumber: integer("server_number").default(1).notNull(), // 1 hoặc 2
 
+  // TRẠNG THÁI TRẬN ĐẤU: 'live' hoặc 'finished'
+  status: text("status").notNull().default("live"),
+
   winningScore: integer("winning_score").notNull(),
   winnerTeam: integer("winner_team"),
 
@@ -32,9 +42,16 @@ export const matches = pgTable("matches", {
 });
 
 // === SCHEMAS ===
-export const insertPlayerSchema = createInsertSchema(players).omit({ id: true, totalMatches: true, wins: true });
-// Lưu ý: Cho phép insertMatchSchema bao gồm cả trạng thái giao bóng
-export const insertMatchSchema = createInsertSchema(matches).omit({ id: true, date: true });
+export const insertPlayerSchema = createInsertSchema(players).omit({
+  id: true,
+  totalMatches: true,
+  wins: true,
+});
+
+// Sửa insertMatchSchema: Đảm bảo có thể nhận ID và status khi tạo hoặc cập nhật
+export const insertMatchSchema = createInsertSchema(matches).omit({
+  date: true,
+});
 
 // === TYPES ===
 export type Player = typeof players.$inferSelect;

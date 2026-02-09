@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-// SỬA LỖI 1: Import đúng đường dẫn từ schema, không phải routes
 import {
   CreatePlayerRequest,
   CreateMatchRequest,
@@ -8,32 +7,34 @@ import {
   Match,
 } from "@shared/schema";
 
-// 1. Hook tạo Player
-export function useCreatePlayer() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (player: CreatePlayerRequest) => {
-      const res = await apiRequest("POST", "/api/players", player);
+// Lấy danh sách trận đấu có phân trang
+export function useMatches(page: number = 1) {
+  return useQuery<Match[]>({
+    queryKey: ["/api/matches", page],
+    queryFn: async () => {
+      const res = await fetch(`/api/matches?page=${page}`);
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+    refetchInterval: 5000, // Tự động cập nhật danh sách mỗi 5s
+  });
+}
+
+// Lấy chi tiết 1 trận đấu (Dùng cho MatchView)
+export function useMatch(id: number) {
+  return useQuery<Match>({
+    queryKey: [`/api/matches/${id}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/matches/${id}`);
+      return res.json();
     },
+    refetchInterval: 1000, // Cập nhật realtime mỗi 1s cho Livestream
+    enabled: !!id,
   });
 }
 
-// 2. Hook lấy danh sách Players
-export function usePlayers() {
-  return useQuery({
-    queryKey: ["/api/players"],
-  });
-}
-
-// 3. Hook tạo Match mới
+// Tạo trận đấu mới
 export function useCreateMatch() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (match: CreateMatchRequest) => {
       const res = await apiRequest("POST", "/api/matches", match);
@@ -45,11 +46,9 @@ export function useCreateMatch() {
   });
 }
 
-// 4. Hook cập nhật Match (Dùng cho Livestream / Scoreboard)
-// SỬA LỖI 2: Đã thêm export function này và sửa lỗi duplicate import
+// Cập nhật điểm số/trạng thái trận đấu
 export function useUpdateMatch() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       id,
@@ -58,17 +57,12 @@ export function useUpdateMatch() {
       id: number;
       data: Partial<InsertMatch>;
     }) => {
-      // Gọi method PATCH để cập nhật điểm số
       const res = await apiRequest("PATCH", `/api/matches/${id}`, data);
       return res.json();
     },
     onSuccess: (data: Match) => {
-      // Cập nhật lại cache để giao diện MatchView tự động nhận điểm mới
       queryClient.invalidateQueries({ queryKey: [`/api/matches/${data.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
-    },
-    onError: (error) => {
-      console.error("Lỗi cập nhật trận đấu:", error);
     },
   });
 }

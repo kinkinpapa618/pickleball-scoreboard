@@ -25,6 +25,14 @@ export class DatabaseStorage implements IStorage {
   async getPlayers(): Promise<Player[]> {
     return await db.select().from(players);
   }
+  async getMatchesPaginated(limit: number, offset: number): Promise<Match[]> {
+    return await db
+      .select()
+      .from(matches)
+      .orderBy(desc(matches.date))
+      .limit(limit)
+      .offset(offset);
+  }
 
   async createPlayer(insertPlayer: InsertPlayer): Promise<Player> {
     const [player] = await db
