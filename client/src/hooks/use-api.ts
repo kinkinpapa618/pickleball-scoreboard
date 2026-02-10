@@ -1,15 +1,10 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import {
-  CreatePlayerRequest,
-  CreateMatchRequest,
-  InsertMatch,
-  Match,
-} from "@shared/schema";
+import * as schema from "@shared/schema";
 
 // Lấy danh sách trận đấu có phân trang
 export function useMatches(page: number = 1) {
-  return useQuery<Match[]>({
+  return useQuery<schema.Match[]>({
     queryKey: ["/api/matches", page],
     queryFn: async () => {
       const res = await fetch(`/api/matches?page=${page}`);
@@ -21,7 +16,7 @@ export function useMatches(page: number = 1) {
 
 // Lấy chi tiết 1 trận đấu (Dùng cho MatchView)
 export function useMatch(id: number) {
-  return useQuery<Match>({
+  return useQuery<schema.Match>({
     queryKey: [`/api/matches/${id}`],
     queryFn: async () => {
       const res = await fetch(`/api/matches/${id}`);
@@ -36,7 +31,7 @@ export function useMatch(id: number) {
 export function useCreateMatch() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (match: CreateMatchRequest) => {
+    mutationFn: async (match: schema.CreateMatchRequest) => {
       const res = await apiRequest("POST", "/api/matches", match);
       return res.json();
     },
@@ -55,12 +50,12 @@ export function useUpdateMatch() {
       data,
     }: {
       id: number;
-      data: Partial<InsertMatch>;
+      data: Partial<schema.InsertMatch>;
     }) => {
       const res = await apiRequest("PATCH", `/api/matches/${id}`, data);
       return res.json();
     },
-    onSuccess: (data: Match) => {
+    onSuccess: (data: schema.Match) => {
       queryClient.invalidateQueries({ queryKey: [`/api/matches/${data.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },

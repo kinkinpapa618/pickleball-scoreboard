@@ -6,12 +6,13 @@ import { Card } from "@/components/ui/card";
 import { Trophy, LogOut, Zap } from "lucide-react";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Match() {
   const search = useSearch();
   const [, setLocation] = useLocation();
   const params = new URLSearchParams(search);
-  const matchId = params.get("matchId");
+  const matchId = params.get("matchId") || params.get("id");
   const updateMatch = useUpdateMatch();
 
   // Khởi tạo state
@@ -29,7 +30,7 @@ export default function Match() {
 
   // 1. Tự động cập nhật Database mỗi khi điểm số hoặc lượt giao thay đổi
   useEffect(() => {
-    if (matchId && !winner) {
+    if (matchId && !isNaN(parseInt(matchId)) && !winner) {
       updateMatch.mutate({
         id: parseInt(matchId),
         data: {
@@ -43,6 +44,29 @@ export default function Match() {
       });
     }
   }, [score1, score2, server, serverNum, matchId, winner]);
+  useEffect(() => {
+    // Nếu có đủ tên người chơi nhưng chưa có ID trận đấu
+    if (!matchId && t1p1 !== "Player 1" && t2p1 !== "Player 3") {
+      const createNewMatch = async () => {
+        try {
+          const res = await apiRequest("POST", "/api/matches", {
+            team1Player1: t1p1,
+            team1Player2: t1p2 !== "Player 2" ? t1p2 : "",
+            team2Player1: t2p1,
+            team2Player2: t2p2 !== "Player 4" ? t2p2 : "",
+            winningScore: winScore,
+            status: "live",
+          });
+          const data = await res.json();
+          // Chuyển hướng sang link có ID chính thức để đồng bộ real-time
+          setLocation(`/match?id=${data.id}`);
+        } catch (err) {
+          console.error("Không thể tạo trận đấu:", err);
+        }
+      };
+      createNewMatch();
+    }
+  }, [matchId, t1p1, t2p1]);
 
   // 2. Phím tắt bàn phím (1: Team 1, 2: Team 2, S: Đổi lượt, T: Đổi Team giao)
   useEffect(() => {

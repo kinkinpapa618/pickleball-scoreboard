@@ -163,7 +163,7 @@ export function Court({ positions, serverTeam, names, score1, score2, serverHand
           </div>
         )}
         <div className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-white font-black text-[9px] italic border border-white/20">
-          PRO SERIES 2026
+          <Trophy className="w-6 h-6 text-yellow-500" />PRO SERIES 2026 
         </div>
       </div>
     </div>

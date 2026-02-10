@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Coins, RotateCw } from "lucide-react";
+import * as lucideReact from "lucide-react";
 
 interface CoinTossModalProps {
   open: boolean;
@@ -72,7 +72,7 @@ export function CoinTossModal({
               onClick={handleToss}
               className="bg-[#ccff00] text-black font-black italic w-full rounded-xl"
             >
-              <Coins className="w-4 h-4 mr-2" /> TUNG XU
+              <lucideReact.Coins className="w-4 h-4 mr-2" /> TUNG XU
             </Button>
           )}
 
@@ -90,13 +90,14 @@ export function CoinTossModal({
                   onClick={() => onComplete(result, "serve")}
                   className="bg-white/5 border border-white/10 hover:bg-[#ccff00] hover:text-black text-[10px] font-black italic rounded-xl py-6"
                 >
-                  GIAO BÓNG
+                  BÓNG
                 </Button>
+
                 <Button
                   onClick={() => onComplete(result, "side")}
                   className="bg-white/5 border border-white/10 hover:bg-[#ccff00] hover:text-black text-[10px] font-black italic rounded-xl py-6"
                 >
-                  CHỌN SÂN
+                  SÂN
                 </Button>
               </div>
             </motion.div>
