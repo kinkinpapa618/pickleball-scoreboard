@@ -4,16 +4,14 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
-  root: path.resolve(__dirname, "client"),
+  server: {
+    host: "0.0.0.0", // Cho phép truy cập từ bên ngoài
+    port: 5173, // Cổng mặc định của Vite
+    allowedHosts: true, // CHÈN DÒNG NÀY: Cho phép tất cả các host của Replit
+  },
   resolve: {
     alias: {
-      // Định nghĩa @ trỏ về thư mục src
-      "@": path.resolve(__dirname, "client/src"),
-      "@shared": path.resolve(__dirname, "shared"),
+      "@": path.resolve(__dirname, "./client/src"),
     },
-  },
-  build: {
-    outDir: path.resolve(__dirname, "dist/public"),
-    emptyOutDir: true,
   },
 });
