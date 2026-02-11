@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import * as schema from "@shared/schema";
 
-// Lấy danh sách trận đấu
+// 1. Lấy danh sách trận đấu
 export function useMatches(page: number = 1) {
   return useQuery<schema.Match[]>({
     queryKey: ["/api/matches", page],
@@ -10,11 +10,11 @@ export function useMatches(page: number = 1) {
       const res = await fetch(`/api/matches?page=${page}`);
       return res.json();
     },
-    refetchInterval: 3000, // Cập nhật danh sách mỗi 3s
+    refetchInterval: 3000,
   });
 }
 
-// Lấy chi tiết 1 trận đấu (Dùng cho cả Trọng tài và Người xem)
+// 2. Lấy chi tiết 1 trận đấu
 export function useMatch(id: number) {
   return useQuery<schema.Match>({
     queryKey: [`/api/matches/${id}`],
@@ -23,11 +23,12 @@ export function useMatch(id: number) {
       if (!res.ok) throw new Error("Match not found");
       return res.json();
     },
-    refetchInterval: 1000, // Cập nhật realtime mỗi 1s
+    refetchInterval: 1000,
     enabled: !!id,
   });
 }
 
+// 3. Tạo trận đấu mới (Cần thiết cho Home.tsx để hết lỗi Ln 18)
 export function useCreateMatch() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -41,6 +42,7 @@ export function useCreateMatch() {
   });
 }
 
+// 4. Cập nhật trận đấu (Dùng để đồng bộ điểm real-time)
 export function useUpdateMatch() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -54,8 +56,7 @@ export function useUpdateMatch() {
       const res = await apiRequest("PATCH", `/api/matches/${id}`, data);
       return res.json();
     },
-    onSuccess: (data) => {
-      // Ép các query liên quan phải tải lại dữ liệu mới nhất ngay lập tức
+    onSuccess: (data: schema.Match) => {
       queryClient.invalidateQueries({ queryKey: [`/api/matches/${data.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },

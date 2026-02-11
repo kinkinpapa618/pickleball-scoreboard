@@ -1,90 +1,245 @@
-import { useParams } from "wouter";
-import { useMatch } from "@/hooks/use-api";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
+import { useLocation } from "wouter";
+import { useGameLogic } from "@/hooks/use-game-logic";
+import { useUpdateMatch } from "@/hooks/use-api";
+import { ScoreBoard } from "@/components/ScoreBoard";
+import { Court, StackingMap } from "@/components/Court";
+import { Button } from "@/components/ui/button";
+import {
+  Trophy,
+  CheckCircle2,
+  AlertOctagon,
+  Undo2,
+  Home,
+  Layers,
+  Lock,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogHeader,
+} from "@/components/ui/dialog";
+import confetti from "canvas-confetti";
+import { motion } from "framer-motion";
 
-export default function MatchView() {
-  const { id } = useParams();
-  const { data: match } = useMatch(parseInt(id || "0"));
+export default function Match() {
+  const [, setLocation] = useLocation();
+  const search = new URLSearchParams(window.location.search);
 
-  if (!match) return null;
+  const matchId = parseInt(search.get("id") || "0");
+  const names = {
+    t1p1: search.get("t1p1") || "P1",
+    t1p2: search.get("t1p2") || "P2",
+    t2p1: search.get("t2p1") || "P3",
+    t2p2: search.get("t2p2") || "P4",
+  };
+  const winningScore = parseInt(search.get("win") || "11");
+  const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
+
+  const { state, scorePoint, fault, undo } = useGameLogic(
+    winningScore,
+    initialServer,
+    names,
+  );
+  const updateMatch = useUpdateMatch();
+  const [saved, setSaved] = useState(false);
+  const [stackingMap, setStackingMap] = useState<StackingMap>({});
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+
+  // HÀM ĐỒNG BỘ: Map chuẩn xác sang Schema Database
+  const syncWithServer = useCallback(
+    (newState: any) => {
+      if (matchId > 0) {
+        updateMatch.mutate({
+          id: matchId,
+          data: {
+            scoreTeam1: newState.score1,
+            scoreTeam2: newState.score2,
+            isServer1: newState.serverTeam === 1,
+            isServer2: newState.serverTeam === 2,
+            // SỬA TẠI ĐÂY: Thay serverHand thành serverNumber để đúng với schema.ts
+            serverNumber: newState.serverHand,
+            status: newState.winner ? "finished" : "live",
+            winnerTeam: newState.winner || null,
+          },
+        });
+      }
+    },
+    [matchId, updateMatch],
+  );
+
+  useEffect(() => {
+    syncWithServer(state);
+    if (state.winner && !saved) {
+      confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+      setSaved(true);
+    }
+  }, [
+    state.score1,
+    state.score2,
+    state.serverTeam,
+    state.serverHand,
+    state.winner,
+    syncWithServer,
+    saved,
+    state,
+  ]);
+
+  const togglePlayerStacking = () => {
+    if (!selectedPlayer) return;
+    setStackingMap((prev) => {
+      const newMap = { ...prev };
+      if (newMap[selectedPlayer.id]) {
+        delete newMap[selectedPlayer.id];
+      } else {
+        const teammateId = selectedPlayer.id.endsWith("p1")
+          ? selectedPlayer.id.replace("p1", "p2")
+          : selectedPlayer.id.replace("p2", "p1");
+        delete newMap[teammateId];
+        newMap[selectedPlayer.id] = selectedPlayer.currentSide;
+      }
+      return newMap;
+    });
+    setSelectedPlayer(null);
+  };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-transparent font-sans p-10">
-      <div className="w-full max-w-4xl bg-black/80 backdrop-blur-md border-4 border-white/10 rounded-[40px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-        {/* Team 1 Row */}
-        <div
-          className={`flex items-center justify-between px-12 py-8 transition-colors duration-500 ${match.isServer1 ? "bg-[#ccff00]" : "bg-transparent"}`}
+    <div className="min-h-screen bg-[#050505] flex flex-col font-sans overflow-hidden">
+      <header className="px-4 py-3 bg-slate-900/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between sticky top-0 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/")}
+          className="text-white/40 hover:text-white"
         >
-          <div
-            className={`flex flex-col ${match.isServer1 ? "text-black" : "text-white"}`}
-          >
-            <span className="text-4xl font-black italic uppercase leading-tight">
-              {match.team1Player1}
-            </span>
-            <span className="text-4xl font-black italic uppercase leading-tight opacity-80">
-              {match.team1Player2}
-            </span>
-          </div>
-          <div className="flex items-center gap-8">
-            <div className="flex flex-col gap-2">
-              <div
-                className={`w-5 h-5 rounded-full ${match.isServer1 && match.serverNumber >= 1 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-white/10"}`}
-              />
-              <div
-                className={`w-5 h-5 rounded-full ${match.isServer1 && match.serverNumber === 2 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-white/10"}`}
-              />
-            </div>
-            <span
-              className={`text-9xl font-black italic tabular-nums ${match.isServer1 ? "text-black" : "text-[#ccff00]"}`}
-            >
-              {match.scoreTeam1}
+          <Home className="w-5 h-5" />
+        </Button>
+        <div className="flex items-center gap-3">
+          <div className="px-3 py-1 bg-black rounded-lg border border-white/10 flex items-center gap-2">
+            <div
+              className={`w-2 h-2 rounded-full animate-pulse ${state.serverTeam === 1 ? "bg-cyan-400" : "bg-rose-500"}`}
+            />
+            <span className="text-lg font-black italic text-white uppercase tracking-tighter">
+              {state.score1}-{state.score2}-{state.serverHand}
             </span>
           </div>
         </div>
-
-        <div className="h-[2px] bg-white/10 w-full" />
-
-        {/* Team 2 Row */}
-        <div
-          className={`flex items-center justify-between px-12 py-8 transition-colors duration-500 ${match.isServer2 ? "bg-[#ccff00]" : "bg-transparent"}`}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={undo}
+          disabled={state.gameHistory.length === 0}
+          className="text-white/40 hover:text-[#ccff00]"
         >
-          <div
-            className={`flex flex-col ${match.isServer2 ? "text-black" : "text-white"}`}
-          >
-            <span className="text-4xl font-black italic uppercase leading-tight">
-              {match.team2Player1}
-            </span>
-            <span className="text-4xl font-black italic uppercase leading-tight opacity-80">
-              {match.team2Player2}
-            </span>
-          </div>
-          <div className="flex items-center gap-8">
-            <div className="flex flex-col gap-2">
-              <div
-                className={`w-5 h-5 rounded-full ${match.isServer2 && match.serverNumber >= 1 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-white/10"}`}
-              />
-              <div
-                className={`w-5 h-5 rounded-full ${match.isServer2 && match.serverNumber === 2 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-white/10"}`}
-              />
-            </div>
-            <span
-              className={`text-9xl font-black italic tabular-nums ${match.isServer2 ? "text-black" : "text-[#ccff00]"}`}
-            >
-              {match.scoreTeam2}
-            </span>
-          </div>
-        </div>
-      </div>
+          <Undo2 className="w-5 h-5" />
+        </Button>
+      </header>
 
-      {/* LIVE TAG */}
-      {match.status === "live" && (
-        <div className="absolute top-10 right-10 flex items-center gap-3 bg-black/60 border border-yellow-500/50 px-6 py-2 rounded-full">
-          <div className="w-3 h-3 bg-red-600 rounded-full animate-ping" />
-          <span className="text-yellow-500 font-black italic tracking-widest text-xl animate-pulse">
-            LIVE
-          </span>
+      <main className="flex-1 flex flex-col p-4 space-y-4 max-w-3xl mx-auto w-full overflow-y-auto">
+        <div className="bg-slate-900/40 border border-white/5 rounded-3xl p-4 backdrop-blur-md">
+          <ScoreBoard
+            score1={state.score1}
+            score2={state.score2}
+            serverTeam={state.serverTeam}
+            serverHand={state.serverHand}
+            compact
+          />
         </div>
-      )}
+
+        <div className="flex-1 min-h-[300px] relative">
+          <Court
+            positions={state.positions}
+            serverTeam={state.serverTeam}
+            serverHand={state.serverHand}
+            names={names}
+            score1={state.score1}
+            score2={state.score2}
+            firstServe={(state as any).isFirstServe || false}
+            compact
+            stackingMap={stackingMap}
+            onPlayerClick={(id, _team, _name, currentSide) =>
+              setSelectedPlayer({ id, currentSide })
+            }
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 pb-8">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={scorePoint}
+            disabled={!!state.winner}
+            className="h-24 rounded-3xl bg-[#ccff00] flex flex-col items-center justify-center text-black shadow-lg"
+          >
+            <CheckCircle2 className="w-8 h-8 mb-1" />
+            <span className="text-xs font-black italic uppercase">
+              GHI ĐIỂM
+            </span>
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={fault}
+            disabled={!!state.winner}
+            className="h-24 rounded-3xl bg-slate-800 border border-white/10 flex flex-col items-center justify-center text-white"
+          >
+            <AlertOctagon className="w-8 h-8 mb-1 text-rose-500" />
+            <span className="text-xs font-black italic uppercase text-white/60">
+              LỖI / ĐỔI GIAO
+            </span>
+          </motion.button>
+        </div>
+      </main>
+
+      <Dialog
+        open={!!selectedPlayer}
+        onOpenChange={() => setSelectedPlayer(null)}
+      >
+        <DialogContent className="max-w-xs bg-slate-900 border-white/10 rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-white font-black italic text-xl uppercase tracking-tight">
+              Chiến thuật Stacking
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="bg-white/5 p-4 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Layers className="text-indigo-400 w-5 h-5" />
+                <span className="text-white font-bold text-sm">
+                  Cố định vị trí
+                </span>
+              </div>
+              <Button
+                onClick={togglePlayerStacking}
+                className="bg-[#ccff00] text-black font-bold h-8"
+              >
+                {selectedPlayer && stackingMap[selectedPlayer.id]
+                  ? "HỦY"
+                  : "KHÓA"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!state.winner}>
+        <DialogContent className="max-w-xs bg-slate-900 border-white/10 rounded-[2rem] p-8 text-center">
+          <Trophy className="w-16 h-16 text-[#ccff00] mb-4 mx-auto" />
+          <DialogTitle className="text-2xl font-black italic text-white uppercase mb-2">
+            Victory!
+          </DialogTitle>
+          <p
+            className={`text-xl font-black italic mb-6 ${state.winner === 1 ? "text-cyan-400" : "text-rose-500"}`}
+          >
+            TEAM {state.winner === 1 ? "01" : "02"}
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="w-full bg-[#ccff00] text-black font-black italic h-12 rounded-xl"
+          >
+            ĐẤU LẠI
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
