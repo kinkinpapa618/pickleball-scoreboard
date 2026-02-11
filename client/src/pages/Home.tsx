@@ -7,6 +7,7 @@ import {
   Coins,
   Users,
   Settings2,
+  Play,
   Eye,
   ChevronLeft,
   ChevronRight,
