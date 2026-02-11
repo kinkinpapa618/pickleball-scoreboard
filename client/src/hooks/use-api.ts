@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import * as schema from "@shared/schema";
 
-// Lấy danh sách trận đấu có phân trang
+// Lấy danh sách trận đấu
 export function useMatches(page: number = 1) {
   return useQuery<schema.Match[]>({
     queryKey: ["/api/matches", page],
@@ -10,24 +10,24 @@ export function useMatches(page: number = 1) {
       const res = await fetch(`/api/matches?page=${page}`);
       return res.json();
     },
-    refetchInterval: 5000, // Tự động cập nhật danh sách mỗi 5s
+    refetchInterval: 3000, // Cập nhật danh sách mỗi 3s
   });
 }
 
-// Lấy chi tiết 1 trận đấu (Dùng cho MatchView)
+// Lấy chi tiết 1 trận đấu (Dùng cho cả Trọng tài và Người xem)
 export function useMatch(id: number) {
   return useQuery<schema.Match>({
     queryKey: [`/api/matches/${id}`],
     queryFn: async () => {
       const res = await fetch(`/api/matches/${id}`);
+      if (!res.ok) throw new Error("Match not found");
       return res.json();
     },
-    refetchInterval: 1000, // Cập nhật realtime mỗi 1s cho Livestream
+    refetchInterval: 1000, // Cập nhật realtime mỗi 1s
     enabled: !!id,
   });
 }
 
-// Tạo trận đấu mới
 export function useCreateMatch() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -41,7 +41,6 @@ export function useCreateMatch() {
   });
 }
 
-// Cập nhật điểm số/trạng thái trận đấu
 export function useUpdateMatch() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -50,12 +49,13 @@ export function useUpdateMatch() {
       data,
     }: {
       id: number;
-      data: Partial<schema.InsertMatch>;
+      data: Partial<schema.Match>;
     }) => {
       const res = await apiRequest("PATCH", `/api/matches/${id}`, data);
       return res.json();
     },
-    onSuccess: (data: schema.Match) => {
+    onSuccess: (data) => {
+      // Ép các query liên quan phải tải lại dữ liệu mới nhất ngay lập tức
       queryClient.invalidateQueries({ queryKey: [`/api/matches/${data.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },
