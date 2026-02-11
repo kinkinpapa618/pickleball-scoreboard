@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useGameLogic } from "@/hooks/use-game-logic";
-import { useCreateMatch } from "@/hooks/use-api";
-import { ScoreBoard } from "@/components/ScoreBoard";
-import { Court, StackingMap } from "@/components/Court"; // Import Type mới
-import { Button } from "@/components/ui/button";
+import { useGameLogic } from "@/src/hooks/use-game-logic";
+import { useCreateMatch } from "@/src/hooks/use-api";
+import { ScoreBoard } from "@/src/components/ScoreBoard";
+import { Court, StackingMap } from "@/src/components/Court"; // Import Type mới
+import { Button } from "@/src/components/ui/button";
 import {
   RotateCcw,
   Trophy,
@@ -22,7 +22,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogHeader,
-} from "@/components/ui/dialog";
+} from "@/src/components/ui/dialog";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
 
@@ -330,7 +330,7 @@ export default function Match() {
                   >
                     <ShieldAlert className="w-4 h-4 text-yellow-500 group-hover:text-black" />
                     <span className="font-bold text-yellow-500 group-hover:text-black text-sm">
-                      Vàng
+                      THẺ VÀNG
                     </span>
                   </button>
                   <button
@@ -339,7 +339,7 @@ export default function Match() {
                   >
                     <ShieldAlert className="w-4 h-4 text-red-500 group-hover:text-white" />
                     <span className="font-bold text-red-500 group-hover:text-white text-sm">
-                      Đỏ
+                      THẺ ĐỎ
                     </span>
                   </button>
                 </div>

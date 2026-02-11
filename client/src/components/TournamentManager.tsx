@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/src/components/ui/card";
+import { Button } from "@/src/components/ui/button";
 import { Trophy, GitBranch, RotateCw, Layers, Play, Trash2, Download, AlertTriangle, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTournament } from "@/context/TournamentContext";
+import { useTournament } from "@/src/context/TournamentContext";
 
 // --- 1. ĐỊNH NGHĨA KIỂU DỮ LIỆU ---
 type Format = "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE";

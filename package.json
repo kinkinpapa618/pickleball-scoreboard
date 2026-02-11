@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --external:lightningcss --external:esbuild --external:pg-native",
+    "build": "vite build client",
+    "check-path": "ls client/index.html",
     "start": "NODE_ENV=production node dist/index.cjs"
   },
   "dependencies": {
@@ -34,7 +35,8 @@
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.6.1",
     "tailwindcss-animate": "^1.0.7",
-    "wouter": "^3.3.5"
+    "wouter": "^3.3.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",

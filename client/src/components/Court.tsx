@@ -1,13 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  User,
-  Zap,
-  ShieldCheck,
-  Trophy,
-  AlertTriangle,
-  Layers,
-  Lock,
-} from "lucide-react";
+import * as lucideReact from "lucide-react";
 
 type Position = "left" | "right";
 
@@ -125,18 +117,18 @@ function PlayerMarker({
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="absolute bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[8px] font-black italic tracking-tighter shadow-md whitespace-nowrap z-30"
+              className="absolute bg-green-400 text-black px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter shadow-md whitespace-nowrap z-30"
             >
-              <Zap className="w-2 h-2 inline mr-1 fill-current" />
+              <lucideReact.Zap className="w-2 h-2 inline mr-1 fill-current" />
               PHÁT
             </motion.div>
           ) : isReceiver && !collisionMode ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="absolute bg-slate-800 text-white px-2 py-0.5 rounded-full text-[8px] font-black italic tracking-tighter shadow-md whitespace-nowrap"
+              className="absolute bg-slate-800 text-white px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter shadow-md whitespace-nowrap"
             >
-              <ShieldCheck className="w-2 h-2 inline mr-1" />
+              <lucideReact.ShieldCheck className="w-2 h-2 inline mr-1" />
               ĐỠ
             </motion.div>
           ) : null}
@@ -148,7 +140,7 @@ function PlayerMarker({
         relative overflow-hidden transition-all duration-300
         ${sizeClass}
         rounded-2xl border-2 flex flex-col items-center justify-center
-        ${isServing ? "bg-white border-indigo-500 shadow-xl z-30" : "bg-white/90 backdrop-blur-md border-slate-200 shadow-md group-hover:border-[#ccff00]"}
+        ${isServing ? "bg-white border-green-400 shadow-xl z-30" : "bg-white/90 backdrop-blur-md border-slate-200 shadow-md group-hover:border-[#ccff00]"}
         ${penalty?.red ? "border-red-600 grayscale opacity-60" : ""}
         ${isStacking ? "ring-2 ring-offset-2 ring-[#ccff00] border-[#ccff00]" : ""}
       `}
@@ -163,7 +155,7 @@ function PlayerMarker({
         {/* Stacking Lock Icon */}
         {isStacking && (
           <div className="absolute top-0 right-0 p-1 bg-[#ccff00] rounded-bl-lg z-10">
-            <Lock className="w-2.5 h-2.5 text-black" />
+            <lucideReact.Lock className="w-2.5 h-2.5 text-black" />
           </div>
         )}
 
@@ -187,7 +179,7 @@ function PlayerMarker({
         <div
           className={`mb-1 p-1.5 rounded-full ${isServing ? "bg-indigo-50" : "bg-slate-50"}`}
         >
-          <User
+          <lucideReact.User
             className={`${compact ? "w-4 h-4" : "w-6 h-6"} ${isServing ? "text-indigo-600" : "text-slate-300"}`}
           />
         </div>
@@ -200,7 +192,7 @@ function PlayerMarker({
 
         {penalty?.red && (
           <div className="absolute inset-0 bg-red-900/10 flex items-center justify-center">
-            <AlertTriangle className="text-red-600 w-6 h-6 opacity-40" />
+            <lucideReact.AlertTriangle className="text-red-600 w-6 h-6 opacity-40" />
           </div>
         )}
       </div>
@@ -212,8 +204,6 @@ export function Court({
   positions,
   serverTeam,
   names,
-  score1,
-  score2,
   serverHand,
   firstServe,
   compact = false,
@@ -334,27 +324,6 @@ export function Court({
         <div className="absolute top-0 bottom-0 left-1/2 w-1.5 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)] z-10" />
       </div>
 
-      {/* Score Header */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 bg-white/90 backdrop-blur-xl px-6 py-2 rounded-full shadow-xl border border-white">
-        <div className="flex flex-col items-center">
-          <span className="text-[9px] font-black text-cyan-500 uppercase">
-            T1
-          </span>
-          <span className="text-3xl font-black text-slate-900 italic">
-            {score1}
-          </span>
-        </div>
-        <div className="h-8 w-px bg-slate-100" />
-        <div className="flex flex-col items-center">
-          <span className="text-[9px] font-black text-rose-500 uppercase">
-            T2
-          </span>
-          <span className="text-3xl font-black text-slate-900 italic">
-            {score2}
-          </span>
-        </div>
-      </div>
-
       {activeSrv && activeRcv && (
         <Ball
           fromX={activeSrv.x}
@@ -390,14 +359,15 @@ export function Court({
       ))}
 
       {/* Footer Info */}
-      <div className="absolute bottom-6 left-8 flex items-center gap-3">
+      <div className="absolute bottom-1/5 left-3 flex items-center gap-3">
         {firstServe && (
           <div className="bg-[#ccff00] text-black px-4 py-1 rounded-full font-black text-[9px] italic shadow-md animate-bounce">
             BẮT ĐẦU: 0-0-2
           </div>
         )}
         <div className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-white font-black text-[9px] italic border border-white/20 flex items-center gap-2">
-          <Trophy className="w-3 h-3 text-yellow-500" /> PRO SERIES 2026
+          <lucideReact.Trophy className="w-3 h-3 text-yellow-300" /> TRỌNG TÀI
+          SỐ - Scoreboard 1.0
         </div>
       </div>
     </div>

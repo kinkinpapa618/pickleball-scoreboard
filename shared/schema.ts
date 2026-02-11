@@ -32,6 +32,8 @@ export const matches = pgTable("matches", {
   isServer2: boolean("is_server2").default(false).notNull(),
   serverNumber: integer("server_number").default(1).notNull(), // 1 hoặc 2
 
+  //
+
   // TRẠNG THÁI TRẬN ĐẤU: 'live' hoặc 'finished'
   status: text("status").notNull().default("live"),
 
@@ -62,3 +64,13 @@ export type InsertMatch = z.infer<typeof insertMatchSchema>;
 // Request types
 export type CreatePlayerRequest = InsertPlayer;
 export type CreateMatchRequest = InsertMatch;
+
+export interface TournamentGroup {
+  name: string;
+  players: string[];
+  matches: {
+    home: string;
+    away: string;
+    status: "pending" | "completed";
+  }[];
+}
