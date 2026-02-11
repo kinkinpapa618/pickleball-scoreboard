@@ -1,14 +1,14 @@
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/src/lib/queryClient";
-import { Toaster } from "@/src/components/ui/toaster";
-import { BottomNav } from "@/src/components/BottomNav";
+import { queryClient } from "@/lib/queryClient";
+import { Toaster } from "@/components/ui/toaster";
+import { BottomNav } from "@/components/BottomNav";
 
-import Home from "@/src/pages/Home";
-import RefereeTools from "@/src/pages/RefereeTools";
-import Match from "@/src/pages/Match";
-import Profile from "@/src/pages/Profile";
-import NotFound from "@/src/pages/not-found";
+import Home from "@/pages/Home";
+import RefereeTools from "@/pages/RefereeTools";
+import Match from "@/pages/Match";
+import Profile from "@/pages/Profile";
+import NotFound from "@/pages/not-found";
 
 function Router() {
   return (

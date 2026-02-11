@@ -4,14 +4,22 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    host: "0.0.0.0", // Cho phép truy cập từ bên ngoài
-    port: 5173, // Cổng mặc định của Vite
-    allowedHosts: true, // CHÈN DÒNG NÀY: Cho phép tất cả các host của Replit
-  },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./client"),
+      "@": path.resolve(__dirname, "./client/src"),
+      "@shared": path.resolve(__dirname, "./shared"),
+    },
+  },
+  server: {
+    // THÊM ĐOẠN NÀY
+    allowedHosts: [
+      "c5005ad0-0dc6-4ff6-8d22-db187a37122b-00-38vfydfxnnakc.picard.replit.dev",
+    ],
+    // HOẶC dùng cách này để cho phép tất cả các host trên Replit:
+    // allowedHosts: true,
+
+    hmr: {
+      clientPort: 443,
     },
   },
 });

@@ -4,8 +4,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/src/components/ui/dialog";
-import { Button } from "@/src/components/ui/button";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import * as lucideReact from "lucide-react";
 

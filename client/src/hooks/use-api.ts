@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/src/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import * as schema from "@shared/schema";
 
 // Lấy danh sách trận đấu

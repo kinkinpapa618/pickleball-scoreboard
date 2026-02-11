@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useGameLogic } from "@/src/hooks/use-game-logic";
-import { useCreateMatch } from "@/src/hooks/use-api";
-import { ScoreBoard } from "@/src/components/ScoreBoard";
-import { Court, StackingMap } from "@/src/components/Court"; // Import Type mới
-import { Button } from "@/src/components/ui/button";
+import { useGameLogic } from "@/hooks/use-game-logic";
+import { useCreateMatch } from "@/hooks/use-api";
+import { ScoreBoard } from "@/components/ScoreBoard";
+import { Court, StackingMap } from "@/components/Court"; // Import Type mới
+import { Button } from "@/components/ui/button";
 import {
   RotateCcw,
   Trophy,
@@ -22,7 +22,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogHeader,
-} from "@/src/components/ui/dialog";
+} from "@/components/ui/dialog";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
 

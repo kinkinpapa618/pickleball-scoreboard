@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs";
-import { Input } from "@/src/components/ui/input";
-import { Button } from "@/src/components/ui/button";
-import { Label } from "@/src/components/ui/label";
-import { Card } from "@/src/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import {
   Play,
   History,
@@ -21,10 +21,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCreateMatch, useMatches } from "@/src/hooks/use-api";
-import { ExcelUpload } from "@/src/components/ExcelUpload";
-import { CoinTossModal } from "@/src/components/CoinTossModal";
-import { generateGroups } from "@/src/lib/tournament";
+import { useCreateMatch, useMatches } from "@/hooks/use-api";
+import { ExcelUpload } from "@/components/ExcelUpload";
+import { CoinTossModal } from "@/components/CoinTossModal";
+import { generateGroups } from "@/lib/tournament";
 
 export default function Home() {
   const [, setLocation] = useLocation();

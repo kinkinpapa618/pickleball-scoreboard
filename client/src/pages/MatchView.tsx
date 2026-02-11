@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useMatch } from "@/src/hooks/use-api";
+import { useMatch } from "@/hooks/use-api";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function MatchView() {

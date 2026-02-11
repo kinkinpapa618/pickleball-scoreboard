@@ -1,7 +1,7 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import { FileSpreadsheet, AlertCircle } from "lucide-react"; // Đã xóa FileUp
-import { Button } from "@/src/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 interface ExcelUploadProps {
   onDataLoaded: (players: string[]) => void;

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "build": "vite build client",
+    "build": "vite build",
     "check-path": "ls client/index.html",
     "start": "NODE_ENV=production node dist/index.cjs"
   },

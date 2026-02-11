@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/src/components/ui/button";
-import { Card } from "@/src/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import * as lucideReact from "lucide-react";
-import { CoinTossModal } from "@/src/components/CoinTossModal";
+import { CoinTossModal } from "@/components/CoinTossModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCreateMatch, useMatches } from "@/src/hooks/use-api";
+import { useCreateMatch, useMatches } from "@/hooks/use-api";
 
 export default function Home() {
   const [, setLocation] = useLocation();
