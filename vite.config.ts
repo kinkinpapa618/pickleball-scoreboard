@@ -7,6 +7,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
+  server: {
+    // THÊM ĐOẠN NÀY
+    allowedHosts: [
+      "c5005ad0-0dc6-4ff6-8d22-db187a37122b-00-38vfydfxnnakc.picard.replit.dev",
+    ],
+    // HOẶC dùng cách này để cho phép tất cả các host trên Replit:
+    // allowedHosts: true,
+  },
   plugins: [react()],
   // 1. Chỉ định root là thư mục client
   root: path.resolve(__dirname, "client"),
