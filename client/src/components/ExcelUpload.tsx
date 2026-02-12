@@ -1,6 +1,6 @@
 import { useState } from "react";
-import * as XLSX from "xlsx";
-import { FileSpreadsheet, AlertCircle } from "lucide-react"; // Đã xóa FileUp
+import ExcelJS from "exceljs";
+import { FileSpreadsheet, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ExcelUploadProps {
@@ -18,35 +18,30 @@ export function ExcelUpload({ onDataLoaded }: ExcelUploadProps) {
     setFileName(file.name);
     setError(null);
 
-    const [playerInput, setPlayerInput] = useState("");
-
-    const handleExcelData = (players: string[]) => {
-      // Nối danh sách từ Excel vào danh sách hiện tại
-      const newList = players.join("\n");
-      setPlayerInput(newList);
-    };
-
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = evt.target?.result;
-        // Sử dụng ArrayBuffer thay vì BinaryString để hết lỗi Deprecated
-        const wb = XLSX.read(data, { type: "array" });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
+        if (!data) throw new Error("No data");
 
-        const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(data as ArrayBuffer);
+        const worksheet = workbook.worksheets[0];
 
-        const players = jsonData
-          .flat()
-          .map((p) => String(p).trim())
-          .filter(
-            (p) =>
-              p !== "" &&
-              p !== "undefined" &&
-              p !== "null" &&
-              p !== "Họ và Tên",
-          );
+        const players: string[] = [];
+        worksheet.eachRow((row) => {
+          row.eachCell((cell) => {
+            const val = String(cell.value).trim();
+            if (
+              val !== "" &&
+              val !== "undefined" &&
+              val !== "null" &&
+              val !== "Họ và Tên"
+            ) {
+              players.push(val);
+            }
+          });
+        });
 
         if (players.length === 0) throw new Error("File trống!");
 
@@ -55,8 +50,26 @@ export function ExcelUpload({ onDataLoaded }: ExcelUploadProps) {
         setError("Không thể đọc file. Vui lòng thử lại.");
       }
     };
-    // Thay đổi phương thức đọc file tại đây
     reader.readAsArrayBuffer(file);
+  };
+
+  const handleDownloadTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("DanhSach");
+    worksheet.addRow(["Họ và Tên"]);
+    worksheet.addRow(["Nguyễn Văn A"]);
+    worksheet.addRow(["Trần Thị B"]);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Mau_Danh_Sach_VDV.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -67,6 +80,7 @@ export function ExcelUpload({ onDataLoaded }: ExcelUploadProps) {
           accept=".xlsx, .xls"
           onChange={handleFileUpload}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          data-testid="input-excel-upload"
         />
 
         <div className="space-y-4">
@@ -91,20 +105,11 @@ export function ExcelUpload({ onDataLoaded }: ExcelUploadProps) {
         </div>
       </div>
 
-      {/* Sửa variant="link" thành "ghost" + underline để hết lỗi type */}
       <Button
         variant="ghost"
         className="text-[10px] text-slate-500 uppercase font-black p-0 mt-2 h-auto hover:bg-transparent hover:text-[#ccff00] underline underline-offset-4"
-        onClick={() => {
-          const ws = XLSX.utils.aoa_to_sheet([
-            ["Họ và Tên"],
-            ["Nguyễn Văn A"],
-            ["Trần Thị B"],
-          ]);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, "DanhSach");
-          XLSX.writeFile(wb, "Mau_Danh_Sach_VDV.xlsx");
-        }}
+        onClick={handleDownloadTemplate}
+        data-testid="button-download-template"
       >
         Tải file Excel mẫu tại đây
       </Button>
