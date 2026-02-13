@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useGameLogic } from "@/hooks/use-game-logic";
-import { useCreateMatch } from "@/hooks/use-api";
+import { useCreateMatch, useUpdateMatch, useMatch } from "@/hooks/use-api";
 import { ScoreBoard } from "@/components/ScoreBoard";
-import { Court, StackingMap } from "@/components/Court"; // Import Type mới
+import { Court, StackingMap } from "@/components/Court";
 import { Button } from "@/components/ui/button";
 import {
   RotateCcw,
@@ -37,6 +37,7 @@ interface PenaltiesState {
 export default function Match() {
   const [, setLocation] = useLocation();
   const search = new URLSearchParams(window.location.search);
+  const matchId = parseInt(search.get("matchId") || "0");
 
   const names = {
     t1p1: search.get("t1p1") || "P1",
@@ -47,36 +48,61 @@ export default function Match() {
   const winningScore = parseInt(search.get("win") || "11");
   const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
 
-  const { state, scorePoint, fault, undo, getMatchData } = useGameLogic(
-    winningScore,
-    initialServer,
-    names,
-  );
+  const { state, scorePoint, fault, undo, getMatchData, resetState } =
+    useGameLogic(winningScore, initialServer, names);
+
   const createMatch = useCreateMatch();
+  const updateMatch = useUpdateMatch();
+  const { data: serverMatch } = useMatch(matchId);
   const [saved, setSaved] = useState(false);
 
-  // --- NEW STATE LOGIC ---
-  // StackingMap: "t1p1" -> "left" (Có nghĩa là t1p1 bị khóa ở cánh trái)
-  const [stackingMap, setStackingMap] = useState<StackingMap>({});
+  // --- KHÔI PHỤC ĐIỂM KHI VÀO TRẬN (nếu có matchId và đang live) ---
+  useEffect(() => {
+    if (serverMatch && serverMatch.status === "live" && !state.winner) {
+      if (
+        serverMatch.scoreTeam1 !== state.score1 ||
+        serverMatch.scoreTeam2 !== state.score2
+      ) {
+        resetState({
+          score1: serverMatch.scoreTeam1,
+          score2: serverMatch.scoreTeam2,
+        });
+      }
+    }
+  }, [serverMatch?.id, resetState]);
 
-  const [penalties, setPenalties] = useState<PenaltiesState>({
-    t1p1: { yellow: 0, red: false },
-    t1p2: { yellow: 0, red: false },
-    t2p1: { yellow: 0, red: false },
-    t2p2: { yellow: 0, red: false },
-  });
+  // --- XỬ LÝ GHI ĐIỂM + TỰ ĐỘNG LƯU SERVER ---
+  const handleScorePoint = () => {
+    scorePoint();
+    if (matchId > 0) {
+      const isTeam1Serving = state.serverTeam === 1;
+      updateMatch.mutate({
+        id: matchId,
+        data: {
+          scoreTeam1: isTeam1Serving ? state.score1 + 1 : state.score1,
+          scoreTeam2: !isTeam1Serving ? state.score2 + 1 : state.score2,
+          status: "live",
+        },
+      });
+    }
+  };
 
-  // State cho Modal (lưu thêm currentSide để biết đường lock)
-  const [selectedPlayer, setSelectedPlayer] = useState<{
-    id: string;
-    team: 1 | 2;
-    name: string;
-    currentSide: "left" | "right";
-  } | null>(null);
+  // --- XỬ LÝ LỖI/ĐỔI GIAO + TỰ ĐỘNG LƯU SERVER ---
+  const handleFault = () => {
+    fault();
+    if (matchId > 0) {
+      updateMatch.mutate({
+        id: matchId,
+        data: {
+          scoreTeam1: state.score1,
+          scoreTeam2: state.score2,
+          status: "live",
+        },
+      });
+    }
+  };
 
-  const isFirstServeActive =
-    (state as any).firstServe || (state as any).isFirstServe;
-
+  // --- XỬ LÝ KẾT THÚC TRẬN ĐẤU (tự động lưu) ---
   useEffect(() => {
     if (state.winner && !saved) {
       confetti({
@@ -85,32 +111,67 @@ export default function Match() {
         origin: { y: 0.6 },
         zIndex: 9999,
       });
-      const rawData = getMatchData();
-      if (rawData) {
-        createMatch.mutate({
-          team1Player1: names.t1p1,
-          team1Player2: names.t1p2,
-          team2Player1: names.t2p1,
-          team2Player2: names.t2p2,
-          winningScore,
-          scoreTeam1: state.score1,
-          scoreTeam2: state.score2,
-          winnerTeam: state.winner,
-          status: "finished",
+
+      if (matchId > 0) {
+        updateMatch.mutate({
+          id: matchId,
+          data: {
+            scoreTeam1: state.score1,
+            scoreTeam2: state.score2,
+            winnerTeam: state.winner,
+            status: "finished",
+          },
         });
-        setSaved(true);
+      } else {
+        // Nếu không có matchId (trận mới), tạo mới
+        const rawData = getMatchData();
+        if (rawData) {
+          createMatch.mutate({
+            team1Player1: names.t1p1,
+            team1Player2: names.t1p2,
+            team2Player1: names.t2p1,
+            team2Player2: names.t2p2,
+            winningScore: winningScore,
+            scoreTeam1: state.score1,
+            scoreTeam2: state.score2,
+            winnerTeam: state.winner,
+            status: "finished",
+            isServer1: false,
+            isServer2: false,
+            serverNumber: 1,
+          });
+        }
       }
+      setSaved(true);
     }
   }, [
     state.winner,
     saved,
-    getMatchData,
-    createMatch,
+    matchId,
     state.score1,
     state.score2,
     names,
     winningScore,
+    getMatchData,
+    createMatch,
+    updateMatch,
   ]);
+
+  // --- STACKING & PENALTIES (giữ nguyên từ code chính) ---
+  const [stackingMap, setStackingMap] = useState<StackingMap>({});
+  const [penalties, setPenalties] = useState<PenaltiesState>({
+    t1p1: { yellow: 0, red: false },
+    t1p2: { yellow: 0, red: false },
+    t2p1: { yellow: 0, red: false },
+    t2p2: { yellow: 0, red: false },
+  });
+
+  const [selectedPlayer, setSelectedPlayer] = useState<{
+    id: string;
+    team: 1 | 2;
+    name: string;
+    currentSide: "left" | "right";
+  } | null>(null);
 
   const giveCard = (playerKey: string, type: "yellow" | "red") => {
     setPenalties((prev) => {
@@ -130,27 +191,30 @@ export default function Match() {
 
   const handleForfeit = (loserKey: string) => {
     const winningTeam = loserKey.startsWith("t1") ? 2 : 1;
+    // Cập nhật winner trong state (có thể dùng resetState hoặc force)
+    // Ở đây ta tạm thời set winner bằng cách mutate state trực tiếp?
+    // Tốt nhất nên có hàm xử lý riêng trong gameLogic, nhưng tạm thời ta dùng cách này.
+    // Vì đây là demo, ta sẽ set winner qua một biến riêng?
+    // Thực tế, nên có action "forfeit" trong gameLogic. Nhưng để đơn giản, ta sẽ dùng một state phụ.
+    // Tôi sẽ thêm một useEffect theo dõi forfeit, nhưng để gọn, tôi tạm thời gán state.winner bằng cách clone?
+    // Không nên mutate state trực tiếp. Ta sẽ tạo một biến winner tạm và dùng nó để hiển thị modal.
+    // Cách tốt nhất: gọi một hàm từ gameLogic, nhưng hook chưa có. Tạm thời, ta dùng một state riêng.
+    // Ở đây, tôi sẽ giữ nguyên logic của code chính: gán (state as any).winner = winningTeam.
+    // Lưu ý: cách này không an toàn, nhưng để giữ đúng code chính.
     (state as any).winner = winningTeam;
   };
 
-  // --- LOGIC TOGGLE STACKING MỚI ---
   const togglePlayerStacking = () => {
     if (!selectedPlayer) return;
     const { id, team, currentSide } = selectedPlayer;
 
     setStackingMap((prev) => {
       const newMap = { ...prev };
-
-      // Nếu player này đang stacking -> Tắt
       if (newMap[id]) {
         delete newMap[id];
       } else {
-        // Nếu chưa stacking -> Bật
-        // 1. Tắt stacking của đồng đội (chỉ 1 người/team được stack)
         const teammateId = id === `t${team}p1` ? `t${team}p2` : `t${team}p1`;
         if (newMap[teammateId]) delete newMap[teammateId];
-
-        // 2. Gán vị trí hiện tại làm vị trí khóa
         newMap[id] = currentSide;
       }
       return newMap;
@@ -161,6 +225,8 @@ export default function Match() {
     ? !!stackingMap[selectedPlayer.id]
     : false;
 
+  // Lấy giá trị firstServe từ state (theo hook mới nhất)
+  const isFirstServeActive = state.isFirstServeOfMatch;
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col font-sans overflow-hidden">
       {/* Header */}
@@ -217,7 +283,6 @@ export default function Match() {
             compact
             stackingMap={stackingMap}
             penalties={penalties}
-            // Truyền vị trí hiện tại lên
             onPlayerClick={(id, team, name, currentSide) =>
               setSelectedPlayer({ id, team, name, currentSide })
             }
@@ -230,7 +295,7 @@ export default function Match() {
         <div className="grid grid-cols-2 gap-4 pb-4">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={scorePoint}
+            onClick={handleScorePoint}
             disabled={!!state.winner}
             className="h-20 rounded-3xl bg-[#ccff00] flex flex-col items-center justify-center text-black shadow-lg"
           >
@@ -241,7 +306,7 @@ export default function Match() {
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={fault}
+            onClick={handleFault}
             disabled={!!state.winner}
             className="h-20 rounded-3xl bg-slate-800 border border-white/10 flex flex-col items-center justify-center text-white"
           >
@@ -253,7 +318,7 @@ export default function Match() {
         </div>
       </main>
 
-      {/* --- MENU CHIẾN THUẬT (MODAL) --- */}
+      {/* Modal chiến thuật (Stacking & Penalties) */}
       <Dialog
         open={!!selectedPlayer}
         onOpenChange={(open) => !open && setSelectedPlayer(null)}
@@ -264,7 +329,11 @@ export default function Match() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3 text-white">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedPlayer.team === 1 ? "bg-cyan-500 text-black" : "bg-rose-500 text-white"}`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      selectedPlayer.team === 1
+                        ? "bg-cyan-500 text-black"
+                        : "bg-rose-500 text-white"
+                    }`}
                   >
                     <UserCog className="w-6 h-6" />
                   </div>
@@ -279,7 +348,7 @@ export default function Match() {
                 </DialogTitle>
               </DialogHeader>
 
-              {/* Stacking Toggle - Player Specific */}
+              {/* Stacking Toggle */}
               <div className="bg-white/5 p-4 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {isCurrentPlayerStacking ? (
@@ -289,7 +358,11 @@ export default function Match() {
                   )}
                   <div>
                     <div
-                      className={`font-bold text-sm ${isCurrentPlayerStacking ? "text-[#ccff00]" : "text-white"}`}
+                      className={`font-bold text-sm ${
+                        isCurrentPlayerStacking
+                          ? "text-[#ccff00]"
+                          : "text-white"
+                      }`}
                     >
                       {isCurrentPlayerStacking
                         ? "ĐANG STACKING"
@@ -349,7 +422,7 @@ export default function Match() {
         </DialogContent>
       </Dialog>
 
-      {/* Winner Modal giữ nguyên */}
+      {/* Winner Modal */}
       <Dialog open={!!state.winner}>
         <DialogContent className="max-w-xs bg-slate-900 border-white/10 rounded-[2rem] p-8 text-center">
           <Trophy className="w-16 h-16 text-[#ccff00] mb-4 mx-auto" />
@@ -357,7 +430,9 @@ export default function Match() {
             Victory!
           </DialogTitle>
           <p
-            className={`text-xl font-black italic mb-6 ${state.winner === 1 ? "text-cyan-400" : "text-rose-500"}`}
+            className={`text-xl font-black italic mb-6 ${
+              state.winner === 1 ? "text-cyan-400" : "text-rose-500"
+            }`}
           >
             TEAM {state.winner === 1 ? "01" : "02"}
           </p>

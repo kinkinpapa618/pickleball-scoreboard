@@ -140,14 +140,14 @@ export default function Home() {
             value="create"
             className="space-y-6 animate-in fade-in zoom-in-95 duration-300"
           >
-            <Card className="p-4 bg-slate-900/50 border-white/5 backdrop-blur-xl rounded-3xl space-y-4 shadow-2xl">
+            <Card className="p-4 bg-slate-900/50 border-white/5 backdrop-blur-xl rounded-3xl space-y-2 shadow-2xl">
               <div className="flex items-center gap-2 text-[#ccff00] mb-2">
                 <Users className="w-4 h-4" />
                 <span className="text-[10px] font-black italic uppercase tracking-widest">
-                  Roster Selection
+                  THÔNG TIN VẬN ĐỘNG VIÊN
                 </span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div className="space-y-2">
                   <span className="text-[10px] font-black text-cyan-400 uppercase italic">
                     Team 1
@@ -193,11 +193,11 @@ export default function Home() {
               </div>
             </Card>
 
-            <Card className="p-4 bg-slate-900/50 border-white/5 backdrop-blur-xl rounded-3xl space-y-4 shadow-xl">
+            <Card className="p-4 bg-slate-900/50 border-white/5 backdrop-blur-xl rounded-3xl space-y-2 shadow-xl">
               <div className="flex items-center gap-2 text-[#ccff00]">
                 <Settings2 className="w-4 h-4" />
                 <span className="text-[10px] font-black italic uppercase tracking-widest">
-                  Cài đặt trận đấu
+                  CÀI ĐẶT TRẬN ĐẤU
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -219,7 +219,7 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="text-[9px] font-bold text-white/40 uppercase mb-2 block">
-                    Team Phát
+                    Team Phát Bóng Đầu
                   </label>
                   <div className="flex gap-1 bg-black/40 p-1 rounded-xl">
                     {[1, 2].map((team) => (
@@ -236,9 +236,9 @@ export default function Home() {
               </div>
               <Button
                 onClick={() => setShowCoinToss(true)}
-                className="w-full bg-white/5 border border-white/10 text-[#ccff00] font-black  text-[10px] py-5 rounded-xl gap-2 hover:bg-white/10 transition-all"
+                className="w-full bg-white/5 border border-white/10 text-[#ccff00] font-black  text-[10px] py-3 rounded-xl gap-4 hover:bg-white/10 transition-all"
               >
-                <Coins className="w-4 h-4" /> TUNG XU PHÂN ĐỊNH
+                <Coins className="w-2 h-2" /> TUNG XU PHÂN ĐỊNH
               </Button>
             </Card>
 
@@ -350,12 +350,20 @@ export default function Home() {
                   >
                     <div className="flex items-center gap-3">
                       {match.status === "live" ? (
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-400/10 border border-yellow-400/20 rounded-full">
+                        /* NÚT BẤM ĐỂ TIẾP TỤC TRẬN ĐẤU */
+                        <button
+                          onClick={() => {
+                            const url = `/match?matchId=${match.id}&t1p1=${encodeURIComponent(match.team1Player1)}&t1p2=${encodeURIComponent(match.team1Player2)}&t2p1=${encodeURIComponent(match.team2Player1)}&t2p2=${encodeURIComponent(match.team2Player2)}&win=${match.winningScore}&serve=1`;
+                            setLocation(url);
+                          }}
+                          className="flex items-center gap-1.5 px-2 py-1 bg-yellow-400/10 border border-yellow-400/30 rounded-full hover:bg-yellow-400/20 transition-colors cursor-pointer group/live"
+                        >
                           <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
-                          <span className="text-[8px] font-black text-yellow-400 uppercase">
-                            Live
+                          <span className="text-[8px] font-black text-yellow-400 uppercase flex items-center gap-1">
+                            Live{" "}
+                            <ChevronRight className="w-2 h-2 group-hover/live:translate-x-0.5 transition-transform" />
                           </span>
-                        </div>
+                        </button>
                       ) : (
                         <div className="px-2 py-1 bg-white/5 border border-white/10 rounded-full">
                           <span className="text-[8px] font-black text-white/20 uppercase tracking-tighter">
@@ -363,6 +371,7 @@ export default function Home() {
                           </span>
                         </div>
                       )}
+
                       <div className="text-[11px] font-bold">
                         <div className="text-white/90">
                           {match.team1Player1} + {match.team1Player2}
@@ -372,20 +381,40 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-4">
                       <span className="text-xl font-black italic text-[#ccff00] tabular-nums">
                         {match.scoreTeam1}-{match.scoreTeam2}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          window.open(`/match-view/${match.id}`, "_blank")
-                        }
-                        className="h-9 w-9 rounded-full bg-white/5 hover:bg-[#ccff00] hover:text-black transition-all"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
+
+                      <div className="flex gap-2">
+                        {/* Nút xem công khai (cho khán giả) */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            window.open(`/match-view/${match.id}`, "_blank")
+                          }
+                          className="h-9 w-9 rounded-full bg-white/5 hover:bg-blue-500 hover:text-white transition-all"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+
+                        {/* Nếu là trận Live, thêm một nút "Tiếp tục" rõ ràng hơn ở bên phải */}
+                        {match.status === "live" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const url = `/match?matchId=${match.id}&t1p1=${encodeURIComponent(match.team1Player1)}&t1p2=${encodeURIComponent(match.team1Player2)}&t2p1=${encodeURIComponent(match.team2Player1)}&t2p2=${encodeURIComponent(match.team2Player2)}&win=${match.winningScore}&serve=1`;
+                              setLocation(url);
+                            }}
+                            className="h-9 w-9 rounded-full bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400 hover:text-black transition-all"
+                          >
+                            <Play className="w-4 h-4 fill-current" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 ))}

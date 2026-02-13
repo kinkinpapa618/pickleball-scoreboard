@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role").$type<Role>().notNull().default("referee"),
   fullName: text("full_name"),
+  phone: text("phone").notNull(), // Thêm trường này
+  idCard: text("id_card").notNull(), // Thêm trường này
 });
 
 // Quyền hạn (Dùng để logic check ở Frontend/Backend)
@@ -75,12 +77,12 @@ export const matches = pgTable("matches", {
 
 // User Schema
 export const insertUserSchema = createInsertSchema(users)
-  .omit({
-    id: true,
-  })
+  .omit({ id: true })
   .extend({
     password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
     username: z.string().min(3, "Tên đăng nhập tối thiểu 3 ký tự"),
+    phone: z.string().min(10, "Số điện thoại không hợp lệ"),
+    idCard: z.string().min(9, "Số Căn cước/CMND không hợp lệ"),
   });
 
 // Player Schema
@@ -116,3 +118,5 @@ export interface TournamentGroup {
     status: "pending" | "completed";
   }[];
 }
+
+export type CreateMatchRequest = InsertMatch;

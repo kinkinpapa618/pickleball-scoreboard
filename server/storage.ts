@@ -1,48 +1,69 @@
-import { db } from "./db";
 import {
-  players,
+  users,
   matches,
-  type InsertPlayer,
-  type InsertMatch,
-  type Player,
+  type User,
+  type InsertUser,
   type Match,
+  type InsertMatch,
+  type Role,
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  // Players
-  getPlayers(): Promise<Player[]>;
-  createPlayer(player: InsertPlayer): Promise<Player>;
+  // User methods
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
 
-  // Matches
-  getMatches(): Promise<Match[]>;
-  getMatch(id: number): Promise<Match | undefined>; // Bổ sung lấy 1 trận đấu
+  // Match methods
+  getMatch(id: number): Promise<Match | undefined>;
   createMatch(match: InsertMatch): Promise<Match>;
-  updateMatch(id: number, match: Partial<InsertMatch>): Promise<Match>; // Bổ sung cập nhật
+  updateMatch(id: number, data: Partial<Match>): Promise<Match>;
+
+  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getPlayers(): Promise<Player[]> {
-    return await db.select().from(players);
+  sessionStore: session.Store;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+      },
+      createTableIfMissing: true,
+    });
   }
 
-  async createPlayer(insertPlayer: InsertPlayer): Promise<Player> {
-    const [player] = await db
-      .insert(players)
-      .values(insertPlayer)
-      .onConflictDoUpdate({
-        target: players.name,
-        set: { name: insertPlayer.name },
-      })
-      .returning();
-    return player;
+  // --- USER METHODS ---
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
-  async getMatches(): Promise<Match[]> {
-    return await db.select().from(matches).orderBy(desc(matches.date));
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
+    return user;
   }
 
-  // Bổ sung: Lấy chi tiết trận đấu cho trang MatchView
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const userData = {
+      ...insertUser,
+      role: insertUser.role as Role,
+    };
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
+  }
+
+  // --- MATCH METHODS ---
   async getMatch(id: number): Promise<Match | undefined> {
     const [match] = await db.select().from(matches).where(eq(matches.id, id));
     return match;
@@ -53,31 +74,15 @@ export class DatabaseStorage implements IStorage {
     return match;
   }
 
-  async getMatchesPaginated(limit: number, offset: number): Promise<Match[]> {
-    return await db
-      .select()
-      .from(matches)
-      .orderBy(desc(matches.date))
-      .limit(limit)
-      .offset(offset);
-  }
-  // Bổ sung: Cập nhật điểm số và lượt giao bóng realtime
-  async updateMatch(
-    id: number,
-    updateData: Partial<InsertMatch>,
-  ): Promise<Match> {
+  async updateMatch(id: number, data: Partial<Match>): Promise<Match> {
     const [updatedMatch] = await db
       .update(matches)
-      .set(updateData)
+      .set(data)
       .where(eq(matches.id, id))
       .returning();
-
-    if (!updatedMatch) {
-      throw new Error(`Không tìm thấy trận đấu với ID ${id}`);
-    }
-
     return updatedMatch;
   }
 }
 
+// CHỈ MỘT DÒNG DUY NHẤT Ở CUỐI FILE
 export const storage = new DatabaseStorage();

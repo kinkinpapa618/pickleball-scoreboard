@@ -54,9 +54,11 @@ export function useUpdateMatch() {
       const res = await apiRequest("PATCH", `/api/matches/${id}`, data);
       return res.json();
     },
-    onSuccess: (data) => {
-      // Ép các query liên quan phải tải lại dữ liệu mới nhất ngay lập tức
-      queryClient.invalidateQueries({ queryKey: [`/api/matches/${data.id}`] });
+    onSuccess: (_data, variables) => {
+      // Sử dụng variables để lấy ID
+      queryClient.invalidateQueries({
+        queryKey: [`/api/matches/${variables.id}`],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },
   });
