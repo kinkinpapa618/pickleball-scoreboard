@@ -1,8 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import * as vite from "./vite";
 import path from "path";
-import { setupAuth } from "./auth"; // Import hàm setup từ file auth.ts của bạn
+import { setupAuth } from "./auth";
 
 const app = express();
 app.use(express.json());
@@ -21,7 +20,7 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (pathStr.startsWith("/api")) {
-      vite.log(`${req.method} ${pathStr} ${res.statusCode} in ${duration}ms`);
+      console.log(`${req.method} ${pathStr} ${res.statusCode} in ${duration}ms`);
     }
   });
   next();
@@ -40,11 +39,12 @@ app.use((req, res, next) => {
   });
 
   if (process.env.NODE_ENV !== "production") {
-    // CHẾ ĐỘ PHÁT TRIỂN (DEV)
+    // CHẾ ĐỘ PHÁT TRIỂN (DEV) - Dynamic import
+    const vite = await import("./vite");
     await vite.setupVite(app, server);
-    vite.log("Đang chạy ở chế độ: DEVELOPMENT");
+    console.log("Đang chạy ở chế độ: DEVELOPMENT");
   } else {
-    const publicPath = path.resolve(__dirname, "public");
+    const publicPath = path.resolve(__dirname, "..", "dist", "public");
     app.use(express.static(publicPath));
     app.get("*", (req, res, next) => {
       if (req.path.startsWith("/api")) {
@@ -60,11 +60,11 @@ app.use((req, res, next) => {
         }
       });
     });
-    vite.log("Đang chạy ở chế độ: PRODUCTION");
+    console.log("Đang chạy ở chế độ: PRODUCTION");
   }
 
   const PORT = 5000;
   server.listen(PORT, "0.0.0.0", () => {
-    vite.log(`[BMB PICKLEBALL] Server online tại cổng ${PORT}`);
+    console.log(`[BMB PICKLEBALL] Server online tại cổng ${PORT}`);
   });
 })();

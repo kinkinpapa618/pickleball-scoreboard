@@ -29,20 +29,17 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // Dựa trên kết quả 'ls -R dist' của bạn:
-  const distPath = path.resolve(process.cwd(), "dist");
+  const distPath = path.resolve(process.cwd(), "dist", "public");
 
   if (fs.existsSync(path.resolve(distPath, "index.html"))) {
-    // 1. Phục vụ các file tĩnh trong thư mục dist (js, css, v.v.)
     app.use(expressStatic(distPath));
 
-    // 2. Với mọi request không phải API, trả về file index.html
     app.get(/^((?!\/api).)*$/, (_req, res) => {
       res.sendFile(path.resolve(distPath, "index.html"));
     });
 
-    log("Server: Đang chạy giao diện từ thư mục dist");
+    log("Server: Đang chạy giao diện từ thư mục dist/public");
   } else {
-    log("Server: LỖI! Không tìm thấy dist/index.html");
+    log("Server: LỖI! Không tìm thấy dist/public/index.html");
   }
 }
