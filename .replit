@@ -41,3 +41,8 @@ waitForPort = 5000
 
 [objectStorage]
 defaultBucketID = "replit-objstore-92062b9d-a996-4b1b-9987-ea2fa90697ea"
+
+[userenv]
+
+[userenv.shared]
+OPENCODE_KEY = "sk-cp-VTjzAtuFIG1fo--mSOcaL9Xq0CjdFUYnJduP-gaP1nYacsl8zYjmX0x6PNU0STvhxwtdX7EiFsUgO03b1-SutHIGlQxgUMtlMosM1usweEsDPZfsi8OF9rU"
