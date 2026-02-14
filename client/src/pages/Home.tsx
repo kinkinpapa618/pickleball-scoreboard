@@ -1,8 +1,55 @@
 import { motion } from "framer-motion";
-import { Trophy, Activity, CalendarDays } from "lucide-react";
+import { Trophy, Activity, CalendarDays, Clock, MapPin } from "lucide-react";
 import { Link } from "wouter";
+import { useEffect, useState } from "react";
+
+interface WorkSchedule {
+  id: number;
+  title: string;
+  description: string | null;
+  date: string;
+  location: string | null;
+  status: string;
+}
 
 export default function Home() {
+  const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/work-schedules")
+      .then((res) => res.json())
+      .then((data) => {
+        setSchedules(data.slice(0, 3));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("vi-VN", {
+      weekday: "short",
+      day: "numeric",
+      month: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "assigned":
+        return "bg-blue-500/20 text-blue-400";
+      case "completed":
+        return "bg-green-500/20 text-green-400";
+      case "cancelled":
+        return "bg-red-500/20 text-red-400";
+      default:
+        return "bg-gray-500/20 text-gray-400";
+    }
+  };
+
   return (
     <div className="p-4 space-y-6">
       {/* Brand Header */}
@@ -60,9 +107,58 @@ export default function Home() {
         <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-indigo-400" /> Lịch công tác
         </h3>
-        <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-center text-slate-500 text-sm">
-          Chưa có lịch phân công mới.
-        </div>
+        {loading ? (
+          <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-center text-slate-500 text-sm">
+            Đang tải...
+          </div>
+        ) : schedules.length > 0 ? (
+          <div className="space-y-3">
+            {schedules.map((schedule) => (
+              <motion.div
+                key={schedule.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-slate-900/50 border border-white/5 rounded-2xl p-4"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-bold text-white">{schedule.title}</h4>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                      schedule.status
+                    )}`}
+                  >
+                    {schedule.status === "assigned"
+                      ? "Đã phân công"
+                      : schedule.status === "completed"
+                      ? "Hoàn thành"
+                      : "Đã hủy"}
+                  </span>
+                </div>
+                <div className="space-y-1 text-sm text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    {formatDate(schedule.date)}
+                  </div>
+                  {schedule.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {schedule.location}
+                    </div>
+                  )}
+                </div>
+                {schedule.description && (
+                  <p className="mt-2 text-sm text-slate-500">
+                    {schedule.description}
+                  </p>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-center text-slate-500 text-sm">
+            Chưa có lịch phân công mới.
+          </div>
+        )}
       </div>
     </div>
   );

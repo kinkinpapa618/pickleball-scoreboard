@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "build": "vite build",
+    "build": "vite build && npm run build:server",
     "db:push": "drizzle-kit push",
-    "start": "NODE_ENV=production tsx server/index.ts"
+    "start": "NODE_ENV=production tsx server/index.ts",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.cjs --external:pg --external:pg-native --external:connect-pg-simple --external:@neondatabase/serverless --external:canvas --external:lightningcss --external:esbuild --format=cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

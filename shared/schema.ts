@@ -19,11 +19,11 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role").$type<Role>().notNull().default("referee"),
   fullName: text("full_name"),
-  phone: text("phone").notNull(), // Thêm trường này
-  idCard: text("id_card").notNull(), // Thêm trường này
+  phone: text("phone").notNull(),
+  idCard: text("id_card").notNull(),
 });
 
-// Quyền hạn (Dùng để logic check ở Frontend/Backend)
+// Quyền hạn
 export const ROLE_PERMISSIONS = {
   admin: ["all"],
   manager: [
@@ -35,7 +35,28 @@ export const ROLE_PERMISSIONS = {
   referee: ["standard_access", "update_scores", "view_assigned_matches"],
 };
 
-// === 2. PLAYERS DEFINITIONS ===
+// === 2. WORK SCHEDULES (Lịch công tác) ===
+export const workSchedules = pgTable("work_schedules", {
+  id: serial("id").primaryKey(),
+  refereeId: integer("referee_id").references(() => users.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  matchId: integer("match_id").references(() => matches.id),
+  date: timestamp("date").notNull(),
+  location: text("location"),
+  status: text("status").notNull().default("assigned"), // 'assigned', 'completed', 'cancelled'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWorkScheduleSchema = createInsertSchema(workSchedules).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type WorkSchedule = typeof workSchedules.$inferSelect;
+export type InsertWorkSchedule = z.infer<typeof insertWorkScheduleSchema>;
+
+// === 3. PLAYERS DEFINITIONS ===
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
@@ -66,6 +87,10 @@ export const matches = pgTable("matches", {
   status: text("status").notNull().default("live"), // 'pending', 'live', 'finished'
   winningScore: integer("winning_score").notNull().default(11),
   winnerTeam: integer("winner_team"), // 1 hoặc 2
+
+  // Timeline events (JSON)
+  timeline: text("timeline"), // JSON string of timeline events
+  timeouts: text("timeouts"), // JSON: { team1: 2, team2: 2 }
 
   // Liên kết trọng tài (Referee) điều khiển trận đấu
   refereeId: integer("referee_id").references(() => users.id),

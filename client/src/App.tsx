@@ -9,12 +9,13 @@ import { Loader2 } from "lucide-react";
 import Home from "@/pages/Home";
 import RefereeTools from "@/pages/RefereeTools";
 import Match from "@/pages/Match";
+import MatchView from "@/pages/MatchView";
 import Profile from "@/pages/Profile";
+import Users from "@/pages/Users";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/AuthPage";
 
 // --- 1. COMPONENT BẢO VỆ ROUTE ---
-// Tách ra ngoài hoặc để trên Router để sử dụng
 function ProtectedRoute({
   component: Component,
 }: {
@@ -51,13 +52,25 @@ function Router() {
         {() => <ProtectedRoute component={RefereeTools} />}
       </Route>
 
+      {/* Route cho trận đấu với query string (?matchId=...) */}
+      <Route path="/match">
+        {() => <ProtectedRoute component={Match} />}
+      </Route>
+
       {/* Sửa lại Path có :id để nhận ID trận đấu từ DB */}
       <Route path="/match/:id">
         {() => <ProtectedRoute component={Match} />}
       </Route>
 
+      {/* Route xem công khai (không cần bảo vệ) */}
+      <Route path="/match-view/:id" component={MatchView} />
+
       <Route path="/profile">
         {() => <ProtectedRoute component={Profile} />}
+      </Route>
+
+      <Route path="/users">
+        {() => <ProtectedRoute component={Users} />}
       </Route>
 
       {/* Trang lỗi */}
@@ -84,7 +97,8 @@ function App() {
 
 // Helper để ẩn BottomNav ở trang Auth
 function ConditionalBottomNav() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
   if (!user) return null;
   return <BottomNav />;
 }

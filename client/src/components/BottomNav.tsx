@@ -6,7 +6,7 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/", icon: Home, label: "TRỌNG TÀI SỐ" },
-    { href: "/tools", icon: Briefcase, label: "CHỨC NĂNG" },
+    { href: "/tools", icon: Briefcase, label: "PICKLEBALL" },
     { href: "/ranking", icon: Trophy, label: "XẾP HẠNG" },
     { href: "/profile", icon: User, label: "ID" },
   ];
