@@ -108,11 +108,11 @@ export default function Profile() {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case "admin":
-        return { text: "Quản trị viên", color: "text-purple-500" };
+        return { text: "Quản trị viên", color: "text-purple-400" };
       case "manager":
-        return { text: "Quản lý", color: "text-orange-500" };
+        return { text: "Quản lý", color: "text-orange-400" };
       default:
-        return { text: "Trọng tài", color: "text-emerald-500" };
+        return { text: "Trọng tài", color: "text-emerald-400" };
     }
   };
 
@@ -127,8 +127,8 @@ export default function Profile() {
 
   if (!user || !editedUser) {
     return (
-      <div className="p-4 flex items-center justify-center min-h-screen bg-[#F8FAFC]">
-        <div className="animate-spin h-8 w-8 border-2 border-blue-500 rounded-full border-t-transparent" />
+      <div className="p-4 flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-2 border-orange-500 rounded-full border-t-transparent" />
       </div>
     );
   }
@@ -136,61 +136,61 @@ export default function Profile() {
   const roleInfo = getRoleLabel(editedUser.role);
 
   return (
-    <div className="p-4 space-y-4 bg-[#F8FAFC] min-h-screen pb-20">
-      <h1 className="text-2xl font-black italic uppercase text-slate-900">
-        Hồ <span className="text-blue-600">Sơ</span>
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl font-black italic uppercase text-white">
+        Hồ <span className="text-[#ccff00]">Sơ</span>
       </h1>
 
       {/* Avatar & Basic Info */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+      <div className="bg-slate-900 p-4 rounded-2xl border border-white/10">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl font-black text-white">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-2xl font-black">
             {editedUser.fullName
               ? getInitials(editedUser.fullName)
               : editedUser.username.slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-white">
               {editedUser.fullName || editedUser.username}
             </h2>
             <p className={`text-xs font-bold uppercase ${roleInfo.color}`}>
               {roleInfo.text}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               @{editedUser.username}
             </p>
           </div>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition"
+            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
           >
             {isEditing ? (
-              <X className="w-5 h-5 text-slate-600" />
+              <X className="w-5 h-5 text-slate-400" />
             ) : (
-              <Edit2 className="w-5 h-5 text-slate-600" />
+              <Edit2 className="w-5 h-5 text-slate-400" />
             )}
           </button>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3 mt-4">
-          <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <div className="text-xl font-black text-blue-600">
+          <div className="bg-slate-800/50 rounded-xl p-3 text-center">
+            <div className="text-xl font-black text-[#ccff00]">
               {stats?.totalMatches || 0}
             </div>
-            <div className="text-[10px] text-slate-400 uppercase">Trận đấu</div>
+            <div className="text-[10px] text-slate-500 uppercase">Trận đấu</div>
           </div>
-          <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <div className="text-xl font-black text-emerald-500">
+          <div className="bg-slate-800/50 rounded-xl p-3 text-center">
+            <div className="text-xl font-black text-emerald-400">
               {stats?.completedMatches || 0}
             </div>
-            <div className="text-[10px] text-slate-400 uppercase">Hoàn thành</div>
+            <div className="text-[10px] text-slate-500 uppercase">Hoàn thành</div>
           </div>
-          <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <div className="text-xl font-black text-orange-500">
+          <div className="bg-slate-800/50 rounded-xl p-3 text-center">
+            <div className="text-xl font-black text-blue-400">
               {stats?.totalSchedules || 0}
             </div>
-            <div className="text-[10px] text-slate-400 uppercase">Lịch công tác</div>
+            <div className="text-[10px] text-slate-500 uppercase">Lịch công tác</div>
           </div>
         </div>
       </div>
@@ -201,8 +201,8 @@ export default function Profile() {
           onClick={() => setActiveTab("info")}
           className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
             activeTab === "info"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-slate-500"
+              ? "bg-[#ccff00] text-black"
+              : "bg-slate-900 text-slate-400"
           }`}
         >
           Thông tin
@@ -211,8 +211,8 @@ export default function Profile() {
           onClick={() => setActiveTab("stats")}
           className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
             activeTab === "stats"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-slate-500"
+              ? "bg-[#ccff00] text-black"
+              : "bg-slate-900 text-slate-400"
           }`}
         >
           Thống kê
@@ -222,8 +222,8 @@ export default function Profile() {
             onClick={() => setActiveTab("admin")}
             className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
               activeTab === "admin"
-                ? "bg-blue-500 text-white"
-                : "bg-white text-slate-500"
+                ? "bg-[#ccff00] text-black"
+                : "bg-slate-900 text-slate-400"
             }`}
           >
             Admin
@@ -233,7 +233,7 @@ export default function Profile() {
 
       {/* Tab Content */}
       {activeTab === "info" && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
+        <div className="bg-slate-900 rounded-2xl border border-white/10 p-4 space-y-4">
           {isEditing ? (
             <>
               <div>
@@ -246,7 +246,7 @@ export default function Profile() {
                   onChange={(e) =>
                     setEditedUser({ ...editedUser, fullName: e.target.value })
                   }
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 mt-1"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white mt-1"
                   placeholder="Nhập họ tên"
                 />
               </div>
@@ -260,7 +260,7 @@ export default function Profile() {
                   onChange={(e) =>
                     setEditedUser({ ...editedUser, phone: e.target.value })
                   }
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 mt-1"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white mt-1"
                 />
               </div>
               <div>
@@ -273,31 +273,31 @@ export default function Profile() {
                   onChange={(e) =>
                     setEditedUser({ ...editedUser, idCard: e.target.value })
                   }
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 mt-1"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white mt-1"
                 />
               </div>
               <button
                 onClick={handleSave}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold flex items-center justify-center gap-2"
               >
                 <Save className="w-4 h-4" /> Lưu thay đổi
               </button>
             </>
           ) : (
             <>
-              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex justify-between items-center py-2 border-b border-slate-800">
                 <span className="text-slate-500 text-sm">Họ tên</span>
-                <span className="text-slate-900 font-medium">
+                <span className="text-white font-medium">
                   {editedUser.fullName || "Chưa cập nhật"}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex justify-between items-center py-2 border-b border-slate-800">
                 <span className="text-slate-500 text-sm">Số điện thoại</span>
-                <span className="text-slate-900 font-medium">{editedUser.phone}</span>
+                <span className="text-white font-medium">{editedUser.phone}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex justify-between items-center py-2 border-b border-slate-800">
                 <span className="text-slate-500 text-sm">Căn cước/CMND</span>
-                <span className="text-slate-900 font-medium">{editedUser.idCard}</span>
+                <span className="text-white font-medium">{editedUser.idCard}</span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-slate-500 text-sm">Vai trò</span>
@@ -311,45 +311,45 @@ export default function Profile() {
       )}
 
       {activeTab === "stats" && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
+        <div className="bg-slate-900 rounded-2xl border border-white/10 p-4 space-y-4">
           <div className="flex items-center gap-3 mb-4">
-            <BarChart3 className="w-5 h-5 text-blue-500" />
-            <h3 className="font-bold text-slate-900">Thống kê hoạt động</h3>
+            <BarChart3 className="w-5 h-5 text-[#ccff00]" />
+            <h3 className="font-bold">Thống kê hoạt động</h3>
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-50 rounded-xl p-4">
-              <Trophy className="w-5 h-5 text-orange-500 mb-2" />
-              <div className="text-2xl font-black text-slate-900">
+            <div className="bg-slate-800/50 rounded-xl p-4">
+              <Trophy className="w-5 h-5 text-orange-400 mb-2" />
+              <div className="text-2xl font-black text-white">
                 {stats?.totalMatches || 0}
               </div>
-              <div className="text-xs text-slate-400">Tổng trận đấu</div>
+              <div className="text-xs text-slate-500">Tổng trận đấu</div>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4">
-              <Calendar className="w-5 h-5 text-blue-500 mb-2" />
-              <div className="text-2xl font-black text-slate-900">
+            <div className="bg-slate-800/50 rounded-xl p-4">
+              <Calendar className="w-5 h-5 text-blue-400 mb-2" />
+              <div className="text-2xl font-black text-white">
                 {stats?.totalSchedules || 0}
               </div>
-              <div className="text-xs text-slate-400">Lịch công tác</div>
+              <div className="text-xs text-slate-500">Lịch công tác</div>
             </div>
           </div>
 
           <div className="space-y-3 mt-4">
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-500 text-sm">Trận đã hoàn thành</span>
-              <span className="font-black text-emerald-500">
+            <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-xl">
+              <span className="text-slate-400 text-sm">Trận đã hoàn thành</span>
+              <span className="font-black text-emerald-400">
                 {stats?.completedMatches || 0}
               </span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-500 text-sm">Trận chờ xử lý</span>
-              <span className="font-black text-orange-500">
+            <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-xl">
+              <span className="text-slate-400 text-sm">Trận chờ xử lý</span>
+              <span className="font-black text-orange-400">
                 {stats?.pendingMatches || 0}
               </span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-500 text-sm">Công tác hoàn thành</span>
-              <span className="font-black text-blue-500">
+            <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-xl">
+              <span className="text-slate-400 text-sm">Công tác hoàn thành</span>
+              <span className="font-black text-blue-400">
                 {stats?.completedSchedules || 0}
               </span>
             </div>
@@ -360,47 +360,47 @@ export default function Profile() {
       {activeTab === "admin" && editedUser.role === "admin" && (
         <div className="space-y-2">
           <Link href="/users">
-            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between hover:bg-slate-50 transition">
+            <div className="bg-slate-900 p-4 rounded-xl border border-white/10 flex items-center justify-between hover:bg-slate-800 transition">
               <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-purple-500" />
-                <span className="font-medium text-slate-900">Quản lý người dùng</span>
+                <Users className="w-5 h-5 text-purple-400" />
+                <span className="font-medium">Quản lý người dùng</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-400" />
+              <ChevronRight className="w-5 h-5 text-slate-500" />
             </div>
           </Link>
           <Link href="/tools">
-            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between hover:bg-slate-50 transition">
+            <div className="bg-slate-900 p-4 rounded-xl border border-white/10 flex items-center justify-between hover:bg-slate-800 transition">
               <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-orange-500" />
-                <span className="font-medium text-slate-900">Quản lý trận đấu</span>
+                <FileText className="w-5 h-5 text-orange-400" />
+                <span className="font-medium">Quản lý trận đấu</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-400" />
+              <ChevronRight className="w-5 h-5 text-slate-500" />
             </div>
           </Link>
           {/* Theme Toggle */}
           <div 
             onClick={toggleTheme}
-            className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:bg-slate-50 transition"
+            className="bg-slate-900 p-4 rounded-xl border border-white/10 flex items-center justify-between cursor-pointer hover:bg-slate-800 transition"
           >
             <div className="flex items-center gap-3">
               {theme === "dark" ? (
-                <Moon className="w-5 h-5 text-slate-500" />
+                <Moon className="w-5 h-5 text-slate-400" />
               ) : (
                 <Sun className="w-5 h-5 text-yellow-500" />
               )}
-              <span className="font-medium text-slate-900">Giao diện</span>
+              <span className="font-medium">Giao diện</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-500">{theme === "dark" ? "Tối" : "Sáng"}</span>
-              <ChevronRight className="w-5 h-5 text-slate-400" />
+              <ChevronRight className="w-5 h-5 text-slate-500" />
             </div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div className="bg-slate-900 p-4 rounded-xl border border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5 text-slate-500" />
-              <span className="font-medium text-slate-900">Cài đặt hệ thống</span>
+              <Settings className="w-5 h-5 text-slate-400" />
+              <span className="font-medium">Cài đặt hệ thống</span>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-400" />
+            <ChevronRight className="w-5 h-5 text-slate-500" />
           </div>
         </div>
       )}
@@ -409,7 +409,7 @@ export default function Profile() {
       <div className="space-y-2 pt-4">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 bg-white p-4 rounded-xl text-rose-500 hover:bg-rose-50 transition shadow-sm"
+          className="w-full flex items-center gap-3 bg-slate-900 p-4 rounded-xl text-rose-500 hover:bg-rose-950/20 transition"
         >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Đăng xuất</span>

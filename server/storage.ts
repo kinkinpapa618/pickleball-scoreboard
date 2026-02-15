@@ -3,6 +3,9 @@ import {
   matches,
   workSchedules,
   players,
+  tournaments,
+  tournamentPlayers,
+  tournamentMatches,
   type User,
   type InsertUser,
   type Match,
@@ -10,6 +13,12 @@ import {
   type WorkSchedule,
   type InsertWorkSchedule,
   type Role,
+  type Tournament,
+  type InsertTournament,
+  type TournamentPlayer,
+  type InsertTournamentPlayer,
+  type TournamentMatch,
+  type InsertTournamentMatch,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -43,6 +52,27 @@ export interface IStorage {
   createWorkSchedule(schedule: InsertWorkSchedule): Promise<WorkSchedule>;
   updateWorkSchedule(id: number, data: Partial<WorkSchedule>): Promise<WorkSchedule>;
   deleteWorkSchedule(id: number): Promise<void>;
+
+  // Tournament methods
+  getTournaments(creatorId?: number): Promise<Tournament[]>;
+  getTournament(id: number): Promise<Tournament | undefined>;
+  createTournament(tournament: InsertTournament): Promise<Tournament>;
+  updateTournament(id: number, data: Partial<Tournament>): Promise<Tournament>;
+  deleteTournament(id: number): Promise<void>;
+
+  // Tournament Player methods
+  getTournamentPlayers(tournamentId: number): Promise<TournamentPlayer[]>;
+  createTournamentPlayer(player: InsertTournamentPlayer): Promise<TournamentPlayer>;
+  createTournamentPlayers(players: InsertTournamentPlayer[]): Promise<TournamentPlayer[]>;
+  deleteTournamentPlayers(tournamentId: number): Promise<void>;
+
+  // Tournament Match methods
+  getTournamentMatches(tournamentId: number): Promise<TournamentMatch[]>;
+  getTournamentMatch(id: number): Promise<TournamentMatch | undefined>;
+  createTournamentMatch(match: InsertTournamentMatch): Promise<TournamentMatch>;
+  createTournamentMatches(matches: InsertTournamentMatch[]): Promise<TournamentMatch[]>;
+  updateTournamentMatch(id: number, data: Partial<TournamentMatch>): Promise<TournamentMatch>;
+  assignRefereeToMatch(matchId: number, refereeId: number): Promise<TournamentMatch>;
 
   sessionStore: session.Store;
 }
@@ -181,6 +211,129 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWorkSchedule(id: number): Promise<void> {
     await db.delete(workSchedules).where(eq(workSchedules.id, id));
+  }
+
+  // --- TOURNAMENT METHODS ---
+  async getTournaments(creatorId?: number): Promise<Tournament[]> {
+    if (creatorId) {
+      return db
+        .select()
+        .from(tournaments)
+        .where(eq(tournaments.creatorId, creatorId))
+        .orderBy(tournaments.createdAt);
+    }
+    return db.select().from(tournaments).orderBy(tournaments.createdAt);
+  }
+
+  async getTournament(id: number): Promise<Tournament | undefined> {
+    const [tournament] = await db
+      .select()
+      .from(tournaments)
+      .where(eq(tournaments.id, id));
+    return tournament;
+  }
+
+  async createTournament(insertTournament: InsertTournament): Promise<Tournament> {
+    const [tournament] = await db
+      .insert(tournaments)
+      .values(insertTournament)
+      .returning();
+    return tournament;
+  }
+
+  async updateTournament(id: number, data: Partial<Tournament>): Promise<Tournament> {
+    const [updated] = await db
+      .update(tournaments)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(tournaments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteTournament(id: number): Promise<void> {
+    await db.delete(tournaments).where(eq(tournaments.id, id));
+  }
+
+  // --- TOURNAMENT PLAYER METHODS ---
+  async getTournamentPlayers(tournamentId: number): Promise<TournamentPlayer[]> {
+    return db
+      .select()
+      .from(tournamentPlayers)
+      .where(eq(tournamentPlayers.tournamentId, tournamentId))
+      .orderBy(tournamentPlayers.seed);
+  }
+
+  async createTournamentPlayer(player: InsertTournamentPlayer): Promise<TournamentPlayer> {
+    const [newPlayer] = await db
+      .insert(tournamentPlayers)
+      .values(player)
+      .returning();
+    return newPlayer;
+  }
+
+  async createTournamentPlayers(players: InsertTournamentPlayer[]): Promise<TournamentPlayer[]> {
+    const newPlayers = await db
+      .insert(tournamentPlayers)
+      .values(players)
+      .returning();
+    return newPlayers;
+  }
+
+  async deleteTournamentPlayers(tournamentId: number): Promise<void> {
+    await db
+      .delete(tournamentPlayers)
+      .where(eq(tournamentPlayers.tournamentId, tournamentId));
+  }
+
+  // --- TOURNAMENT MATCH METHODS ---
+  async getTournamentMatches(tournamentId: number): Promise<TournamentMatch[]> {
+    return db
+      .select()
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.tournamentId, tournamentId))
+      .orderBy(tournamentMatches.groupName, tournamentMatches.matchOrder);
+  }
+
+  async getTournamentMatch(id: number): Promise<TournamentMatch | undefined> {
+    const [match] = await db
+      .select()
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.id, id));
+    return match;
+  }
+
+  async createTournamentMatch(match: InsertTournamentMatch): Promise<TournamentMatch> {
+    const [newMatch] = await db
+      .insert(tournamentMatches)
+      .values(match)
+      .returning();
+    return newMatch;
+  }
+
+  async createTournamentMatches(matches: InsertTournamentMatch[]): Promise<TournamentMatch[]> {
+    const newMatches = await db
+      .insert(tournamentMatches)
+      .values(matches)
+      .returning();
+    return newMatches;
+  }
+
+  async updateTournamentMatch(id: number, data: Partial<TournamentMatch>): Promise<TournamentMatch> {
+    const [updated] = await db
+      .update(tournamentMatches)
+      .set(data)
+      .where(eq(tournamentMatches.id, id))
+      .returning();
+    return updated;
+  }
+
+  async assignRefereeToMatch(matchId: number, refereeId: number): Promise<TournamentMatch> {
+    const [updated] = await db
+      .update(tournamentMatches)
+      .set({ refereeId, status: "scheduled" })
+      .where(eq(tournamentMatches.id, matchId))
+      .returning();
+    return updated;
   }
 }
 

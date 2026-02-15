@@ -8,56 +8,54 @@
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
 
-  /* Purple & White Sports Theme - Modern & Crisp */
-  --background: 260 30% 98%;
-  --foreground: 260 40% 10%;
-
-  /* Primary Purple */
-  --primary: 265 85% 55%;
+  /* Light mode (default) */
+  --background: 0 0% 98%;
+  --foreground: 0 0% 10%;
+  
+  --primary: 0 0% 9%;
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary / Accents */
-  --secondary: 260 20% 90%;
-  --secondary-foreground: 260 40% 20%;
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 0 0% 10%;
   
-  --muted: 260 10% 92%;
-  --muted-foreground: 260 20% 50%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 45%;
 
-  --accent: 35 95% 55%; /* Orange/Gold accent for winning/active states */
-  --accent-foreground: 0 0% 100%;
+  --accent: 72 100% 50%;
+  --accent-foreground: 0 0% 0%;
 
   --destructive: 0 85% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 260 20% 88%;
-  --input: 260 20% 92%;
-  --ring: 265 85% 55%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 72 100% 50%;
 
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: 260 40% 10%;
-  --foreground: 260 10% 95%;
+  --background: 0 0% 3%;
+  --foreground: 0 0% 98%;
   
-  --primary: 265 85% 65%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 0%;
 
-  --secondary: 260 20% 18%;
-  --secondary-foreground: 260 10% 95%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 98%;
+  
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 65%;
 
-  --muted: 260 20% 18%;
-  --muted-foreground: 260 20% 70%;
-
-  --accent: 35 95% 60%;
-  --accent-foreground: 0 0% 100%;
+  --accent: 72 100% 50%;
+  --accent-foreground: 0 0% 0%;
 
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 260 20% 20%;
-  --input: 260 20% 20%;
-  --ring: 265 85% 65%;
+  --border: 0 0% 15%;
+  --input: 0 0% 15%;
+  --ring: 72 100% 50%;
 }
 
 @layer base {
@@ -84,4 +82,72 @@
 
 .glass-panel {
   @apply bg-white/80 dark:bg-black/60 backdrop-blur-md border border-white/20 shadow-xl;
+}
+
+/* Light mode overrides */
+.light .bg-slate-900\/40,
+.light .bg-slate-900\/30 {
+  background-color: rgb(241 245 249 / 0.9);
+}
+
+.light .bg-slate-900 {
+  background-color: rgb(241 245 249);
+}
+
+.light .bg-slate-800 {
+  background-color: rgb(226 232 240);
+}
+
+.light .border-white\/5 {
+  border-color: rgb(0 0 0 / 0.05);
+}
+
+.light .border-white\/10 {
+  border-color: rgb(0 0 0 / 0.1);
+}
+
+.light .text-white {
+  color: rgb(15 23 42);
+}
+
+.light .text-white\/40,
+.light .text-white\/60,
+.light .text-white\/20 {
+  color: rgb(15 23 42 / 0.4);
+}
+
+.light .text-slate-400,
+.light .text-slate-500 {
+  color: rgb(100 116 139);
+}
+
+.light .text-slate-900 {
+  color: rgb(15 23 42);
+}
+
+/* ScoreBoard light mode */
+.light .bg-\[\#050505\] {
+  background-color: rgb(241 245 249);
+}
+
+.light .border-white\/20 {
+  border-color: rgb(0 0 0 / 0.2);
+}
+
+/* Court light mode */
+.light .bg-slate-200 {
+  background-color: rgb(226 232 240);
+}
+
+.light .border-white\/40 {
+  border-color: rgb(0 0 0 / 0.4);
+}
+
+/* Timeline */
+.light .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(203 213 225);
+}
+
+.light .scrollbar-thin::-webkit-scrollbar-track {
+  background-color: rgb(241 245 249);
 }

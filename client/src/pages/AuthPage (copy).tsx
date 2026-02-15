@@ -51,53 +51,60 @@ export default function AuthPage() {
   });
 
   return (
-    <div className="h-[svh] w-full flex flex-col bg-[#F8FAFC] font-sans overflow-hidden">
+    // Thêm h-[svh] và overflow-hidden để chặn cuộn toàn trang
+    <div className="h-[svh] w-full flex flex-col bg-[#050505] font-sans overflow-hidden selection:bg-[#ccff00] selection:text-black">
       {/* HEADER CỐ ĐỊNH */}
-      <header className="w-full bg-white/80 backdrop-blur-lg border-b border-slate-100 flex-none">
+      <header className="w-full bg-[#050505]/80 backdrop-blur-lg border-b border-white/5 flex-none">
         <div className="text-center py-4">
           <motion.h3
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-2xl font-black italic tracking-tighter text-blue-600"
+            className="text-2xl font-black italic tracking-tighter text-[#ccff00]"
           >
             TRONGTAISO.COM
           </motion.h3>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-slate-400 text-[8px] tracking-[0.5em] uppercase font-bold"
+            className="text-white/40 text-[8px] tracking-[0.5em] uppercase font-bold"
           >
             Referee Professional System
           </motion.p>
         </div>
       </header>
 
-      {/* NỘI DUNG CHÍNH */}
+      {/* NỘI DUNG CHÍNH - Sử dụng flex-1 và justify-center để tự căn giữa */}
       <main className="flex-1 flex items-center justify-center p-4 relative">
+        {/* Hiệu ứng ánh sáng nền để tăng chiều sâu mà ko làm tràn trang */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#ccff00]/5 blur-[100px] rounded-full" />
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-[420px] z-10"
         >
-          <Card className="bg-white border-slate-100 shadow-xl rounded-3xl overflow-hidden">
+          <Card className="bg-slate-900/40 border-white/5 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden">
             <CardContent className="p-0">
               <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-slate-100 h-14 p-1">
+                <TabsList className="grid w-full grid-cols-2 bg-white/5 h-14 p-1">
                   <TabsTrigger
                     value="login"
-                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-2xl transition-all font-black italic uppercase text-[10px]"
+                    className="data-[state=active]:bg-[#ccff00] data-[state=active]:text-black rounded-2xl transition-all font-black italic uppercase text-[10px]"
                   >
                     Đăng nhập
                   </TabsTrigger>
                   <TabsTrigger
                     value="register"
-                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-2xl transition-all font-black italic uppercase text-[10px]"
+                    className="data-[state=active]:bg-[#ccff00] data-[state=active]:text-black rounded-2xl transition-all font-black italic uppercase text-[10px]"
                   >
                     Đăng ký
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="p-6 max-h-[70vh] overflow-y-auto">
+                {/* Giới hạn chiều cao vùng nội dung để tránh đẩy Card dài quá màn hình */}
+                <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                   <TabsContent
                     value="login"
                     className="mt-0 space-y-4 outline-none"
@@ -114,12 +121,12 @@ export default function AuthPage() {
                           name="username"
                           render={({ field }: { field: any }) => (
                             <FormItem className="space-y-1">
-                              <FormLabel className="text-slate-500 text-[10px] font-bold uppercase ml-1">
+                              <FormLabel className="text-slate-400 text-[10px] font-bold uppercase ml-1">
                                 Username
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  className="h-11 bg-slate-50 border-slate-200 focus:border-blue-500 text-slate-900 rounded-xl transition-all placeholder:text-slate-400"
+                                  className="h-11 bg-black/40 border-white/10 focus:border-[#ccff00] text-white rounded-xl transition-all placeholder:text-slate-600"
                                   placeholder="Tên tài khoản..."
                                   {...field}
                                 />
@@ -133,13 +140,13 @@ export default function AuthPage() {
                           name="password"
                           render={({ field }: { field: any }) => (
                             <FormItem className="space-y-1">
-                              <FormLabel className="text-slate-500 text-[10px] font-bold uppercase ml-1">
+                              <FormLabel className="text-slate-400 text-[10px] font-bold uppercase ml-1">
                                 Mật khẩu
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   type="password"
-                                  className="h-11 bg-slate-50 border-slate-200 focus:border-blue-500 text-slate-900 rounded-xl transition-all"
+                                  className="h-11 bg-black/40 border-white/10 focus:border-[#ccff00] text-white rounded-xl transition-all"
                                   {...field}
                                 />
                               </FormControl>
@@ -149,7 +156,7 @@ export default function AuthPage() {
                         />
                         <Button
                           type="submit"
-                          className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 font-black italic uppercase transition-all mt-2 rounded-xl"
+                          className="w-full bg-[#ccff00] hover:bg-[#b3ff00] text-black h-12 font-black italic uppercase transition-all mt-2 rounded-xl"
                           disabled={loginMutation.isPending}
                         >
                           {loginMutation.isPending ? (
@@ -170,18 +177,19 @@ export default function AuthPage() {
                         )}
                         className="space-y-3"
                       >
+                        {/* Các trường đăng ký giữ nguyên, chỉ giảm padding/margin để tiết kiệm không gian */}
                         <div className="grid grid-cols-2 gap-2">
                           <FormField
                             control={registerForm.control}
                             name="username"
                             render={({ field }: { field: any }) => (
                               <FormItem>
-                                <FormLabel className="text-[9px] uppercase font-bold text-slate-500 ml-1">
+                                <FormLabel className="text-[9px] uppercase font-bold text-slate-400 ml-1">
                                   User
                                 </FormLabel>
                                 <FormControl>
                                   <Input
-                                    className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs rounded-lg"
+                                    className="h-9 bg-black/40 border-white/10 text-white text-xs rounded-lg"
                                     {...field}
                                   />
                                 </FormControl>
@@ -194,12 +202,12 @@ export default function AuthPage() {
                             name="fullName"
                             render={({ field }: { field: any }) => (
                               <FormItem>
-                                <FormLabel className="text-[9px] uppercase font-bold text-slate-500 ml-1">
+                                <FormLabel className="text-[9px] uppercase font-bold text-slate-400 ml-1">
                                   Họ tên
                                 </FormLabel>
                                 <FormControl>
                                   <Input
-                                    className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs rounded-lg"
+                                    className="h-9 bg-black/40 border-white/10 text-white text-xs rounded-lg"
                                     {...field}
                                   />
                                 </FormControl>
@@ -214,12 +222,12 @@ export default function AuthPage() {
                             name="phone"
                             render={({ field }: { field: any }) => (
                               <FormItem>
-                                <FormLabel className="text-[9px] uppercase font-bold text-slate-500 ml-1">
+                                <FormLabel className="text-[9px] uppercase font-bold text-slate-400 ml-1">
                                   SĐT
                                 </FormLabel>
                                 <FormControl>
                                   <Input
-                                    className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs rounded-lg"
+                                    className="h-9 bg-black/40 border-white/10 text-white text-xs rounded-lg"
                                     {...field}
                                   />
                                 </FormControl>
@@ -232,12 +240,12 @@ export default function AuthPage() {
                             name="idCard"
                             render={({ field }: { field: any }) => (
                               <FormItem>
-                                <FormLabel className="text-[9px] uppercase font-bold text-slate-500 ml-1">
+                                <FormLabel className="text-[9px] uppercase font-bold text-slate-400 ml-1">
                                   CCCD
                                 </FormLabel>
                                 <FormControl>
                                   <Input
-                                    className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs rounded-lg"
+                                    className="h-9 bg-black/40 border-white/10 text-white text-xs rounded-lg"
                                     {...field}
                                   />
                                 </FormControl>
@@ -251,13 +259,13 @@ export default function AuthPage() {
                           name="password"
                           render={({ field }: { field: any }) => (
                             <FormItem className="space-y-1">
-                              <FormLabel className="text-[9px] uppercase font-bold text-slate-500 ml-1">
+                              <FormLabel className="text-[9px] uppercase font-bold text-slate-400 ml-1">
                                 Mật khẩu
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   type="password"
-                                  className="h-9 bg-slate-50 border-slate-200 text-slate-900 rounded-lg"
+                                  className="h-9 bg-black/40 border-white/10 text-white rounded-lg"
                                   {...field}
                                 />
                               </FormControl>
@@ -267,7 +275,7 @@ export default function AuthPage() {
                         />
                         <Button
                           type="submit"
-                          className="w-full bg-blue-500 hover:bg-blue-600 text-white h-11 font-black italic uppercase transition-all mt-2 rounded-xl"
+                          className="w-full bg-[#ccff00] hover:bg-[#b3ff00] text-black h-11 font-black italic uppercase transition-all mt-2 rounded-xl shadow-lg shadow-[#ccff00]/10"
                           disabled={registerMutation.isPending}
                         >
                           {registerMutation.isPending ? (
@@ -284,7 +292,7 @@ export default function AuthPage() {
             </CardContent>
           </Card>
 
-          <p className="mt-4 text-center text-slate-400 text-[8px] font-medium tracking-widest uppercase">
+          <p className="mt-4 text-center text-slate-500 text-[8px] font-medium tracking-widest uppercase">
             Secure Access • Referee ID Required
           </p>
         </motion.div>

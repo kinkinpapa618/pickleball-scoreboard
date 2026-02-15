@@ -1,4 +1,4 @@
-import { useState } from "react"; // Không cần import React from "react" nữa
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -37,9 +37,9 @@ export function CoinTossModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-950 border-white/10 text-white max-w-[320px] rounded-[2.5rem]">
+      <DialogContent className="bg-white border-slate-100 text-slate-900 max-w-[320px] rounded-[2.5rem]">
         <DialogHeader>
-          <DialogTitle className="text-center font-black italic uppercase tracking-tighter text-[#ccff00]">
+          <DialogTitle className="text-center font-black italic uppercase tracking-tighter text-blue-500">
             Coin Toss
           </DialogTitle>
         </DialogHeader>
@@ -57,11 +57,11 @@ export function CoinTossModal({
               className="w-full h-full relative preserve-3d"
             >
               {/* Mặt trước - Đội 1 */}
-              <div className="absolute inset-0 bg-cyan-500 rounded-full border-4 border-white/20 flex items-center justify-center font-black text-2xl backface-hidden">
+              <div className="absolute inset-0 bg-blue-500 rounded-full border-4 border-blue-600 flex items-center justify-center font-black text-2xl text-white backface-hidden">
                 T1
               </div>
               {/* Mặt sau - Đội 2 */}
-              <div className="absolute inset-0 bg-rose-500 rounded-full border-4 border-white/20 flex items-center justify-center font-black text-2xl backface-hidden [transform:rotateY(180deg)]">
+              <div className="absolute inset-0 bg-orange-500 rounded-full border-4 border-orange-600 flex items-center justify-center font-black text-2xl text-white backface-hidden [transform:rotateY(180deg)]">
                 T2
               </div>
             </motion.div>
@@ -70,7 +70,7 @@ export function CoinTossModal({
           {!result && !isSpinning && (
             <Button
               onClick={handleToss}
-              className="bg-[#ccff00] text-black font-black italic w-full rounded-xl"
+              className="bg-blue-500 text-white font-black italic w-full rounded-xl"
             >
               <lucideReact.Coins className="w-4 h-4 mr-2" /> TUNG XU
             </Button>
@@ -82,20 +82,26 @@ export function CoinTossModal({
               animate={{ opacity: 1, scale: 1 }}
               className="w-full space-y-3"
             >
-              <p className="text-center text-[10px] font-bold uppercase text-white/40 tracking-widest">
+              <p className="text-center text-[10px] font-bold uppercase text-slate-400 tracking-widest">
                 Team {result} thắng! Chọn quyền:
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  onClick={() => onComplete(result, "serve")}
-                  className="bg-white/5 border border-white/10 hover:bg-[#ccff00] hover:text-black text-[10px] font-black italic rounded-xl py-6"
+                  onClick={() => {
+                    onComplete(result, "serve");
+                    onOpenChange(false);
+                  }}
+                  className="bg-blue-500 border border-blue-600 hover:bg-blue-600 text-white text-[10px] font-black italic rounded-xl py-6"
                 >
                   BÓNG
                 </Button>
 
                 <Button
-                  onClick={() => onComplete(result, "side")}
-                  className="bg-white/5 border border-white/10 hover:bg-[#ccff00] hover:text-black text-[10px] font-black italic rounded-xl py-6"
+                  onClick={() => {
+                    onComplete(result, "side");
+                    onOpenChange(false);
+                  }}
+                  className="bg-orange-500 border border-orange-600 hover:bg-orange-600 text-white text-[10px] font-black italic rounded-xl py-6"
                 >
                   SÂN
                 </Button>
@@ -106,4 +112,4 @@ export function CoinTossModal({
       </DialogContent>
     </Dialog>
   );
-} // ĐÂY CHÍNH LÀ DẤU NGOẶC BẠN ĐANG THIẾU
+}

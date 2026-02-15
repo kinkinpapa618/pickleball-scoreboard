@@ -117,7 +117,7 @@ function PlayerMarker({
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="absolute bg-green-400 text-black px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter shadow-md whitespace-nowrap z-30"
+              className="absolute bg-yellow-400 text-black px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter shadow-md whitespace-nowrap z-30"
             >
               <lucideReact.Zap className="w-2 h-2 inline mr-1 fill-current" />
               PHÁT
@@ -139,8 +139,8 @@ function PlayerMarker({
         className={`
         relative overflow-hidden transition-all duration-300
         ${sizeClass}
-        rounded-2xl border-2 flex flex-col items-center justify-center
-        ${isServing ? "bg-white border-green-400 shadow-xl z-30" : "bg-white/90 backdrop-blur-md border-slate-200 shadow-md group-hover:border-[#ccff00]"}
+        rounded-2xl border-1 flex flex-col items-center justify-center
+        ${isServing ? "bg-white border-yellow-400 shadow-xl z-30" : "bg-white/90 backdrop-blur-md border-slate-200 shadow-md group-hover:border-[#ccff00]"}
         ${penalty?.red ? "border-red-600 grayscale opacity-60" : ""}
         ${isStacking ? "ring-2 ring-offset-2 ring-[#ccff00] border-[#ccff00]" : ""}
       `}
@@ -309,10 +309,10 @@ export function Court({
 
   return (
     <div
-      className={`relative w-full bg-slate-200 overflow-hidden border-[4px] border-white shadow-inner ${compact ? "aspect-[4/3] rounded-[2rem]" : "aspect-[16/9] rounded-[3rem]"}`}
+      className={`relative w-full bg-slate-200 overflow-hidden border-[2px] border-white shadow-inner ${compact ? "aspect-[4/3] rounded-[1rem]" : "aspect-[16/9] rounded-[1rem]"}`}
     >
       {/* PROFESSIONAL LIGHT COURT SURFACE */}
-      <div className="absolute inset-0 bg-indigo-500/90">
+      <div className="absolute inset-0 bg-green-500/90">
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
         {/* Kitchen */}
         <div className="absolute inset-0 flex justify-center pointer-events-none">
@@ -360,15 +360,7 @@ export function Court({
 
       {/* Footer Info */}
       <div className="absolute bottom-1/5 left-3 flex items-center gap-3">
-        {firstServe && (
-          <div className="bg-[#ccff00] text-black px-4 py-1 rounded-full font-black text-[9px] italic shadow-md animate-bounce">
-            BẮT ĐẦU: 0-0-2
-          </div>
-        )}
-        <div className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-white font-black text-[9px] italic border border-white/20 flex items-center gap-2">
-          <lucideReact.Trophy className="w-3 h-3 text-yellow-300" /> TRỌNG TÀI
-          SỐ - Scoreboard 1.0
-        </div>
+        <div className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-white font-black text-[9px] italic border border-white/20 flex items-center gap-2"></div>
       </div>
     </div>
   );

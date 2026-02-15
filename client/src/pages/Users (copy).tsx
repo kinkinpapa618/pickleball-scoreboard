@@ -131,23 +131,24 @@ export default function Users() {
   };
 
   return (
-    <div className="p-4 space-y-4 min-h-screen pb-20 bg-[#F8FAFC]">
+    <div className="p-4 space-y-4 min-h-screen pb-20">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => setLocation("/profile")}
-          className="p-2 bg-white rounded-xl hover:bg-slate-100 transition shadow-sm"
+          className="p-2 bg-slate-900 rounded-xl hover:bg-slate-800 transition"
         >
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-black italic uppercase text-slate-900">
-          Quản lý <span className="text-blue-600">Users</span>
+        <h1 className="text-xl font-black italic uppercase text-white">
+          Quản lý <span className="text-[#ccff00]">Users</span>
         </h1>
       </div>
 
       {/* Add Button */}
       <button
         onClick={() => setShowAddModal(true)}
-        className="w-full bg-blue-500 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"
+        className="w-full bg-[#ccff00] text-black py-3 rounded-xl font-black flex items-center justify-center gap-2"
       >
         <Plus className="w-5 h-5" /> Thêm người dùng
       </button>
@@ -162,11 +163,11 @@ export default function Users() {
           {users.map((user) => (
             <div
               key={user.id}
-              className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"
+              className="bg-slate-900 p-4 rounded-2xl border border-white/10"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center font-black text-blue-600">
+                  <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center font-black text-slate-400">
                     {user.fullName
                       ? user.fullName
                           .split(" ")
@@ -177,10 +178,10 @@ export default function Users() {
                       : user.username.slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900">
+                    <h3 className="font-bold text-white">
                       {user.fullName || user.username}
                     </h3>
-                    <p className="text-xs text-slate-400">@{user.username}</p>
+                    <p className="text-xs text-slate-500">@{user.username}</p>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadge(
                         user.role
@@ -192,12 +193,12 @@ export default function Users() {
                 </div>
                 <button
                   onClick={() => setEditingUser(user)}
-                  className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition"
+                  className="p-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition"
                 >
-                  <Edit2 className="w-4 h-4 text-slate-500" />
+                  <Edit2 className="w-4 h-4 text-slate-400" />
                 </button>
               </div>
-              <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-sm">
+              <div className="mt-3 pt-3 border-t border-slate-800 grid grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-2 text-slate-400">
                   <Phone className="w-4 h-4" />
                   {user.phone}
@@ -214,23 +215,113 @@ export default function Users() {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
-            <h2 className="text-xl font-black text-slate-900">Thêm người dùng mới</h2>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 p-6 rounded-2xl w-full max-w-md space-y-4">
+            <h2 className="text-xl font-black">Thêm người dùng mới</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Tên đăng nhập"
+                value={formData.username}
+                onChange={(e) =>
+                  setFormData({ ...formData, username: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Mật khẩu"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+                required
+              />
               <input
                 type="text"
                 placeholder="Họ tên"
                 value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                onChange={(e) =>
+                  setFormData({ ...formData, fullName: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
               />
               <input
                 type="text"
                 placeholder="Số điện thoại"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Căn cước/CMND"
+                value={formData.idCard}
+                onChange={(e) =>
+                  setFormData({ ...formData, idCard: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+                required
+              />
+              <select
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+              >
+                <option value="referee">Trọng tài</option>
+                <option value="manager">Quản lý</option>
+                <option value="admin">Admin</option>
+              </select>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 bg-slate-800 py-3 rounded-xl font-bold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#ccff00] text-black py-3 rounded-xl font-bold"
+                >
+                  Thêm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 p-6 rounded-2xl w-full max-w-md space-y-4">
+            <h2 className="text-xl font-black">Cập nhật người dùng</h2>
+            <form onSubmit={handleUpdate} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Họ tên"
+                value={editingUser.fullName || ""}
+                onChange={(e) =>
+                  setEditingUser({ ...editingUser, fullName: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+              />
+              <input
+                type="text"
+                placeholder="Số điện thoại"
+                value={editingUser.phone}
+                onChange={(e) =>
+                  setEditingUser({ ...editingUser, phone: e.target.value })
+                }
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
               />
               <input
                 type="text"

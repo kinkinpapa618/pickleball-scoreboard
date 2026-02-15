@@ -63,3 +63,157 @@ export function useUpdateMatch() {
     },
   });
 }
+
+// Tournament hooks
+export function useTournaments() {
+  return useQuery<schema.Tournament[]>({
+    queryKey: ["/api/tournaments"],
+    queryFn: async () => {
+      const res = await fetch("/api/tournaments");
+      if (!res.ok) throw new Error("Failed to fetch tournaments");
+      return res.json();
+    },
+  });
+}
+
+export function useTournament(id: number) {
+  return useQuery<schema.Tournament & { players: schema.TournamentPlayer[]; matches: schema.TournamentMatch[] }>({
+    queryKey: [`/api/tournaments/${id}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/tournaments/${id}`);
+      if (!res.ok) throw new Error("Tournament not found");
+      return res.json();
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tournament: Omit<schema.InsertTournament, "creatorId">) => {
+      const res = await apiRequest("POST", "/api/tournaments", tournament);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tournaments"] });
+    },
+  });
+}
+
+export function useUpdateTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<schema.Tournament>;
+    }) => {
+      const res = await apiRequest("PATCH", `/api/tournaments/${id}`, data);
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tournaments/${variables.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tournaments"] });
+    },
+  });
+}
+
+export function useDeleteTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/tournaments/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tournaments"] });
+    },
+  });
+}
+
+export function useGenerateTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      players,
+      teamsPerGroup,
+    }: {
+      tournamentId: number;
+      players: string[];
+      teamsPerGroup: number;
+    }) => {
+      const res = await apiRequest("POST", `/api/tournaments/${tournamentId}/generate`, {
+        players,
+        teamsPerGroup,
+      });
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tournaments/${variables.tournamentId}`] });
+    },
+  });
+}
+
+export function useReferees() {
+  return useQuery<schema.User[]>({
+    queryKey: ["/api/referees"],
+    queryFn: async () => {
+      const res = await fetch("/api/referees");
+      if (!res.ok) throw new Error("Failed to fetch referees");
+      return res.json();
+    },
+  });
+}
+
+export function useAssignReferee() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      matchId,
+      refereeId,
+    }: {
+      tournamentId: number;
+      matchId: number;
+      refereeId: number;
+    }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/tournaments/${tournamentId}/matches/${matchId}/assign-referee`,
+        { refereeId }
+      );
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tournaments/${variables.tournamentId}`] });
+    },
+  });
+}
+
+export function useStartTournamentMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      matchId,
+    }: {
+      tournamentId: number;
+      matchId: number;
+    }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/tournaments/${tournamentId}/matches/${matchId}/start`,
+        {}
+      );
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tournaments/${variables.tournamentId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+    },
+  });
+}

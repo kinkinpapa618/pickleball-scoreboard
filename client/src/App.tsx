@@ -1,15 +1,17 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { Loader2 } from "lucide-react";
 
 import Home from "@/pages/Home";
 import RefereeTools from "@/pages/RefereeTools";
 import Match from "@/pages/Match";
 import MatchView from "@/pages/MatchView";
+import MatchDetail from "@/pages/MatchDetail";
 import Profile from "@/pages/Profile";
 import Users from "@/pages/Users";
 import NotFound from "@/pages/not-found";
@@ -46,16 +48,14 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
 
       {/* Các trang yêu cầu Đăng nhập mới được vào */}
-      <Route path="/">{() => <ProtectedRoute component={Home} />}</Route>
+      <Route path="/" component={Home} />
 
       <Route path="/tools">
-        {() => <ProtectedRoute component={RefereeTools} />}
+        {() => <RefereeTools />}
       </Route>
 
       {/* Route cho trận đấu với query string (?matchId=...) */}
-      <Route path="/match">
-        {() => <ProtectedRoute component={Match} />}
-      </Route>
+      <Route path="/match">{() => <ProtectedRoute component={Match} />}</Route>
 
       {/* Sửa lại Path có :id để nhận ID trận đấu từ DB */}
       <Route path="/match/:id">
@@ -65,13 +65,16 @@ function Router() {
       {/* Route xem công khai (không cần bảo vệ) */}
       <Route path="/match-view/:id" component={MatchView} />
 
+      {/* Route chi tiết trận đấu (cho trận đã hoàn thành) */}
+      <Route path="/match-detail/:id">
+        {() => <ProtectedRoute component={MatchDetail} />}
+      </Route>
+
       <Route path="/profile">
         {() => <ProtectedRoute component={Profile} />}
       </Route>
 
-      <Route path="/users">
-        {() => <ProtectedRoute component={Users} />}
-      </Route>
+      <Route path="/users">{() => <ProtectedRoute component={Users} />}</Route>
 
       {/* Trang lỗi */}
       <Route component={NotFound} />
@@ -80,26 +83,37 @@ function Router() {
 }
 
 // --- 3. COMPONENT TỔNG ---
+function AppContent() {
+  const { theme } = useTheme();
+
+  return (
+    <div className={`min-h-screen pb-20 bg-white text-foreground`}>
+      <Router />
+      {/* BottomNav thường chỉ hiện khi đã đăng nhập */}
+      <ConditionalBottomNav />
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <div className="min-h-screen bg-[#050505] text-white pb-20">
-          <Router />
-          {/* BottomNav thường chỉ hiện khi đã đăng nhập */}
-          <ConditionalBottomNav />
-        </div>
-        <Toaster />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
 
 // Helper để ẩn BottomNav ở trang Auth
 function ConditionalBottomNav() {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return null;
-  if (!user) return null;
+  const [location] = useLocation();
+  if (location === "/auth") return null;
+  // Không hiện Nav khi đang trong trận đấu để tập trung
+  if (location.includes("/match")) return null;
   return <BottomNav />;
 }
 

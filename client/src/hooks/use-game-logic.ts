@@ -47,11 +47,20 @@ export function useGameLogic(
 
   // HÀM RESET STATE (dùng để khôi phục điểm từ server)
   const resetState = useCallback(
-    (newData: { score1: number; score2: number }) => {
+    (newData: { 
+      score1: number; 
+      score2: number;
+      serverTeam?: 1 | 2;
+      serverHand?: 1 | 2;
+      isFirstServeOfMatch?: boolean;
+    }) => {
       setState((prev) => ({
         ...prev,
         score1: newData.score1,
         score2: newData.score2,
+        serverTeam: newData.serverTeam ?? prev.serverTeam,
+        serverHand: newData.serverHand ?? prev.serverHand,
+        isFirstServeOfMatch: newData.isFirstServeOfMatch ?? prev.isFirstServeOfMatch,
         gameHistory: [], // Xóa lịch sử cũ
       }));
     },

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTournament } from "@/context/TournamentContext";
+import CreateTournament from "./CreateTournament";
 
 // --- 1. ĐỊNH NGHĨA KIỂU DỮ LIỆU ---
 type Format = "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE";
@@ -33,6 +34,15 @@ const AVAILABLE_COURTS = [1, 2, 3, 4]; // Danh sách sân có sẵn
 export default function TournamentManager() {
   const { stats, history, resetTournament, showToast } = useTournament();
 
+  const [tournamentInfo, setTournamentInfo] = useState<{
+    name: string;
+    date: string;
+    time: string;
+    location: string;
+    level: string;
+    content: string[];
+  } | null>(null);
+
   // Danh sách vận động viên (Demo)
   const [players] = useState<string[]>([
     "Minh",
@@ -46,6 +56,18 @@ export default function TournamentManager() {
   ]);
   const [format, setFormat] = useState<Format>("ROUND_ROBIN");
   const [matches, setMatches] = useState<Match[]>([]);
+
+  const handleTournamentSubmit = (data: {
+    name: string;
+    date: string;
+    time: string;
+    location: string;
+    level: string;
+    content: string[];
+  }) => {
+    setTournamentInfo(data);
+    showToast(`Đã lưu thông tin giải: ${data.name}`, "success");
+  };
 
   // --- 2. LOGIC TẠO GIẢI ĐẤU ---
   const generateTournament = () => {
@@ -174,6 +196,34 @@ export default function TournamentManager() {
           </Button>
         </div>
       </section>
+
+      {/* BƯỚC 1: NHẬP THÔNG TIN GIẢI ĐẤU */}
+      {!tournamentInfo ? (
+        <CreateTournament onSubmit={handleTournamentSubmit} />
+      ) : (
+        <Card className="bg-slate-900/80 border-white/5 mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-black italic text-lg">{tournamentInfo.name}</h3>
+                <p className="text-white/50 text-sm">
+                  {tournamentInfo.date} • {tournamentInfo.location}
+                </p>
+                <p className="text-[#ccff00] text-xs mt-1">
+                  Level: {tournamentInfo.level.toUpperCase()} | Nội dung: {tournamentInfo.content.join(", ")}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setTournamentInfo(null)}
+                className="bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+              >
+                Sửa
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* CHỌN THỂ THỨC */}
       <section>

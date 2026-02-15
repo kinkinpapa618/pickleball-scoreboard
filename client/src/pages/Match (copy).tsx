@@ -39,15 +39,7 @@ interface PenaltiesState {
   [key: string]: PlayerPenalty;
 }
 
-type TimelineEventType =
-  | "score"
-  | "fault"
-  | "switch-sides"
-  | "yellow-card"
-  | "red-card"
-  | "stacking"
-  | "undo"
-  | "timeout";
+type TimelineEventType = "score" | "fault" | "switch-sides" | "yellow-card" | "red-card" | "stacking" | "undo" | "timeout";
 
 interface TimelineEvent {
   id: string;
@@ -100,7 +92,7 @@ export default function Match() {
           isFirstServeOfMatch: serverMatch.isFirstServeOfMatch ?? true,
         });
       }
-
+      
       // Restore timeouts
       if (serverMatch.timeouts) {
         try {
@@ -110,7 +102,7 @@ export default function Match() {
           console.error("Failed to parse timeouts", e);
         }
       }
-
+      
       // Restore timeline
       if (serverMatch.timeline) {
         try {
@@ -212,7 +204,6 @@ export default function Match() {
             scoreTeam2: state.score2,
             winnerTeam: state.winner,
             status: "finished",
-            endTime: new Date(),
           },
         });
       } else {
@@ -303,10 +294,7 @@ export default function Match() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const [timeouts, setTimeouts] = useState<{ team1: number; team2: number }>({
-    team1: 2,
-    team2: 2,
-  });
+  const [timeouts, setTimeouts] = useState<{ team1: number; team2: number }>({ team1: 2, team2: 2 });
   const [isTimeoutActive, setIsTimeoutActive] = useState(false);
   const [timeoutTeam, setTimeoutTeam] = useState<1 | 2 | null>(null);
   const [timeoutSeconds, setTimeoutSeconds] = useState(180);
@@ -366,7 +354,7 @@ export default function Match() {
       serverTeam?: 1 | 2;
       serverHand?: 1 | 2;
       scorerTeam?: 1 | 2;
-    },
+    }
   ) => {
     const event: TimelineEvent = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -395,9 +383,7 @@ export default function Match() {
     });
   };
 
-  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(
-    null,
-  );
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
 
   const [selectedPlayer, setSelectedPlayer] = useState<{
     id: string;
@@ -413,15 +399,11 @@ export default function Match() {
       newState[playerKey] = { ...prev[playerKey] };
       if (type === "yellow") {
         newState[playerKey].yellow += 1;
-        addTimelineEvent("yellow-card", playerKey.startsWith("t1") ? 1 : 2, {
-          playerName,
-        });
+        addTimelineEvent("yellow-card", playerKey.startsWith("t1") ? 1 : 2, { playerName });
         if (newState[playerKey].yellow >= 2) handleForfeit(playerKey);
       } else {
         newState[playerKey].red = true;
-        addTimelineEvent("red-card", playerKey.startsWith("t1") ? 1 : 2, {
-          playerName,
-        });
+        addTimelineEvent("red-card", playerKey.startsWith("t1") ? 1 : 2, { playerName });
         handleForfeit(playerKey);
       }
       return newState;
@@ -449,7 +431,7 @@ export default function Match() {
     const { id, team, currentSide, name } = selectedPlayer;
 
     const wasStacking = stackingMap[id];
-
+    
     setStackingMap((prev) => {
       const newMap = { ...prev };
       if (newMap[id]) {
@@ -461,7 +443,7 @@ export default function Match() {
       }
       return newMap;
     });
-
+    
     if (!wasStacking) {
       addTimelineEvent("stacking", team, { playerName: name });
     }
@@ -495,9 +477,7 @@ export default function Match() {
   const getEventColor = (type: TimelineEventType, team: 1 | 2 | null) => {
     switch (type) {
       case "score":
-        return team === 1
-          ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-          : "bg-rose-500/20 text-rose-400 border-rose-500/30";
+        return team === 1 ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" : "bg-rose-500/20 text-rose-400 border-rose-500/30";
       case "fault":
         return "bg-orange-500/20 text-orange-400 border-orange-500/30";
       case "yellow-card":
@@ -509,9 +489,7 @@ export default function Match() {
       case "undo":
         return "bg-white/10 text-white/50 border-white/20";
       case "timeout":
-        return team === 1
-          ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-          : "bg-rose-500/20 text-rose-400 border-rose-500/30";
+        return team === 1 ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" : "bg-rose-500/20 text-rose-400 border-rose-500/30";
       default:
         return "bg-white/10 text-white/50 border-white/20";
     }
@@ -540,30 +518,19 @@ export default function Match() {
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const [prevHistoryLength, setPrevHistoryLength] = useState(
-    state.gameHistory.length,
-  );
-
+  const [prevHistoryLength, setPrevHistoryLength] = useState(state.gameHistory.length);
+  
   useEffect(() => {
     if (state.gameHistory.length < prevHistoryLength) {
       setTimeline((prev) => {
         const newTimeline = [...prev];
         const lastScoreIndex = newTimeline.length - 1;
-        if (
-          lastScoreIndex >= 0 &&
-          newTimeline[lastScoreIndex].type === "score"
-        ) {
+        if (lastScoreIndex >= 0 && newTimeline[lastScoreIndex].type === "score") {
           newTimeline.pop();
-        } else if (
-          lastScoreIndex >= 0 &&
-          newTimeline[lastScoreIndex].type === "fault"
-        ) {
+        } else if (lastScoreIndex >= 0 && newTimeline[lastScoreIndex].type === "fault") {
           newTimeline.pop();
         }
         return newTimeline;
@@ -575,27 +542,27 @@ export default function Match() {
   // Lấy giá trị firstServe từ state (theo hook mới nhất)
   const isFirstServeActive = state.isFirstServeOfMatch;
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans overflow-hidden text-slate-900">
+    <div className="min-h-screen bg-[#050505] flex flex-col font-sans overflow-hidden">
       {/* Header */}
-      <header className="px-1 py-1 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between sticky top-0 z-50">
+      <header className="px-3 py-2 bg-slate-900/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between sticky top-0 z-50">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setLocation("/")}
-          className="text-slate-400 hover:text-slate-600 h-10 w-10 bg-slate-100 hover:bg-slate-200 rounded-xl"
+          className="text-white/40 hover:text-white h-9 w-9"
         >
-          <Home className="w-5 h-5" />
+          <Home className="w-4 h-4" />
         </Button>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-black rounded-lg border border-white/10">
             {isTimerRunning ? (
-              <Play className="w-3 h-3 text-green-500" />
+              <Play className="w-2.5 h-2.5 text-green-400" />
             ) : state.winner ? (
-              <Trophy className="w-3 h-3 text-blue-500" />
+              <Trophy className="w-2.5 h-2.5 text-[#ccff00]" />
             ) : (
-              <Pause className="w-3 h-3 text-orange-500" />
+              <Pause className="w-2.5 h-2.5 text-yellow-400" />
             )}
-            <span className="text-sm font-black italic text-slate-900 leading-none">
+            <span className="text-sm font-black italic text-white leading-none">
               {formatTimerDisplay(elapsedSeconds)}
             </span>
           </div>
@@ -608,14 +575,14 @@ export default function Match() {
             addTimelineEvent("undo", null);
           }}
           disabled={state.gameHistory.length === 0}
-          className="text-slate-400 hover:text-blue-500 h-10 w-10 bg-slate-100 hover:bg-blue-50 rounded-xl"
+          className="text-white/40 hover:text-[#ccff00] h-9 w-9"
         >
-          <Undo2 className="w-5 h-5" />
+          <Undo2 className="w-4 h-4" />
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col p-2 space-y-3 max-w-3xl mx-auto w-full overflow-hidden">
-        <div className="bg-white-500 border border-slate-100 rounded-2xl p-3 shadow-lg shadow-blue-500/30">
+      <main className="flex-1 flex flex-col p-3 space-y-3 max-w-3xl mx-auto w-full overflow-hidden">
+        <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-3 backdrop-blur-md">
           <Scoreboard
             score1={state.score1}
             score2={state.score2}
@@ -626,25 +593,20 @@ export default function Match() {
         </div>
 
         {timeline.length > 0 && (
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-2">
+          <div className="bg-slate-900/30 border border-white/5 rounded-2xl p-2 backdrop-blur-md">
             <div className="flex gap-1 overflow-x-hidden pb-1">
-              {[...timeline]
-                .reverse()
-                .slice(0, 8)
-                .map((event) => (
-                  <button
-                    key={event.id}
-                    onClick={() => setSelectedEvent(event)}
-                    className={`flex-shrink-0 px-2 py-1 rounded-lg border text-[10px] font-bold flex items-center gap-1 ${getEventColor(event.type, event.team)} hover:opacity-80 transition-opacity`}
-                  >
-                    {getEventIcon(event.type)}
-                    <span className="whitespace-nowrap">
-                      {event.type === "score"
-                        ? `${event.score1}-${event.score2}`
-                        : getEventLabel(event)}
-                    </span>
-                  </button>
-                ))}
+              {[...timeline].reverse().slice(0, 8).map((event) => (
+                <button
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  className={`flex-shrink-0 px-2 py-1 rounded-lg border text-[10px] font-bold flex items-center gap-1 ${getEventColor(event.type, event.team)} hover:opacity-80 transition-opacity`}
+                >
+                  {getEventIcon(event.type)}
+                  <span className="whitespace-nowrap">
+                    {event.type === "score" ? `${event.score1}-${event.score2}` : getEventLabel(event)}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -669,32 +631,28 @@ export default function Match() {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => startTimeout(1)}
-              disabled={
-                !!state.winner || timeouts.team1 === 0 || isTimeoutActive
-              }
+              disabled={!!state.winner || timeouts.team1 === 0 || isTimeoutActive}
               className="h-9 px-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center gap-1.5 text-cyan-400"
             >
               <Timer className="w-3.5 h-3.5" />
               <span className="text-[9px] font-black italic">
-                TIMEOUT T1 ({timeouts.team1})
+                T1 ({timeouts.team1})
               </span>
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => startTimeout(2)}
-              disabled={
-                !!state.winner || timeouts.team2 === 0 || isTimeoutActive
-              }
+              disabled={!!state.winner || timeouts.team2 === 0 || isTimeoutActive}
               className="h-9 px-3 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center gap-1.5 text-rose-400"
             >
               <Timer className="w-3.5 h-3.5" />
               <span className="text-[9px] font-black italic">
-                TIMEOUT T2 ({timeouts.team2})
+                T2 ({timeouts.team2})
               </span>
             </motion.button>
           </div>
-          <div className="text-center mt-1 text-[10px] text-black/50 italic">
-            * Chạm vào icon VĐV để Stacking / Thẻ phạt
+          <div className="text-center mt-1 text-[9px] text-white/30 italic">
+            * Chạm cầu thủ để Stacking / Thẻ phạt
           </div>
         </div>
 
@@ -703,10 +661,10 @@ export default function Match() {
             whileTap={{ scale: 0.95 }}
             onClick={handleScorePoint}
             disabled={!!state.winner}
-            className="h-20 rounded-2xl bg-blue-500 flex flex-col items-center justify-center text-white shadow-lg"
+            className="h-16 rounded-2xl bg-[#ccff00] flex flex-col items-center justify-center text-black shadow-lg"
           >
-            <CheckCircle2 className="w-6 h-6 mb-1" />
-            <span className="text-xs font-black italic uppercase">
+            <CheckCircle2 className="w-5 h-5 mb-1" />
+            <span className="text-[10px] font-black italic uppercase">
               GHI ĐIỂM
             </span>
           </motion.button>
@@ -714,11 +672,11 @@ export default function Match() {
             whileTap={{ scale: 0.95 }}
             onClick={handleFault}
             disabled={!!state.winner}
-            className="h-20 rounded-2xl bg-orange-500 flex flex-col items-center justify-center text-white shadow-lg"
+            className="h-16 rounded-2xl bg-slate-800 border border-white/10 flex flex-col items-center justify-center text-white"
           >
-            <AlertOctagon className="w-6 h-6 mb-1" />
-            <span className="text-xs font-black italic uppercase">
-              ĐỔI GIAO
+            <AlertOctagon className="w-5 h-5 mb-1 text-rose-500" />
+            <span className="text-[10px] font-black italic uppercase text-white/60">
+              LỖI / ĐỔI GIAO
             </span>
           </motion.button>
         </div>
@@ -729,23 +687,23 @@ export default function Match() {
         open={!!selectedPlayer}
         onOpenChange={(open) => !open && setSelectedPlayer(null)}
       >
-        <DialogContent className="max-w-xs bg-white border-slate-100 rounded-3xl p-6">
+        <DialogContent className="max-w-xs bg-slate-900 border-white/10 rounded-3xl p-6">
           {selectedPlayer && (
             <div className="space-y-6">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-3 text-slate-900">
+                <DialogTitle className="flex items-center gap-3 text-white">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       selectedPlayer.team === 1
-                        ? "bg-blue-500 text-white"
-                        : "bg-orange-500 text-white"
+                        ? "bg-cyan-500 text-black"
+                        : "bg-rose-500 text-white"
                     }`}
                   >
                     <UserCog className="w-6 h-6" />
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      Cài đặt VĐV
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                      Cài đặt cầu thủ
                     </div>
                     <div className="text-xl font-black italic">
                       {selectedPlayer.name}
@@ -755,26 +713,26 @@ export default function Match() {
               </DialogHeader>
 
               {/* Stacking Toggle */}
-              <div className="bg-slate-50 p-4 rounded-xl flex items-center justify-between">
+              <div className="bg-white/5 p-4 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {isCurrentPlayerStacking ? (
-                    <Lock className="w-5 h-5 text-blue-500" />
+                    <Lock className="w-5 h-5 text-[#ccff00]" />
                   ) : (
-                    <Layers className="w-5 h-5 text-indigo-500" />
+                    <Layers className="w-5 h-5 text-indigo-400" />
                   )}
                   <div>
                     <div
                       className={`font-bold text-sm ${
                         isCurrentPlayerStacking
-                          ? "text-blue-500"
-                          : "text-slate-900"
+                          ? "text-[#ccff00]"
+                          : "text-white"
                       }`}
                     >
                       {isCurrentPlayerStacking
                         ? "ĐANG STACKING"
                         : "Bật Stacking"}
                     </div>
-                    <div className="text-[10px] text-slate-400">
+                    <div className="text-[10px] text-white/40">
                       {isCurrentPlayerStacking
                         ? `Khóa vị trí: ${stackingMap[selectedPlayer.id] === "left" ? "Trái" : "Phải"}`
                         : "Giữ vị trí hiện tại"}
@@ -784,7 +742,7 @@ export default function Match() {
                 <div
                   onClick={togglePlayerStacking}
                   className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${
-                    isCurrentPlayerStacking ? "bg-blue-500" : "bg-slate-200"
+                    isCurrentPlayerStacking ? "bg-[#ccff00]" : "bg-white/20"
                   }`}
                 >
                   <div
@@ -799,7 +757,7 @@ export default function Match() {
 
               {/* Penalty Controls */}
               <div className="space-y-2">
-                <div className="text-[10px] font-bold text-slate-400 uppercase ml-1">
+                <div className="text-[10px] font-bold text-white/40 uppercase ml-1">
                   Xử lý vi phạm
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -829,22 +787,17 @@ export default function Match() {
       </Dialog>
 
       {/* Timeline Event Detail Modal */}
-      <Dialog
-        open={!!selectedEvent}
-        onOpenChange={(open) => !open && setSelectedEvent(null)}
-      >
-        <DialogContent className="max-w-xs bg-white border-slate-100 rounded-[2rem] p-6">
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent className="max-w-xs bg-slate-900 border-white/10 rounded-[2rem] p-6">
           {selectedEvent && (
             <div className="space-y-4">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-3 text-slate-900">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${getEventColor(selectedEvent.type, selectedEvent.team)} border`}
-                  >
+                <DialogTitle className="flex items-center gap-3 text-white">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getEventColor(selectedEvent.type, selectedEvent.team)} border`}>
                     {getEventIcon(selectedEvent.type)}
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
                       Chi tiết sự kiện
                     </div>
                     <div className="text-lg font-black italic">
@@ -854,59 +807,38 @@ export default function Match() {
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+              <div className="bg-white/5 rounded-xl p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-slate-400 uppercase">
-                    Thời gian
-                  </span>
-                  <span className="text-sm font-bold text-slate-900">
-                    {formatTime(selectedEvent.timestamp)}
-                  </span>
+                  <span className="text-[10px] text-white/40 uppercase">Thời gian</span>
+                  <span className="text-sm font-bold text-white">{formatTime(selectedEvent.timestamp)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-slate-400 uppercase">
-                    Tỷ số
-                  </span>
-                  <span className="text-sm font-black text-slate-900">
-                    <span className="text-blue-500">
-                      {selectedEvent.score1}
-                    </span>
-                    <span className="text-slate-300 mx-1">-</span>
-                    <span className="text-orange-500">
-                      {selectedEvent.score2}
-                    </span>
+                  <span className="text-[10px] text-white/40 uppercase">Tỷ số</span>
+                  <span className="text-sm font-black text-white">
+                    <span className="text-cyan-400">{selectedEvent.score1}</span>
+                    <span className="text-white/30 mx-1">-</span>
+                    <span className="text-rose-400">{selectedEvent.score2}</span>
                   </span>
                 </div>
-
-                {(selectedEvent.type === "score" ||
-                  selectedEvent.type === "fault") && (
+                
+                {(selectedEvent.type === "score" || selectedEvent.type === "fault") && (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-400 uppercase">
-                        Người phát
-                      </span>
-                      <span className="text-sm font-bold text-slate-900">
+                      <span className="text-[10px] text-white/40 uppercase">Người phát</span>
+                      <span className="text-sm font-bold text-white">
                         {selectedEvent.serverPlayer || "Unknown"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-400 uppercase">
-                        Đội phát
-                      </span>
-                      <span
-                        className={`text-sm font-bold ${selectedEvent.serverTeam === 1 ? "text-blue-500" : "text-orange-500"}`}
-                      >
+                      <span className="text-[10px] text-white/40 uppercase">Đội phát</span>
+                      <span className={`text-sm font-bold ${selectedEvent.serverTeam === 1 ? "text-cyan-400" : "text-rose-400"}`}>
                         Team {selectedEvent.serverTeam}
                       </span>
                     </div>
                     {selectedEvent.type === "score" && (
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-slate-400 uppercase">
-                          Ghi điểm
-                        </span>
-                        <span
-                          className={`text-sm font-bold ${selectedEvent.scorerTeam === 1 ? "text-blue-500" : "text-orange-500"}`}
-                        >
+                        <span className="text-[10px] text-white/40 uppercase">Ghi điểm</span>
+                        <span className={`text-sm font-bold ${selectedEvent.scorerTeam === 1 ? "text-cyan-400" : "text-rose-400"}`}>
                           Team {selectedEvent.scorerTeam}
                         </span>
                       </div>
@@ -914,26 +846,17 @@ export default function Match() {
                   </>
                 )}
 
-                {(selectedEvent.type === "yellow-card" ||
-                  selectedEvent.type === "red-card") && (
+                {(selectedEvent.type === "yellow-card" || selectedEvent.type === "red-card") && (
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-400 uppercase">
-                      VĐV
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {selectedEvent.playerName}
-                    </span>
+                    <span className="text-[10px] text-white/40 uppercase">Cầu thủ</span>
+                    <span className="text-sm font-bold text-white">{selectedEvent.playerName}</span>
                   </div>
                 )}
 
                 {selectedEvent.type === "stacking" && (
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-400 uppercase">
-                      Cầu thủ
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {selectedEvent.playerName}
-                    </span>
+                    <span className="text-[10px] text-white/40 uppercase">Cầu thủ</span>
+                    <span className="text-sm font-bold text-white">{selectedEvent.playerName}</span>
                   </div>
                 )}
               </div>
@@ -941,7 +864,7 @@ export default function Match() {
               <Button
                 variant="ghost"
                 onClick={() => setSelectedEvent(null)}
-                className="w-full text-slate-400 hover:text-slate-600"
+                className="w-full text-white/40 hover:text-white"
               >
                 Đóng
               </Button>
@@ -952,22 +875,16 @@ export default function Match() {
 
       {/* Timeout Modal */}
       <Dialog open={isTimeoutActive}>
-        <DialogContent className="max-w-sm bg-white border-slate-100 rounded-[2rem] p-8 text-center">
-          <Timer
-            className={`w-20 h-20 mx-auto mb-4 ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-orange-500"}`}
-          />
-          <DialogTitle className="text-3xl font-black italic text-slate-900 uppercase mb-2">
+        <DialogContent className="max-w-sm bg-slate-900 border-white/10 rounded-[2rem] p-8 text-center">
+          <Timer className={`w-20 h-20 mx-auto mb-4 ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-yellow-400"}`} />
+          <DialogTitle className="text-3xl font-black italic text-white uppercase mb-2">
             TIMEOUT
           </DialogTitle>
-          <p
-            className={`text-xl font-black italic mb-6 ${timeoutTeam === 1 ? "text-blue-500" : "text-orange-500"}`}
-          >
+          <p className={`text-xl font-black italic mb-6 ${timeoutTeam === 1 ? "text-cyan-400" : "text-rose-400"}`}>
             TEAM {timeoutTeam}
           </p>
-
-          <div
-            className={`text-7xl font-black mb-6 ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-slate-900"}`}
-          >
+          
+          <div className={`text-7xl font-black mb-6 ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-white"}`}>
             {formatTimerDisplay(timeoutSeconds)}
           </div>
 
@@ -983,14 +900,14 @@ export default function Match() {
 
       {/* Winner Modal */}
       <Dialog open={!!state.winner}>
-        <DialogContent className="max-w-xs bg-white border-slate-100 rounded-[2rem] p-8 text-center">
-          <Trophy className="w-16 h-16 text-blue-500 mb-4 mx-auto" />
-          <DialogTitle className="text-2xl font-black italic text-slate-900 uppercase mb-2">
+        <DialogContent className="max-w-xs bg-slate-900 border-white/10 rounded-[2rem] p-8 text-center">
+          <Trophy className="w-16 h-16 text-[#ccff00] mb-4 mx-auto" />
+          <DialogTitle className="text-2xl font-black italic text-white uppercase mb-2">
             Victory!
           </DialogTitle>
           <p
             className={`text-xl font-black italic mb-6 ${
-              state.winner === 1 ? "text-blue-500" : "text-orange-500"
+              state.winner === 1 ? "text-cyan-400" : "text-rose-500"
             }`}
           >
             TEAM {state.winner === 1 ? "01" : "02"}
@@ -998,14 +915,14 @@ export default function Match() {
           <div className="space-y-3">
             <Button
               onClick={() => window.location.reload()}
-              className="w-full bg-blue-500 text-white font-black italic h-12 rounded-xl"
+              className="w-full bg-[#ccff00] text-black font-black italic h-12 rounded-xl"
             >
               <RotateCcw className="w-4 h-4 mr-2" /> ĐẤU LẠI
             </Button>
             <Button
               variant="ghost"
               onClick={() => setLocation("/")}
-              className="w-full text-slate-400 font-bold uppercase text-[10px]"
+              className="w-full text-white/40 font-bold uppercase text-[10px]"
             >
               Về trang chủ
             </Button>

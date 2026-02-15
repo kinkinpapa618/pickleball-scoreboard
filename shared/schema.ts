@@ -92,6 +92,13 @@ export const matches = pgTable("matches", {
   timeline: text("timeline"), // JSON string of timeline events
   timeouts: text("timeouts"), // JSON: { team1: 2, team2: 2 }
 
+  // Thời gian bắt đầu trận đấu (khi status = 'live')
+  startTime: timestamp("start_time"),
+  endTime: timestamp("end_time"),
+
+  // Lượt phát đầu tiên của trận (để hiển thị số 2)
+  isFirstServeOfMatch: boolean("is_first_serve_of_match"),
+
   // Liên kết trọng tài (Referee) điều khiển trận đấu
   refereeId: integer("referee_id").references(() => users.id),
 
@@ -120,7 +127,7 @@ export const insertPlayerSchema = createInsertSchema(players).omit({
 // Match Schema
 export const insertMatchSchema = createInsertSchema(matches).omit({
   date: true,
-  id: true, // Thường ID tự tăng nên omit khi insert
+  id: true,
 });
 
 // === 5. TYPES DEFINITIONS ===
@@ -145,3 +152,83 @@ export interface TournamentGroup {
 }
 
 export type CreateMatchRequest = InsertMatch;
+
+// === 6. TOURNAMENT DEFINITIONS ===
+export const tournaments = pgTable("tournaments", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  teamsPerGroup: integer("teams_per_group").default(4),
+  winningScore: integer("winning_score").default(11),
+  status: text("status").notNull().default("draft"), // 'draft', 'active', 'completed', 'cancelled'
+  
+  // Người tạo giải đấu
+  creatorId: integer("creator_id").references(() => users.id).notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const tournamentPlayers = pgTable("tournament_players", {
+  id: serial("id").primaryKey(),
+  tournamentId: integer("tournament_id").references(() => tournaments.id).notNull(),
+  name: text("name").notNull(),
+  groupName: text("group_name"), // A, B, C, D...
+  seed: integer("seed"), // Thứ tự seed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const tournamentMatches = pgTable("tournament_matches", {
+  id: serial("id").primaryKey(),
+  tournamentId: integer("tournament_id").references(() => tournaments.id).notNull(),
+  
+  // Liên kết với match thực tế (nếu đã tạo trận)
+  matchId: integer("match_id").references(() => matches.id),
+  
+  // Thông tin trận đấu
+  team1Player1: text("team1_player1").notNull(),
+  team1Player2: text("team1_player2").notNull(),
+  team2Player1: text("team2_player1").notNull(),
+  team2Player2: text("team2_player2").notNull(),
+  
+  groupName: text("group_name"), // Bảng đấu
+  round: integer("round"), // Vòng đấu
+  matchOrder: integer("match_order"), // Thứ tự trong vòng
+  
+  status: text("status").notNull().default("pending"), // 'pending', 'scheduled', 'live', 'completed'
+  
+  // Referee được assign điều khiển trận
+  refereeId: integer("referee_id").references(() => users.id),
+  
+  scheduledAt: timestamp("scheduled_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ZOD SCHEMAS
+export const insertTournamentSchema = createInsertSchema(tournaments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  status: z.enum(["draft", "active", "completed", "cancelled"]).default("draft"),
+});
+
+export const insertTournamentPlayerSchema = createInsertSchema(tournamentPlayers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTournamentMatchSchema = createInsertSchema(tournamentMatches).omit({
+  id: true,
+  createdAt: true,
+});
+
+// TYPES
+export type Tournament = typeof tournaments.$inferSelect;
+export type InsertTournament = z.infer<typeof insertTournamentSchema>;
+
+export type TournamentPlayer = typeof tournamentPlayers.$inferSelect;
+export type InsertTournamentPlayer = z.infer<typeof insertTournamentPlayerSchema>;
+
+export type TournamentMatch = typeof tournamentMatches.$inferSelect;
+export type InsertTournamentMatch = z.infer<typeof insertTournamentMatchSchema>;
