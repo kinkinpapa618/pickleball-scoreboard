@@ -220,6 +220,20 @@ export default function Users() {
             <form onSubmit={handleSubmit} className="space-y-3">
               <input
                 type="text"
+                placeholder="Tên đăng nhập"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+              />
+              <input
+                type="password"
+                placeholder="Mật khẩu"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+              />
+              <input
+                type="text"
                 placeholder="Họ tên"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
@@ -235,18 +249,78 @@ export default function Users() {
               <input
                 type="text"
                 placeholder="Căn cước/CMND"
+                value={formData.idCard}
+                onChange={(e) => setFormData({ ...formData, idCard: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+              />
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+              >
+                <option value="referee">Trọng tài</option>
+                <option value="manager">Quản lý</option>
+                <option value="admin">Admin</option>
+              </select>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-slate-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-500 py-3 rounded-xl font-bold text-white"
+                >
+                  Thêm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
+            <h2 className="text-xl font-black text-slate-900">Sửa người dùng</h2>
+            <form onSubmit={handleUpdate} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Họ tên"
+                value={editingUser.fullName || ""}
+                onChange={(e) =>
+                  setEditingUser({ ...editingUser, fullName: e.target.value })
+                }
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+              />
+              <input
+                type="text"
+                placeholder="Số điện thoại"
+                value={editingUser.phone}
+                onChange={(e) =>
+                  setEditingUser({ ...editingUser, phone: e.target.value })
+                }
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+              />
+              <input
+                type="text"
+                placeholder="Căn cước/CMND"
                 value={editingUser.idCard}
                 onChange={(e) =>
                   setEditingUser({ ...editingUser, idCard: e.target.value })
                 }
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
               />
               <select
                 value={editingUser.role}
                 onChange={(e) =>
                   setEditingUser({ ...editingUser, role: e.target.value })
                 }
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
               >
                 <option value="referee">Trọng tài</option>
                 <option value="manager">Quản lý</option>
@@ -256,13 +330,13 @@ export default function Users() {
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="flex-1 bg-slate-800 py-3 rounded-xl font-bold"
+                  className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-slate-700"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-[#ccff00] text-black py-3 rounded-xl font-bold"
+                  className="flex-1 bg-blue-500 py-3 rounded-xl font-bold text-white"
                 >
                   Lưu
                 </button>

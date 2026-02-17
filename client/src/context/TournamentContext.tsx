@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BracketData, BracketPlayer, updateBracketMatch as updateBracketMatchFn } from "@/lib/tournament-bracket";
 
 interface TeamStats {
   name: string; played: number; won: number; lost: number;
@@ -15,11 +16,14 @@ interface MatchHistory {
 interface TournamentContextType {
   stats: TeamStats[];
   history: MatchHistory[];
+  bracket: BracketData | null;
   updateTournamentStats: (result: {
     team1: string; team2: string; score1: number; score2: number; winner: 1 | 2;
   }) => void;
+  setBracket: (bracket: BracketData | null) => void;
+  updateBracketMatch: (matchId: string, winner: BracketPlayer, score1: number, score2: number) => void;
   resetTournament: () => void;
-  showToast: (message: string, type?: "success" | "error") => void; // Khai báo
+  showToast: (message: string, type?: "success" | "error") => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -27,6 +31,7 @@ const TournamentContext = createContext<TournamentContextType | undefined>(undef
 export function TournamentProvider({ children }: { children: ReactNode }) {
   const [stats, setStats] = useState<TeamStats[]>([]);
   const [history, setHistory] = useState<MatchHistory[]>([]);
+  const [bracket, setBracket] = useState<BracketData | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   // 2. Logic hàm showToast
@@ -73,17 +78,27 @@ export function TournamentProvider({ children }: { children: ReactNode }) {
     if (window.confirm("Xóa toàn bộ dữ liệu giải đấu?")) {
       setStats([]);
       setHistory([]);
+      setBracket(null);
       showToast("Đã xóa sạch dữ liệu!", "success");
     }
+  };
+
+  const updateBracketMatch = (matchId: string, winner: BracketPlayer, score1: number, score2: number) => {
+    if (!bracket) return;
+    const newBracket = updateBracketMatchFn(bracket, matchId, winner, score1, score2);
+    setBracket(newBracket);
   };
 
   return (
     <TournamentContext.Provider value={{ 
       stats, 
-      history, 
+      history,
+      bracket,
+      setBracket,
       updateTournamentStats, 
+      updateBracketMatch,
       resetTournament, 
-      showToast // Đảm bảo hàm này có mặt ở đây
+      showToast
     }}>
       {children}
 

@@ -2,13 +2,15 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
-  insertMatchSchema, 
+  insertMatchSchema,
+  updateMatchSchema,
   insertPlayerSchema, 
   insertWorkScheduleSchema,
   insertTournamentSchema,
   insertTournamentPlayerSchema,
   insertTournamentMatchSchema,
   insertMatchSchema as matchSchema,
+  insertCourtSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -31,17 +33,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(player);
   });
 
-  // 3. Lấy danh sách trận đấu (Lọc theo refereeId nếu không phải admin)
+  // 3. Lấy danh sách trận đấu (Hiển thị tất cả cho tab Lịch sử)
   app.get("/api/matches", async (req, res) => {
-    const user = req.user as any;
-    let matches;
-    if (user && user.role === "admin") {
-      matches = await storage.getMatches();
-    } else if (user) {
-      matches = await storage.getMatchesByReferee(user.id);
-    } else {
-      matches = await storage.getMatches();
-    }
+    const matches = await storage.getMatches();
     res.json(matches);
   });
 
@@ -59,31 +53,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(publicMatch);
   });
 
+  // 4b. Lấy trận đấu bằng token (dành cho trọng tài truy cập qua link)
+  app.get("/api/matches/token/:token", async (req, res) => {
+    const token = req.params.token as string;
+    const tournamentMatch = await storage.getTournamentMatchByToken(token);
+    
+    if (!tournamentMatch) {
+      return res.status(404).json({ message: "Không tìm thấy trận đấu" });
+    }
+    
+    // Lấy thông tin tournament
+    const tournament = await storage.getTournament(tournamentMatch.tournamentId);
+    
+    res.json({
+      ...tournamentMatch,
+      tournamentName: tournament?.name,
+    });
+  });
+
   // 5. Cập nhật trận đấu (Dành cho Livestream/Scoreboard)
   app.patch("/api/matches/:id", async (req, res) => {
     const id = parseInt(req.params.id as string);
     const user = req.user as any;
     
-    // Kiểm tra quyền sở hữu
+    // Kiểm tra quyền sở hữu - cho phép cập nhật nếu:
+    // 1. Là admin
+    // 2. Là referee của trận đấu
+    // 3. Trận đấu không có referee (để cho phép cập nhật điểm tự do)
     const match = await storage.getMatch(id);
     if (!match) {
       return res.status(404).json({ message: "Không tìm thấy trận đấu" });
     }
     
-    // Admin có thể sửa mọi trận, referee chỉ sửa được trận của mình
-    if (user && user.role !== "admin" && match.refereeId !== user.id) {
+    const hasPermission = !user || user.role === "admin" || match.refereeId === user.id || !match.refereeId;
+    if (user && !hasPermission) {
       return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa trận đấu này" });
     }
     
     // Dùng .partial() để cho phép gửi lên chỉ 1 vài trường cần update
-    const result = insertMatchSchema.partial().safeParse(req.body);
+    // Validate từng trường một thay vì validate cả object
+    const { status, winnerTeam, endTime, scoreTeam1, scoreTeam2 } = req.body;
+    
+    // Build update data chỉ với các trường được gửi lên
+    const updateData: any = {};
+    if (status !== undefined) updateData.status = status;
+    if (winnerTeam !== undefined) updateData.winnerTeam = winnerTeam;
+    if (endTime !== undefined) updateData.endTime = endTime;
+    if (scoreTeam1 !== undefined) updateData.scoreTeam1 = scoreTeam1;
+    if (scoreTeam2 !== undefined) updateData.scoreTeam2 = scoreTeam2;
 
-    if (!result.success) {
-      return res.status(400).json({ message: "Dữ liệu cập nhật không hợp lệ" });
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
     }
 
     try {
-      const updated = await storage.updateMatch(id, result.data);
+      const updated = await storage.updateMatch(id, updateData);
       res.json(updated);
     } catch (error: any) {
       res.status(404).json({ message: error.message });
@@ -164,15 +188,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 12. Lấy danh sách users (cho admin)
-  app.get("/api/users", async (_, res) => {
-    const users = await storage.getUsers();
-    res.json(users);
+  // 12. Lấy danh sách users (chỉ admin và manager)
+  app.get("/api/users", async (req, res) => {
+    const user = req.user as any;
+    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+    
+    // Nếu là manager, chỉ hiển thị user do manager đó tạo (referee)
+    if (user.role === "manager") {
+      const managerUsers = await storage.getUsersByManagerId(user.id);
+      res.json(managerUsers);
+    } else {
+      const users = await storage.getUsers();
+      res.json(users);
+    }
   });
 
-  // 13. Cập nhật thông tin user
+  // 13. Cập nhật thông tin user (admin và manager)
   app.patch("/api/users/:id", async (req, res) => {
+    const user = req.user as any;
+    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+    
     const id = parseInt(req.params.id as string);
+    const targetUser = await storage.getUser(id);
+    
+    if (!targetUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+    
+    // Nếu là manager, chỉ được sửa user do mình tạo
+    if (user.role === "manager" && targetUser.managerId !== user.id) {
+      return res.status(403).json({ message: "Bạn không có quyền sửa người dùng này" });
+    }
+    
+    // Manager không được sửa role của user thành manager hoặc admin
+    if (user.role === "manager" && req.body.role && (req.body.role === "admin" || req.body.role === "manager")) {
+      return res.status(403).json({ message: "Bạn không có quyền cấp quyền này" });
+    }
+    
     try {
       const updated = await storage.updateUser(id, req.body);
       res.json(updated);
@@ -181,7 +237,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 14. Lấy thống kê trận đấu của referee
+  // 14. Xóa user (chỉ admin và manager)
+  app.delete("/api/users/:id", async (req, res) => {
+    const user = req.user as any;
+    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+    
+    const id = parseInt(req.params.id as string);
+    const targetUser = await storage.getUser(id);
+    
+    if (!targetUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+    
+    // Nếu là manager, chỉ được xóa user do mình tạo
+    if (user.role === "manager" && targetUser.managerId !== user.id) {
+      return res.status(403).json({ message: "Bạn không có quyền xóa người dùng này" });
+    }
+    
+    // Không cho phép xóa admin hoặc manager khác
+    if (user.role === "manager" && (targetUser.role === "admin" || targetUser.role === "manager")) {
+      return res.status(403).json({ message: "Bạn không có quyền xóa người dùng này" });
+    }
+    
+    try {
+      await storage.deleteUser(id);
+      res.json({ message: "Xóa người dùng thành công" });
+    } catch (error: any) {
+      res.status(404).json({ message: error.message });
+    }
+  });
+
+  // 15. Lấy thống kê trận đấu của referee
   app.get("/api/stats/referee/:id", async (req, res) => {
     const refereeId = parseInt(req.params.id as string);
     const matches = await storage.getMatchesByReferee(refereeId);
@@ -197,6 +285,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
 
+  // 15. Thống kê tổng quan cho Admin
+  app.get("/api/stats/admin", async (req, res) => {
+    const user = req.user as any;
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+    
+    const allMatches = await storage.getMatches();
+    const allUsers = await storage.getUsers();
+    const allSchedules = await storage.getWorkSchedules();
+    const allTournaments = await storage.getTournaments();
+    
+    const stats = {
+      totalMatches: allMatches.length,
+      liveMatches: allMatches.filter(m => m.status === "live").length,
+      finishedMatches: allMatches.filter(m => m.status === "finished").length,
+      pendingMatches: allMatches.filter(m => m.status === "pending").length,
+      totalUsers: allUsers.length,
+      adminUsers: allUsers.filter(u => u.role === "admin").length,
+      managerUsers: allUsers.filter(u => u.role === "manager").length,
+      refereeUsers: allUsers.filter(u => u.role === "referee").length,
+      totalSchedules: allSchedules.length,
+      completedSchedules: allSchedules.filter(s => s.status === "completed").length,
+      totalTournaments: allTournaments.length,
+      activeTournaments: allTournaments.filter(t => t.status === "active").length,
+      completedTournaments: allTournaments.filter(t => t.status === "completed").length,
+    };
+    res.json(stats);
+  });
+
   // === TOURNAMENT APIs ===
 
   // 15. Lấy danh sách giải đấu (chỉ user tạo mới thấy được)
@@ -205,7 +323,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!user) {
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
     }
-    const tournaments = await storage.getTournaments(user.id);
+    // Admin thấy tất cả, manager chỉ thấy của mình
+    const tournaments = user.role === "admin" 
+      ? await storage.getTournaments() 
+      : await storage.getTournaments(user.id);
     res.json(tournaments);
   });
 
@@ -220,17 +341,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     console.log("Creating tournament with data:", req.body);
-    const result = insertTournamentSchema.safeParse(req.body);
-    if (!result.success) {
-      console.log("Validation error:", result.error.format());
-      return res.status(400).json({ message: "Dữ liệu giải đấu không hợp lệ" });
+    
+    try {
+      const tournament = await storage.createTournament({
+        name: req.body.name,
+        description: req.body.description,
+        date: req.body.date,
+        time: req.body.time,
+        location: req.body.location,
+        court: req.body.court,
+        level: req.body.level,
+        content: req.body.content,
+        teamsPerGroup: req.body.teamsPerGroup || 4,
+        winningScore: req.body.winningScore || 11,
+        status: "draft",
+        creatorId: user.id,
+      });
+      res.json(tournament);
+    } catch (error: any) {
+      console.error("Error creating tournament:", error);
+      return res.status(500).json({ message: error.message || "Không thể tạo giải đấu" });
     }
-
-    const tournament = await storage.createTournament({
-      ...result.data,
-      creatorId: user.id,
-    });
-    res.json(tournament);
   });
 
   // 17. Lấy chi tiết giải đấu
@@ -243,8 +374,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Không tìm thấy giải đấu" });
     }
 
-    // Chỉ người tạo mới xem được
-    if (user && tournament.creatorId !== user.id) {
+    // Chỉ người tạo mới xem được (hoặc admin)
+    if (user && user.role !== "admin" && tournament.creatorId !== user.id) {
       return res.status(403).json({ message: "Bạn không có quyền xem giải đấu này" });
     }
 
@@ -264,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Không tìm thấy giải đấu" });
     }
 
-    if (tournament.creatorId !== user.id) {
+    if (user.role !== "admin" && tournament.creatorId !== user.id) {
       return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa giải đấu này" });
     }
 
@@ -287,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Không tìm thấy giải đấu" });
     }
 
-    if (tournament.creatorId !== user.id) {
+    if (user.role !== "admin" && tournament.creatorId !== user.id) {
       return res.status(403).json({ message: "Bạn không có quyền xóa giải đấu này" });
     }
 
@@ -300,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/tournaments/:id/generate", async (req, res) => {
     const id = parseInt(req.params.id as string);
     const user = req.user as any;
-    const { players: playerNames, teamsPerGroup } = req.body;
+    const { players: playerData, teamsPerGroup } = req.body;
 
     const tournament = await storage.getTournament(id);
     if (!tournament) {
@@ -311,62 +442,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa giải đấu này" });
     }
 
-    if (!playerNames || playerNames.length < 4) {
-      return res.status(400).json({ message: "Cần tối thiểu 4 đội/người" });
+    if (!playerData || playerData.length < 1) {
+      return res.status(400).json({ message: "Cần tối thiểu 1 cặp đấu" });
     }
 
-    // Xóa players cũ nếu có
+    // Xóa matches cũ nếu có
+    await storage.deleteTournamentMatches(id);
     await storage.deleteTournamentPlayers(id);
 
-    // Import hàm generateGroups từ shared
-    const { generateGroups } = await import("@shared/tournament");
-    const groups = generateGroups(playerNames, teamsPerGroup || 4);
-
-    // Lưu players vào database
-    const playersToInsert: any[] = [];
-    let seed = 1;
-    for (const [groupName, groupData] of Object.entries(groups) as any[]) {
-      for (const player of groupData.players) {
-        playersToInsert.push({
-          tournamentId: id,
-          name: player,
-          groupName,
-          seed: seed++,
-        });
-      }
-    }
-    const savedPlayers = await storage.createTournamentPlayers(playersToInsert);
-
-    // Tạo tournament matches
+    // Xử lý dữ liệu 4 VĐV/cặp
+    // playerData có thể là array of strings (cũ) hoặc array of objects (mới với 4 players)
     const matchesToInsert: any[] = [];
     let matchOrder = 1;
-    for (const [groupName, groupData] of Object.entries(groups) as any[]) {
-      const roundMatches = groupData.matches || [];
-      for (const match of roundMatches) {
-        const [home1, home2] = match.home.split(" vs ");
-        const [away1, away2] = match.away.split(" vs ");
+    let currentRound = 1;
+
+    // Kiểm tra format dữ liệu
+    const isNewFormat = Array.isArray(playerData) && typeof playerData[0] === 'object' && playerData[0] !== null && 'player1' in playerData[0];
+
+    if (isNewFormat) {
+      // Format mới: mỗi phần tử là object chứa 4 VĐV
+      // Gom nhóm theo level/category để tạo bảng
+      const byLevel: Record<string, any[]> = {};
+      
+      playerData.forEach((p: any) => {
+        const level = p.level || "Default";
+        if (!byLevel[level]) byLevel[level] = [];
+        byLevel[level].push(p);
+      });
+
+      // Tạo bảng cho từng level
+      let groupCounter = 0;
+      const groupNames = "ABCDEFGHIJKLMNOP".split("");
+      
+      for (const [level, levelMatches] of Object.entries(byLevel)) {
+        const levelGroups: Record<string, any[]> = {};
+        const matchesInLevel = levelMatches as any[];
         
-        matchesToInsert.push({
-          tournamentId: id,
-          team1Player1: home1,
-          team1Player2: home2,
-          team2Player1: away1,
-          team2Player2: away2,
-          groupName,
-          round: 1,
-          matchOrder: matchOrder++,
-          status: "pending",
+        // Chia thành các bảng
+        matchesInLevel.forEach((match, idx) => {
+          const groupIdx = Math.floor(idx / (teamsPerGroup || 4));
+          const groupName = `${level}-${groupNames[groupCounter + groupIdx]}`;
+          if (!levelGroups[groupName]) levelGroups[groupName] = [];
+          levelGroups[groupName].push(match);
         });
+        
+        // Tạo round robin cho mỗi bảng
+        for (const [groupName, groupMatches] of Object.entries(levelGroups)) {
+          // Tạo tất cả cặp đấu round robin trong bảng
+          for (let i = 0; i < groupMatches.length; i++) {
+            for (let j = i + 1; j < groupMatches.length; j++) {
+              const m1 = groupMatches[i];
+              const m2 = groupMatches[j];
+              
+              if (m1 && m2) {
+                matchesToInsert.push({
+                  tournamentId: id,
+                  team1Player1: m1.player1 || "",
+                  team1Player2: m1.player2 || "",
+                  team2Player1: m2.player1 || "",
+                  team2Player2: m2.player2 || "",
+                  groupName,
+                  round: currentRound,
+                  matchOrder: matchOrder++,
+                  status: "pending",
+                });
+              }
+            }
+          }
+          groupCounter++;
+        }
+      }
+    } else {
+      // Format cũ: array of strings
+      const playerNames = playerData as string[];
+      const pairs: string[] = [];
+      for (let i = 0; i < playerNames.length; i += 2) {
+        if (playerNames[i + 1]) {
+          pairs.push(`${playerNames[i]} vs ${playerNames[i + 1]}`);
+        }
+      }
+
+      const { generateGroups } = await import("@shared/tournament");
+      const groups = generateGroups(pairs, teamsPerGroup || 4);
+
+      for (const [groupName, groupData] of Object.entries(groups) as any[]) {
+        const roundMatches = groupData.matches || [];
+        for (const match of roundMatches) {
+          matchesToInsert.push({
+            tournamentId: id,
+            team1Player1: match.home.split(" vs ")[0] || "",
+            team1Player2: match.home.split(" vs ")[1] || "",
+            team2Player1: match.away.split(" vs ")[0] || "",
+            team2Player2: match.away.split(" vs ")[1] || "",
+            groupName,
+            round: 1,
+            matchOrder: matchOrder++,
+            status: "pending",
+          });
+        }
       }
     }
-    const savedMatches = await storage.createTournamentMatches(matchesToInsert);
 
-    // Cập nhật status giải đấu
+    if (matchesToInsert.length === 0) {
+      return res.status(400).json({ message: "Không thể tạo trận đấu nào!" });
+    }
+
+    const savedMatches = await storage.createTournamentMatches(matchesToInsert);
     await storage.updateTournament(id, { status: "active" });
 
     res.json({ 
       tournament: await storage.getTournament(id),
-      players: savedPlayers, 
       matches: savedMatches 
     });
   });
@@ -399,6 +584,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const updated = await storage.assignRefereeToMatch(matchId, refereeId);
+    res.json(updated);
+  });
+
+  // 22a. Lấy link truy cập trận đấu cho trọng tài
+  app.get("/api/tournaments/:tournamentId/matches/:matchId/access-link", async (req, res) => {
+    const matchId = parseInt(req.params.matchId as string);
+    
+    const accessLink = await storage.getMatchAccessLink(matchId);
+    if (!accessLink) {
+      return res.status(404).json({ message: "Không tìm thấy link truy cập" });
+    }
+    
+    res.json(accessLink);
+  });
+
+  // 22b. Assign court vào trận đấu trong giải
+  app.post("/api/tournaments/:tournamentId/matches/:matchId/assign-court", async (req, res) => {
+    const tournamentId = parseInt(req.params.tournamentId as string);
+    const matchId = parseInt(req.params.matchId as string);
+    const { courtId } = req.body;
+    const user = req.user as any;
+
+    const tournament = await storage.getTournament(tournamentId);
+    if (!tournament) {
+      return res.status(404).json({ message: "Không tìm thấy giải đấu" });
+    }
+
+    if (tournament.creatorId !== user.id) {
+      return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa giải đấu này" });
+    }
+
+    const updated = await storage.updateTournamentMatch(matchId, { courtId });
     res.json(updated);
   });
 
@@ -453,6 +670,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     res.json(createdMatch);
+  });
+
+  // === SETTINGS APIs ===
+  app.get("/api/settings", async (req, res) => {
+    const user = req.user as any;
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+    const allSettings = await storage.getSettings();
+    res.json(allSettings);
+  });
+
+  app.get("/api/settings/:key", async (req, res) => {
+    const key = req.params.key as string;
+    const setting = await storage.getSetting(key);
+    if (!setting) {
+      return res.status(404).json({ message: "Không tìm thấy cài đặt" });
+    }
+    res.json(setting);
+  });
+
+  app.post("/api/settings", async (req, res) => {
+    const user = req.user as any;
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+    const { key, value, description } = req.body;
+    if (!key || value === undefined) {
+      return res.status(400).json({ message: "Thiếu key hoặc value" });
+    }
+    const setting = await storage.setSetting(key, String(value), description);
+    res.json(setting);
+  });
+
+  // === COURT ROUTES ===
+  // Lấy danh sách sân
+  app.get("/api/courts", async (req, res) => {
+    const courts = await storage.getCourts();
+    res.json(courts);
+  });
+
+  // Lấy chi tiết một sân
+  app.get("/api/courts/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const court = await storage.getCourt(id);
+    if (!court) {
+      return res.status(404).json({ message: "Không tìm thấy sân" });
+    }
+    res.json(court);
+  });
+
+  // Tạo sân mới (chỉ admin/manager)
+  app.post("/api/courts", async (req, res) => {
+    const user = req.user as any;
+    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+      return res.status(403).json({ message: "Không có quyền tạo sân" });
+    }
+
+    const result = insertCourtSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: "Dữ liệu sân không hợp lệ" });
+    }
+
+    const court = await storage.createCourt(result.data);
+    res.json(court);
+  });
+
+  // Cập nhật sân
+  app.patch("/api/courts/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const user = req.user as any;
+    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+      return res.status(403).json({ message: "Không có quyền cập nhật sân" });
+    }
+
+    const court = await storage.getCourt(id);
+    if (!court) {
+      return res.status(404).json({ message: "Không tìm thấy sân" });
+    }
+
+    const updated = await storage.updateCourt(id, req.body);
+    res.json(updated);
+  });
+
+  // Xóa sân
+  app.delete("/api/courts/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const user = req.user as any;
+    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+      return res.status(403).json({ message: "Không có quyền xóa sân" });
+    }
+
+    const court = await storage.getCourt(id);
+    if (!court) {
+      return res.status(404).json({ message: "Không tìm thấy sân" });
+    }
+
+    await storage.deleteCourt(id);
+    res.json({ message: "Xóa sân thành công" });
   });
 
   const httpServer = createServer(app);

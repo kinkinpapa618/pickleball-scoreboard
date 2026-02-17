@@ -9,13 +9,17 @@ import { Loader2 } from "lucide-react";
 
 import Home from "@/pages/Home";
 import RefereeTools from "@/pages/RefereeTools";
+import TournamentPage from "@/pages/TournamentPage";
 import Match from "@/pages/Match";
 import MatchView from "@/pages/MatchView";
 import MatchDetail from "@/pages/MatchDetail";
 import Profile from "@/pages/Profile";
 import Users from "@/pages/Users";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminPanel from "@/pages/AdminPanel";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/AuthPage";
+import RefereeMatchAccess from "@/pages/RefereeMatchAccess";
 
 // --- 1. COMPONENT BẢO VỆ ROUTE ---
 function ProtectedRoute({
@@ -54,6 +58,10 @@ function Router() {
         {() => <RefereeTools />}
       </Route>
 
+      <Route path="/tournament">
+        {() => <TournamentPage />}
+      </Route>
+
       {/* Route cho trận đấu với query string (?matchId=...) */}
       <Route path="/match">{() => <ProtectedRoute component={Match} />}</Route>
 
@@ -75,6 +83,13 @@ function Router() {
       </Route>
 
       <Route path="/users">{() => <ProtectedRoute component={Users} />}</Route>
+
+      <Route path="/admin">{() => <ProtectedRoute component={AdminDashboard} />}</Route>
+
+      <Route path="/admin/manage">{() => <ProtectedRoute component={AdminPanel} />}</Route>
+
+      {/* Route truy cập trận đấu bằng token (cho trọng tài) */}
+      <Route path="/trong-tai/:token" component={RefereeMatchAccess} />
 
       {/* Trang lỗi */}
       <Route component={NotFound} />

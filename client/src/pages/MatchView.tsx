@@ -34,12 +34,13 @@ export default function MatchView() {
             </span>
           </div>
           <div className="flex items-center gap-8">
+            <span className="text-8xl font-black text-blue-600">{match.scoreTeam1}</span>
             <div className="flex flex-col gap-2">
               <div
-                className={`w-5 h-5 rounded-full ${match.isServer1 && match.serverNumber >= 1 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
+                className={`w-5 h-5 rounded-full ${match.isServer1 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
               />
               <div
-                className={`w-5 h-5 rounded-full ${match.isServer1 && match.serverNumber >= 2 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
+                className={`w-5 h-5 rounded-full ${match.isServer1 && match.isFirstServeOfMatch === false ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
               />
             </div>
           </div>
@@ -62,12 +63,13 @@ export default function MatchView() {
             </span>
           </div>
           <div className="flex items-center gap-8">
+            <span className="text-8xl font-black text-orange-600">{match.scoreTeam2}</span>
             <div className="flex flex-col gap-2">
               <div
-                className={`w-5 h-5 rounded-full ${match.isServer2 && match.serverNumber >= 1 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
+                className={`w-5 h-5 rounded-full ${match.isServer2 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
               />
               <div
-                className={`w-5 h-5 rounded-full ${match.isServer2 && match.serverNumber >= 2 ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
+                className={`w-5 h-5 rounded-full ${match.isServer2 && match.isFirstServeOfMatch === false ? "bg-red-600 animate-pulse shadow-[0_0_15px_red]" : "bg-slate-200"}`}
               />
             </div>
           </div>

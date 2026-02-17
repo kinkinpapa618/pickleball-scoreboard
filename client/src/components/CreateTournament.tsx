@@ -4,14 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar, MapPin, Trophy, ChevronRight, Save, User, Users } from "lucide-react";
+import { Plus, X, Calendar, MapPin, Trophy, ChevronRight, Save, User, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 const SINGLES_OPTIONS = [
@@ -26,13 +19,18 @@ const DOUBLES_OPTIONS = [
   { id: "doi_hon", label: "Đôi Hỗn Hợp" },
 ];
 
+interface LevelContent {
+  level: string;
+  contents: string[];
+}
+
 interface TournamentFormData {
   name: string;
   date: string;
   time: string;
   location: string;
-  level: string;
-  content: string[];
+  court: string;
+  levels: LevelContent[];
 }
 
 interface CreateTournamentProps {
@@ -45,21 +43,46 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
     date: "",
     time: "",
     location: "",
-    level: "",
-    content: [],
+    court: "",
+    levels: [],
   });
+
+  const [newLevel, setNewLevel] = useState("");
 
   const handleChange = (field: keyof TournamentFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleContentToggle = (id: string, checked: boolean) => {
-    setFormData((prev) => {
-      const newContent = checked
-        ? [...prev.content, id]
-        : prev.content.filter((c) => c !== id);
-      return { ...prev, content: newContent };
-    });
+  const handleAddLevel = () => {
+    if (newLevel && !formData.levels.find(l => l.level === newLevel)) {
+      setFormData((prev) => ({
+        ...prev,
+        levels: [...prev.levels, { level: newLevel, contents: [] }],
+      }));
+      setNewLevel("");
+    }
+  };
+
+  const handleRemoveLevel = (levelToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      levels: prev.levels.filter((l) => l.level !== levelToRemove),
+    }));
+  };
+
+  const handleContentToggle = (level: string, contentId: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      levels: prev.levels.map((l) => {
+        if (l.level === level) {
+          const newContents = checked
+            ? [...l.contents, contentId]
+            : l.contents.filter((c) => c !== contentId);
+          return { ...l, contents: newContents };
+        }
+        return l;
+      }),
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,7 +90,7 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
     onSubmit(formData);
   };
 
-  const isValid = formData.name && formData.date && formData.location && formData.level && formData.content.length > 0;
+  const isValid = formData.name && formData.date && formData.location && formData.levels.length > 0;
 
   return (
     <motion.div
@@ -84,7 +107,7 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
             Tạo giải đấu mới
           </h2>
           <p className="text-white/40 text-xs font-medium">
-            Bước 1: Nhập thông tin cơ bản
+            Nhập thông tin giải đấu
           </p>
         </div>
       </div>
@@ -155,98 +178,115 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="court" className="text-white/70 text-xs font-bold uppercase">
+                Sân thi đấu
+              </Label>
+              <Input
+                id="court"
+                placeholder="VD: Sân A, Sân B (tùy chọn)"
+                value={formData.court}
+                onChange={(e) => handleChange("court", e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
+              />
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-slate-900/80 border-white/5">
           <CardHeader className="pb-4">
             <CardTitle className="text-white/80 text-sm font-bold uppercase tracking-wider">
-              Level & Nội dung thi đấu
+              Level & Nội dung thi đấu <span className="text-rose-500">*</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="level" className="text-white/70 text-xs font-bold uppercase">
-                Level thi đấu <span className="text-rose-500">*</span>
-              </Label>
-              <Select
-                value={formData.level}
-                onValueChange={(value) => handleChange("level", value)}
-              >
-                <SelectTrigger className="bg-white/5 border-white/10 text-white focus:border-[#ccff00] focus:ring-[#ccff00]/20">
-                  <SelectValue placeholder="Chọn level" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-white/10">
-                  <SelectItem value="beginner" className="text-white focus:bg-white/10">
-                    Beginner (Mới bắt đầu)
-                  </SelectItem>
-                  <SelectItem value="intermediate" className="text-white focus:bg-white/10">
-                    Intermediate (Trung cấp)
-                  </SelectItem>
-                  <SelectItem value="advanced" className="text-white focus:bg-white/10">
-                    Advanced (Cao cấp)
-                  </SelectItem>
-                  <SelectItem value="pro" className="text-white focus:bg-white/10">
-                    Professional (Chuyên nghiệp)
-                  </SelectItem>
-                  <SelectItem value="mixed" className="text-white focus:bg-white/10">
-                    Mixed (Hỗn hợp)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-3">
               <Label className="text-white/70 text-xs font-bold uppercase">
-                Nội dung thi đấu <span className="text-rose-500">*</span>
+                Thêm level
               </Label>
-              
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
-                  <User className="w-4 h-4" />
-                  ĐÁNH ĐƠN
-                </div>
-                <div className="grid grid-cols-2 gap-2 pl-6">
-                  {SINGLES_OPTIONS.map((option) => (
-                    <label
-                      key={option.id}
-                      className="flex items-center gap-2 cursor-pointer group"
-                    >
-                      <Checkbox
-                        id={option.id}
-                        checked={formData.content.includes(option.id)}
-                        onCheckedChange={(checked: boolean) => handleContentToggle(option.id, checked)}
-                        className="border-white/20 data-[state=checked]:bg-[#ccff00] data-[state=checked]:border-[#ccff00]"
-                      />
-                      <span className="text-white/70 text-sm group-hover:text-white">{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
-                  <Users className="w-4 h-4" />
-                  ĐÁNH ĐÔI
-                </div>
-                <div className="grid grid-cols-2 gap-2 pl-6">
-                  {DOUBLES_OPTIONS.map((option) => (
-                    <label
-                      key={option.id}
-                      className="flex items-center gap-2 cursor-pointer group"
-                    >
-                      <Checkbox
-                        id={option.id}
-                        checked={formData.content.includes(option.id)}
-                        onCheckedChange={(checked: boolean) => handleContentToggle(option.id, checked)}
-                        className="border-white/20 data-[state=checked]:bg-[#ccff00] data-[state=checked]:border-[#ccff00]"
-                      />
-                      <span className="text-white/70 text-sm group-hover:text-white">{option.label}</span>
-                    </label>
-                  ))}
-                </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="VD: 4.0, 4.5, 5.0"
+                  value={newLevel}
+                  onChange={(e) => setNewLevel(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddLevel())}
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddLevel}
+                  className="bg-[#ccff00] hover:bg-[#b8e600] text-black"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
             </div>
+
+            {formData.levels.length > 0 && (
+              <div className="space-y-4">
+                {formData.levels.map((levelData) => (
+                  <div key={levelData.level} className="bg-white/5 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#ccff00] font-bold">Level {levelData.level}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLevel(levelData.level)}
+                        className="text-white/50 hover:text-rose-500"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
+                        <User className="w-4 h-4" />
+                        ĐÁNH ĐƠN
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pl-6">
+                        {SINGLES_OPTIONS.map((option) => (
+                          <label
+                            key={`${levelData.level}-${option.id}`}
+                            className="flex items-center gap-2 cursor-pointer group"
+                          >
+                            <Checkbox
+                              id={`${levelData.level}-${option.id}`}
+                              checked={levelData.contents.includes(option.id)}
+                              onCheckedChange={(checked: boolean) => handleContentToggle(levelData.level, option.id, checked)}
+                              className="border-white/20 data-[state=checked]:bg-[#ccff00] data-[state=checked]:border-[#ccff00]"
+                            />
+                            <span className="text-white/70 text-sm group-hover:text-white">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
+                        <Users className="w-4 h-4" />
+                        ĐÁNH ĐÔI
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pl-6">
+                        {DOUBLES_OPTIONS.map((option) => (
+                          <label
+                            key={`${levelData.level}-${option.id}`}
+                            className="flex items-center gap-2 cursor-pointer group"
+                          >
+                            <Checkbox
+                              id={`${levelData.level}-${option.id}`}
+                              checked={levelData.contents.includes(option.id)}
+                              onCheckedChange={(checked: boolean) => handleContentToggle(levelData.level, option.id, checked)}
+                              className="border-white/20 data-[state=checked]:bg-[#ccff00] data-[state=checked]:border-[#ccff00]"
+                            />
+                            <span className="text-white/70 text-sm group-hover:text-white">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

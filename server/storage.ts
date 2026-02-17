@@ -6,6 +6,8 @@ import {
   tournaments,
   tournamentPlayers,
   tournamentMatches,
+  settings,
+  courts,
   type User,
   type InsertUser,
   type Match,
@@ -19,11 +21,16 @@ import {
   type InsertTournamentPlayer,
   type TournamentMatch,
   type InsertTournamentMatch,
+  type Setting,
+  type InsertSetting,
+  type Court,
+  type InsertCourt,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { nanoid } from "nanoid";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -32,8 +39,10 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
+  getUsersByManagerId(managerId: number): Promise<User[]>; // Lấy user do manager tạo
   updateUser(id: number, data: Partial<User>): Promise<User>;
   createUser(user: InsertUser): Promise<User>;
+  deleteUser(id: number): Promise<void>;
 
   // Player methods
   getPlayers(): Promise<any[]>;
@@ -69,10 +78,25 @@ export interface IStorage {
   // Tournament Match methods
   getTournamentMatches(tournamentId: number): Promise<TournamentMatch[]>;
   getTournamentMatch(id: number): Promise<TournamentMatch | undefined>;
+  getTournamentMatchByToken(token: string): Promise<TournamentMatch | undefined>;
+  getMatchAccessLink(matchId: number): Promise<{ link: string; token: string } | null>;
   createTournamentMatch(match: InsertTournamentMatch): Promise<TournamentMatch>;
   createTournamentMatches(matches: InsertTournamentMatch[]): Promise<TournamentMatch[]>;
+  deleteTournamentMatches(tournamentId: number): Promise<void>;
   updateTournamentMatch(id: number, data: Partial<TournamentMatch>): Promise<TournamentMatch>;
   assignRefereeToMatch(matchId: number, refereeId: number): Promise<TournamentMatch>;
+
+  // Court methods
+  getCourts(): Promise<Court[]>;
+  getCourt(id: number): Promise<Court | undefined>;
+  createCourt(court: InsertCourt): Promise<Court>;
+  updateCourt(id: number, data: Partial<Court>): Promise<Court>;
+  deleteCourt(id: number): Promise<void>;
+
+  // Settings methods
+  getSettings(): Promise<Setting[]>;
+  getSetting(key: string): Promise<Setting | undefined>;
+  setSetting(key: string, value: string, description?: string): Promise<Setting>;
 
   sessionStore: session.Store;
 }
@@ -107,6 +131,10 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users);
   }
 
+  async getUsersByManagerId(managerId: number): Promise<User[]> {
+    return db.select().from(users).where(eq(users.managerId, managerId));
+  }
+
   async updateUser(id: number, data: Partial<User>): Promise<User> {
     const [updated] = await db
       .update(users)
@@ -123,6 +151,10 @@ export class DatabaseStorage implements IStorage {
     };
     const [user] = await db.insert(users).values(userData).returning();
     return user;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // --- PLAYER METHODS ---
@@ -154,7 +186,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMatch(insertMatch: InsertMatch): Promise<Match> {
-    const [match] = await db.insert(matches).values(insertMatch).returning();
+    const result = await db.insert(matches).values(insertMatch).returning();
+    const [match] = result;
     return match;
   }
 
@@ -285,6 +318,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tournamentPlayers.tournamentId, tournamentId));
   }
 
+  async deleteTournamentMatches(tournamentId: number): Promise<void> {
+    await db
+      .delete(tournamentMatches)
+      .where(eq(tournamentMatches.tournamentId, tournamentId));
+  }
+
   // --- TOURNAMENT MATCH METHODS ---
   async getTournamentMatches(tournamentId: number): Promise<TournamentMatch[]> {
     return db
@@ -300,6 +339,30 @@ export class DatabaseStorage implements IStorage {
       .from(tournamentMatches)
       .where(eq(tournamentMatches.id, id));
     return match;
+  }
+
+  async getTournamentMatchByToken(token: string): Promise<TournamentMatch | undefined> {
+    const [match] = await db
+      .select()
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.refereeToken, token));
+    return match;
+  }
+
+  async getMatchAccessLink(matchId: number): Promise<{ link: string; token: string } | null> {
+    const [match] = await db
+      .select()
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.id, matchId));
+    
+    if (!match || !match.refereeToken) {
+      return null;
+    }
+    
+    return {
+      link: `/trong-tai/${match.refereeToken}`,
+      token: match.refereeToken
+    };
   }
 
   async createTournamentMatch(match: InsertTournamentMatch): Promise<TournamentMatch> {
@@ -328,12 +391,66 @@ export class DatabaseStorage implements IStorage {
   }
 
   async assignRefereeToMatch(matchId: number, refereeId: number): Promise<TournamentMatch> {
+    const token = `trongtai_${nanoid(16)}`;
     const [updated] = await db
       .update(tournamentMatches)
-      .set({ refereeId, status: "scheduled" })
+      .set({ refereeId, status: "scheduled", refereeToken: token })
       .where(eq(tournamentMatches.id, matchId))
       .returning();
     return updated;
+  }
+
+  // --- SETTINGS METHODS ---
+  async getSettings(): Promise<Setting[]> {
+    return db.select().from(settings);
+  }
+
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, key));
+    return setting;
+  }
+
+  async setSetting(key: string, value: string, description?: string): Promise<Setting> {
+    const [setting] = await db
+      .insert(settings)
+      .values({ key, value, description })
+      .onConflictDoUpdate({
+        target: settings.key,
+        set: { value, description, updatedAt: new Date() },
+      })
+      .returning();
+    return setting;
+  }
+
+  // --- COURT METHODS ---
+  async getCourts(): Promise<Court[]> {
+    return db.select().from(courts).orderBy(courts.name);
+  }
+
+  async getCourt(id: number): Promise<Court | undefined> {
+    const [court] = await db.select().from(courts).where(eq(courts.id, id));
+    return court;
+  }
+
+  async createCourt(insertCourt: InsertCourt): Promise<Court> {
+    const [court] = await db.insert(courts).values(insertCourt).returning();
+    return court;
+  }
+
+  async updateCourt(id: number, data: Partial<Court>): Promise<Court> {
+    const [court] = await db
+      .update(courts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(courts.id, id))
+      .returning();
+    return court;
+  }
+
+  async deleteCourt(id: number): Promise<void> {
+    await db.delete(courts).where(eq(courts.id, id));
   }
 }
 

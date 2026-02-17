@@ -80,10 +80,20 @@ export function setupAuth(app: Express) {
         }
 
         const hashedPassword = await hashPassword(req.body.password);
-        const newUser = await storage.createUser({
+        
+        // Lấy thông tin manager hiện tại nếu có
+        const currentUser = req.user as any;
+        const userData: any = {
           ...req.body,
           password: hashedPassword,
-        });
+        };
+        
+        // Nếu là manager đang tạo user, set managerId
+        if (currentUser && currentUser.role === "manager") {
+          userData.managerId = currentUser.id;
+        }
+        
+        const newUser = await storage.createUser(userData);
 
         req.login(newUser, (err) => {
           if (err) return next(err);

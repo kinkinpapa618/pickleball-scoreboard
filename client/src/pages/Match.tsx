@@ -120,8 +120,38 @@ export default function Match() {
           console.error("Failed to parse timeline", e);
         }
       }
+
+      // Restore stacking
+      if (serverMatch.stacking) {
+        try {
+          const savedStacking = JSON.parse(serverMatch.stacking);
+          setStackingMap(savedStacking);
+        } catch (e) {
+          console.error("Failed to parse stacking", e);
+        }
+      }
+
+      // Restore penalties
+      if (serverMatch.penalties) {
+        try {
+          const savedPenalties = JSON.parse(serverMatch.penalties);
+          setPenalties(savedPenalties);
+        } catch (e) {
+          console.error("Failed to parse penalties", e);
+        }
+      }
     }
   }, [serverMatch?.id, resetState]);
+
+  const [pendingScoreUpdate, setPendingScoreUpdate] = useState<{
+    score1: number;
+    score2: number;
+    serverTeam: 1 | 2;
+    serverHand: 1 | 2;
+    isFirstServeOfMatch: boolean;
+    scoringTeam: 1 | 2;
+    serverPlayer: string;
+  } | null>(null);
 
   // --- XỬ LÝ GHI ĐIỂM + TỰ ĐỘNG LƯU SERVER ---
   const handleScorePoint = () => {
@@ -129,128 +159,169 @@ export default function Match() {
     const scoringTeam = isTeam1Serving ? 1 : 2;
     const serverPlayerId = `t${state.serverTeam}p${state.serverHand}`;
     const serverPlayerName = names[serverPlayerId as keyof typeof names];
-    scorePoint();
-    addTimelineEvent("score", scoringTeam, {
-      serverPlayer: serverPlayerName,
+
+    const newScore1 = scoringTeam === 1 ? state.score1 + 1 : state.score1;
+    const newScore2 = scoringTeam === 2 ? state.score2 + 1 : state.score2;
+
+    setPendingScoreUpdate({
+      score1: newScore1,
+      score2: newScore2,
       serverTeam: state.serverTeam,
       serverHand: state.serverHand,
-      scorerTeam: scoringTeam,
+      isFirstServeOfMatch: state.isFirstServeOfMatch,
+      scoringTeam,
+      serverPlayer: serverPlayerName,
     });
-    if (matchId > 0) {
-      const newServerTeam = state.serverTeam;
-      const newIsServer1 = newServerTeam === 1;
-      const newIsServer2 = newServerTeam === 2;
+
+    scorePoint();
+  };
+
+  useEffect(() => {
+    const handleUpdate = async () => {
+      if (!pendingScoreUpdate) return;
+      
+      let currentMatchId = matchId;
+      
+      // Nếu chưa có match, tạo mới trước
+      if (currentMatchId === 0) {
+        try {
+          const newMatch = await createMatch.mutateAsync({
+            team1Player1: names.t1p1,
+            team1Player2: names.t1p2,
+            team2Player1: names.t2p1,
+            team2Player2: names.t2p2,
+            scoreTeam1: 0,
+            scoreTeam2: 0,
+            status: "live",
+            winningScore,
+          });
+          currentMatchId = newMatch.id;
+          // Cập nhật URL với matchId mới
+          const url = new URL(window.location.href);
+          url.searchParams.set("matchId", currentMatchId.toString());
+          window.history.replaceState({}, "", url.toString());
+        } catch (e) {
+          console.error("Failed to create match:", e);
+          setPendingScoreUpdate(null);
+          return;
+        }
+      }
+      
       const updateData: any = {
-        scoreTeam1: newIsServer1 ? state.score1 + 1 : state.score1,
-        scoreTeam2: !newIsServer1 ? state.score2 + 1 : state.score2,
-        isServer1: newIsServer1,
-        isServer2: newIsServer2,
-        serverNumber: state.serverHand,
-        isFirstServeOfMatch: state.isFirstServeOfMatch,
+        scoreTeam1: pendingScoreUpdate.score1,
+        scoreTeam2: pendingScoreUpdate.score2,
+        isServer1: pendingScoreUpdate.serverTeam === 1,
+        isServer2: pendingScoreUpdate.serverTeam === 2,
+        serverNumber: pendingScoreUpdate.serverHand,
+        isFirstServeOfMatch: pendingScoreUpdate.isFirstServeOfMatch,
         status: "live",
       };
-      // Chỉ set startTime nếu chưa có
-      if (!serverMatch?.startTime) {
-        updateData.startTime = new Date().toISOString();
-      }
+      
       updateMatch.mutate({
-        id: matchId,
+        id: currentMatchId,
         data: updateData,
       });
+
+      addTimelineEvent("score", pendingScoreUpdate.scoringTeam, {
+        serverPlayer: pendingScoreUpdate.serverPlayer,
+        serverTeam: pendingScoreUpdate.serverTeam,
+        serverHand: pendingScoreUpdate.serverHand,
+        scorerTeam: pendingScoreUpdate.scoringTeam,
+      });
+
+      setPendingScoreUpdate(null);
+    };
+    
+    if (pendingScoreUpdate) {
+      handleUpdate();
     }
-  };
+  }, [pendingScoreUpdate, matchId, updateMatch, createMatch, names, winningScore]);
+
+  const [pendingFaultUpdate, setPendingFaultUpdate] = useState<{
+    serverTeam: 1 | 2;
+    serverHand: 1 | 2;
+    isFirstServeOfMatch: boolean;
+    serverPlayer: string;
+  } | null>(null);
 
   // --- XỬ LÝ LỖI/ĐỔI GIAO + TỰ ĐỘNG LƯU SERVER ---
   const handleFault = () => {
     const serverPlayerId = `t${state.serverTeam}p${state.serverHand}`;
     const serverPlayerName = names[serverPlayerId as keyof typeof names];
-    fault();
-    addTimelineEvent("fault", state.serverTeam === 1 ? 2 : 1, {
-      serverPlayer: serverPlayerName,
+
+    setPendingFaultUpdate({
       serverTeam: state.serverTeam,
       serverHand: state.serverHand,
+      isFirstServeOfMatch: state.isFirstServeOfMatch,
+      serverPlayer: serverPlayerName,
     });
-    if (matchId > 0) {
-      const newServerTeam = state.serverTeam;
-      const newIsServer1 = newServerTeam === 1;
-      const newIsServer2 = newServerTeam === 2;
-      const updateData: any = {
-        scoreTeam1: state.score1,
-        scoreTeam2: state.score2,
-        isServer1: newIsServer1,
-        isServer2: newIsServer2,
-        serverNumber: state.serverHand,
-        isFirstServeOfMatch: state.isFirstServeOfMatch,
-        status: "live",
-      };
-      // Chỉ set startTime nếu chưa có
-      if (!serverMatch?.startTime) {
-        updateData.startTime = new Date().toISOString();
-      }
-      updateMatch.mutate({
-        id: matchId,
-        data: updateData,
-      });
-    }
+
+    fault();
   };
 
-  // --- XỬ LÝ KẾT THÚC TRẬN ĐẤU (tự động lưu) ---
   useEffect(() => {
-    if (state.winner && !saved) {
-      confetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 },
-        zIndex: 9999,
-      });
-
-      if (matchId > 0) {
-        updateMatch.mutate({
-          id: matchId,
-          data: {
-            scoreTeam1: state.score1,
-            scoreTeam2: state.score2,
-            winnerTeam: state.winner,
-            status: "finished",
-            endTime: new Date(),
-          },
-        });
-      } else {
-        // Nếu không có matchId (trận mới), tạo mới
-        const rawData = getMatchData();
-        if (rawData) {
-          createMatch.mutate({
+    const handleFaultUpdate = async () => {
+      if (!pendingFaultUpdate) return;
+      
+      let currentMatchId = matchId;
+      
+      // Nếu chưa có match, tạo mới trước
+      if (currentMatchId === 0) {
+        try {
+          const newMatch = await createMatch.mutateAsync({
             team1Player1: names.t1p1,
             team1Player2: names.t1p2,
             team2Player1: names.t2p1,
             team2Player2: names.t2p2,
-            winningScore: winningScore,
             scoreTeam1: state.score1,
             scoreTeam2: state.score2,
-            winnerTeam: state.winner,
-            status: "finished",
-            isServer1: false,
-            isServer2: false,
-            serverNumber: 1,
+            status: "live",
+            winningScore,
           });
+          currentMatchId = newMatch.id;
+          // Cập nhật URL với matchId mới
+          const url = new URL(window.location.href);
+          url.searchParams.set("matchId", currentMatchId.toString());
+          window.history.replaceState({}, "", url.toString());
+        } catch (e) {
+          console.error("Failed to create match:", e);
+          setPendingFaultUpdate(null);
+          return;
         }
       }
-      setSaved(true);
-    }
-  }, [
-    state.winner,
-    saved,
-    matchId,
-    state.score1,
-    state.score2,
-    names,
-    winningScore,
-    getMatchData,
-    createMatch,
-    updateMatch,
-  ]);
+      
+      const currentScore1 = state.score1;
+      const currentScore2 = state.score2;
+      const updateData: any = {
+        scoreTeam1: currentScore1,
+        scoreTeam2: currentScore2,
+        isServer1: state.serverTeam === 1,
+        isServer2: state.serverTeam === 2,
+        serverNumber: state.serverHand,
+        isFirstServeOfMatch: state.isFirstServeOfMatch,
+        status: "live",
+      };
+      
+      updateMatch.mutate({
+        id: currentMatchId,
+        data: updateData,
+      });
 
-  // --- STACKING & PENALTIES (giữ nguyên từ code chính) ---
+      addTimelineEvent("fault", state.serverTeam, {
+        serverPlayer: pendingFaultUpdate.serverPlayer,
+        serverTeam: pendingFaultUpdate.serverTeam,
+        serverHand: pendingFaultUpdate.serverHand,
+      });
+
+      setPendingFaultUpdate(null);
+    };
+    
+    if (pendingFaultUpdate) {
+      handleFaultUpdate();
+    }
+  }, [pendingFaultUpdate, matchId, state, updateMatch, createMatch, names, winningScore]);
+
+  // --- STACKING & PENALTIES ---
   const [stackingMap, setStackingMap] = useState<StackingMap>({});
   const [penalties, setPenalties] = useState<PenaltiesState>({
     t1p1: { yellow: 0, red: false },
@@ -263,15 +334,12 @@ export default function Match() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // Khôi phục hoặc set thời gian bắt đầu từ DB
   useEffect(() => {
     if (!matchStartTime && serverMatch) {
       if (serverMatch.startTime) {
-        // Sử dụng startTime từ database
         setMatchStartTime(new Date(serverMatch.startTime).getTime());
         setIsTimerRunning(true);
       } else if (serverMatch.status === "live") {
-        // DB đang live nhưng chưa có startTime, set now
         setMatchStartTime(Date.now());
         setIsTimerRunning(true);
       }
@@ -294,8 +362,27 @@ export default function Match() {
   useEffect(() => {
     if (state.winner) {
       setIsTimerRunning(false);
+      // Lưu winner vào database khi trận đấu kết thúc
+      if (matchId > 0) {
+        console.log("🏆 Match ended, saving winner:", state.winner);
+        updateMatch.mutate({
+          id: matchId,
+          data: {
+            winnerTeam: state.winner,
+            status: "finished",
+            endTime: new Date(),
+          },
+        }, {
+          onSuccess: (data) => {
+            console.log("✅ Match status updated to finished:", data);
+          },
+          onError: (error) => {
+            console.error("❌ Failed to update match status:", error);
+          }
+        });
+      }
     }
-  }, [state.winner]);
+  }, [state.winner, matchId]);
 
   const formatTimerDisplay = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -303,24 +390,55 @@ export default function Match() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const [timeouts, setTimeouts] = useState<{ team1: number; team2: number }>({
-    team1: 2,
-    team2: 2,
-  });
+  const [timeouts, setTimeouts] = useState<{ team1: number; team2: number }>({ team1: 2, team2: 2 });
   const [isTimeoutActive, setIsTimeoutActive] = useState(false);
   const [timeoutTeam, setTimeoutTeam] = useState<1 | 2 | null>(null);
   const [timeoutSeconds, setTimeoutSeconds] = useState(180);
 
   useEffect(() => {
-    if (matchId > 0 && timeouts) {
+    const handleTimeoutsUpdate = async () => {
+      if (!timeouts) return;
+      
+      let currentMatchId = matchId;
+      
+      if (currentMatchId === 0) return; // Chỉ lưu khi đã có match
+      
       updateMatch.mutate({
-        id: matchId,
+        id: currentMatchId,
         data: {
           timeouts: JSON.stringify(timeouts),
         },
       });
+    };
+    
+    if (matchId > 0) {
+      handleTimeoutsUpdate();
     }
   }, [timeouts, matchId]);
+
+  // --- LƯU STACKING REAL-TIME ---
+  useEffect(() => {
+    if (matchId > 0 && Object.keys(stackingMap).length >= 0) {
+      updateMatch.mutate({
+        id: matchId,
+        data: {
+          stacking: JSON.stringify(stackingMap),
+        },
+      });
+    }
+  }, [stackingMap, matchId]);
+
+  // --- LƯU PENALTIES REAL-TIME ---
+  useEffect(() => {
+    if (matchId > 0 && penalties) {
+      updateMatch.mutate({
+        id: matchId,
+        data: {
+          penalties: JSON.stringify(penalties),
+        },
+      });
+    }
+  }, [penalties, matchId]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;

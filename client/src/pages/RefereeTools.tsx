@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import {
   Play,
@@ -25,6 +24,9 @@ import {
   Trash2,
   UserPlus,
   Plus,
+  Zap,
+  Layers,
+  Calendar,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -38,6 +40,7 @@ import {
   useAssignReferee,
   useStartTournamentMatch,
   useDeleteTournament,
+  useCourts,
 } from "@/hooks/use-api";
 import { ExcelUpload } from "@/components/ExcelUpload";
 import { CoinTossModal } from "@/components/CoinTossModal";
@@ -85,16 +88,33 @@ export default function RefereeTools() {
   const startMatch = useStartTournamentMatch();
   const deleteTournament = useDeleteTournament();
   const { data: referees } = useReferees();
+  const { data: courts = [] } = useCourts();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTournamentName, setNewTournamentName] = useState("");
   const [newTournamentDesc, setNewTournamentDesc] = useState("");
+  const [newTournamentDate, setNewTournamentDate] = useState("");
+  const [newTournamentTime, setNewTournamentTime] = useState("");
+  const [newTournamentLocation, setNewTournamentLocation] = useState("");
+  const [newTournamentCourt, setNewTournamentCourt] = useState("");
+  const [newTournamentLevels, setNewTournamentLevels] = useState<string[]>([]);
+  const [newLevelInput, setNewLevelInput] = useState("");
   const [teamsPerGroup, setTeamsPerGroup] = useState(4);
-  const [newTournamentWinScore, setNewTournamentWinScore] = useState(11);
+  const [courtCount, setCourtCount] = useState(1);
   const [assigningMatchId, setAssigningMatchId] = useState<number | null>(null);
+  const [assigningCourtMatchId, setAssigningCourtMatchId] = useState<number | null>(null);
 
-  const handleExcelData = (players: string[]) => {
-    setPlayerInput(players.join("\n"));
+  const handleExcelData = (data: string[] | import("../components/ExcelUpload").PlayerData[]) => {
+    const playerNames = Array.isArray(data) && typeof data[0] === "string"
+      ? data as string[]
+      : (data as import("../components/ExcelUpload").PlayerData[]).reduce<string[]>((acc, p) => {
+          if (p.player1) acc.push(p.player1);
+          if (p.player2) acc.push(p.player2);
+          if (p.player3) acc.push(p.player3);
+          if (p.player4) acc.push(p.player4);
+          return acc;
+        }, []);
+    setPlayerInput(playerNames.join("\n"));
   };
 
   const handleDraw = () => {
@@ -113,23 +133,62 @@ export default function RefereeTools() {
       alert("Vui lòng nhập tên giải đấu");
       return;
     }
+    if (!newTournamentDate) {
+      alert("Vui lòng chọn ngày thi đấu");
+      return;
+    }
+    if (!newTournamentLocation.trim()) {
+      alert("Vui lòng nhập địa điểm");
+      return;
+    }
+    if (newTournamentLevels.length === 0) {
+      alert("Vui lòng thêm ít nhất một level");
+      return;
+    }
     try {
+      const contentMap: Record<string, string[]> = {};
+      newTournamentLevels.forEach(level => {
+        contentMap[level] = [];
+      });
+      
       const result = await createTournament.mutateAsync({
         name: newTournamentName,
         description: newTournamentDesc,
+        date: newTournamentDate,
+        time: newTournamentTime || null,
+        location: newTournamentLocation,
+        court: newTournamentCourt || null,
+        level: JSON.stringify(newTournamentLevels),
+        content: JSON.stringify(contentMap),
         teamsPerGroup,
-        winningScore: newTournamentWinScore,
+        winningScore: 11,
         status: "draft",
       });
       setShowCreateModal(false);
       setNewTournamentName("");
       setNewTournamentDesc("");
+      setNewTournamentDate("");
+      setNewTournamentTime("");
+      setNewTournamentLocation("");
+      setNewTournamentCourt("");
+      setNewTournamentLevels([]);
       setSelectedTournamentId(result.id);
     } catch (error: any) {
       console.error("Error creating tournament:", error);
       const message = error?.message || "Không thể tạo giải đấu";
       alert(message);
     }
+  };
+
+  const handleAddLevel = () => {
+    if (newLevelInput && !newTournamentLevels.includes(newLevelInput)) {
+      setNewTournamentLevels([...newTournamentLevels, newLevelInput]);
+      setNewLevelInput("");
+    }
+  };
+
+  const handleRemoveLevel = (level: string) => {
+    setNewTournamentLevels(newTournamentLevels.filter(l => l !== level));
   };
 
   const handleGenerateTournament = async () => {
@@ -233,37 +292,51 @@ export default function RefereeTools() {
       </div>
 
       <div className="flex-1 max-w-md mx-auto w-full">
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full bg-white mb-6 p-1 rounded-2xl h-12 shadow-sm border border-slate-100 ${isManager ? 'grid-cols-4' : 'grid-cols-3'}`}>
-            <TabsTrigger
-              value="create"
-              className="rounded-xl data-[state=active]:bg-blue-500 data-[state=active]:text-white font-black uppercase text-[10px]"
-            >
-              <Play className="w-3 h-3 mr-1" /> Trận
-            </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="rounded-xl data-[state=active]:bg-orange-500 data-[state=active]:text-white font-black uppercase text-[10px]"
-            >
-              <History className="w-3 h-3 mr-1" /> Lịch sử {!user && <Lock className="w-2 h-2 ml-1 opacity-50" />}
-            </TabsTrigger>
-            <TabsTrigger
-              value="draw"
-              className="rounded-xl data-[state=active]:bg-indigo-500 data-[state=active]:text-white font-black uppercase text-[10px]"
-            >
-              <GitPullRequest className="w-3 h-3 mr-1" /> Bốc thăm {!user && <Lock className="w-2 h-2 ml-1 opacity-50" />}
-            </TabsTrigger>
-            {isManager && (
-              <TabsTrigger
-                value="tournament"
-                className="rounded-xl data-[state=active]:bg-amber-500 data-[state=active]:text-white font-black uppercase text-[10px]"
-              >
-                <Trophy className="w-3 h-3 mr-1" /> Giải
-              </TabsTrigger>
-            )}
-          </TabsList>
+        {/* CUSTOM BEAUTIFUL TABS */}
+        <div className="mb-6">
+          <div className="relative bg-slate-900/50 rounded-3xl p-1.5 backdrop-blur-xl border border-white/10">
+            {/* Active Tab Indicator */}
+            <motion.div 
+              className="absolute top-1.5 h-[calc(100%-12px)] bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl shadow-lg shadow-blue-500/25"
+              animate={{
+                left: activeTab === "create" ? "4px" : 
+                      activeTab === "history" ? isManager ? "calc(25% + 4px)" : "calc(33.33% + 4px)" :
+                      activeTab === "draw" ? isManager ? "calc(50% + 4px)" : "calc(66.66% + 4px)" :
+                      "calc(75% + 4px)",
+                width: isManager ? "calc(25% - 8px)" : "calc(33.33% - 8px)"
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+            
+            <div className={`relative flex ${isManager ? 'grid grid-cols-3' : 'grid grid-cols-3'}`}>
+              <TabButton 
+                active={activeTab === "create"} 
+                onClick={() => handleTabChange("create")}
+                icon={<Play className="w-4 h-4" />}
+                label="Trận đấu"
+                color="blue"
+              />
+              <TabButton 
+                active={activeTab === "history"} 
+                onClick={() => handleTabChange("history")}
+                icon={<History className="w-4 h-4" />}
+                label="Lịch sử"
+                color="orange"
+                locked={!user}
+              />
+              <TabButton 
+                active={activeTab === "draw"} 
+                onClick={() => handleTabChange("draw")}
+                icon={<GitPullRequest className="w-4 h-4" />}
+                label="Bốc thăm"
+                color="indigo"
+                locked={!user}
+              />
+            </div>
+          </div>
+        </div>
 
-          {/* TAB 1: ĐIỀU KHIỂN / TẠO TRẬN */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsContent
             value="create"
             className="space-y-6 animate-in fade-in zoom-in-95 duration-300"
@@ -489,9 +562,7 @@ export default function RefereeTools() {
                           variant="ghost"
                           size="icon"
                           onClick={() =>
-                            match.status === "live"
-                              ? window.open(`/match-view/${match.id}`, "_blank")
-                              : setLocation(`/match-detail/${match.id}`)
+                            window.open(`/match-view/${match.id}`, "_blank")
                           }
                           className="h-7 w-7 rounded-md bg-slate-200 hover:bg-blue-500 hover:text-white transition-colors"
                         >
@@ -502,7 +573,7 @@ export default function RefereeTools() {
                           size="icon"
                           onClick={() => {
                             const url = `/match?matchId=${match.id}&t1p1=${encodeURIComponent(match.team1Player1)}&t1p2=${encodeURIComponent(match.team1Player2)}&t2p1=${encodeURIComponent(match.team2Player1)}&t2p2=${encodeURIComponent(match.team2Player2)}&win=${match.winningScore}&serve=1`;
-                            setLocation(url);
+                            window.open(url, "_blank");
                           }}
                           className="h-7 w-7 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors"
                         >
@@ -515,7 +586,7 @@ export default function RefereeTools() {
                           <span className="text-red-500 font-black italic text-xs">LIVE</span>
                         </div>
                       ) : (
-                        <span className="text-slate-400 font-bold text-[10px] uppercase">DONE</span>
+                        <span className="text-green-500 font-bold text-[10px] uppercase">DONE</span>
                       )}
                     </div>
 
@@ -595,259 +666,6 @@ export default function RefereeTools() {
             </div>
           </TabsContent>
 
-          {/* TAB 4: QUẢN LÝ GIẢI ĐẤU (Chỉ MANAGER) */}
-          {isManager && (
-            <TabsContent
-              value="tournament"
-              className="space-y-4 animate-in slide-in-from-right-4 duration-300"
-            >
-              {/* Danh sách giải đấu */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-black text-sm text-slate-800">GIẢI ĐẤU CỦA BẠN</h3>
-                  <Button
-                    onClick={() => setShowCreateModal(true)}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] rounded-xl h-8 px-3"
-                  >
-                    <Plus className="w-3 h-3 mr-1" /> Tạo giải mới
-                  </Button>
-                </div>
-
-                {tournaments?.map((t) => (
-                  <Card
-                    key={t.id}
-                    className={`p-3 cursor-pointer border-2 transition-all ${
-                      selectedTournamentId === t.id
-                        ? "border-amber-500 bg-amber-50"
-                        : "border-slate-100 hover:border-amber-300"
-                    }`}
-                    onClick={() => setSelectedTournamentId(t.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-black text-sm text-slate-800">{t.name}</h4>
-                        <p className="text-[10px] text-slate-500">{t.description || "Chưa có mô tả"}</p>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                          t.status === "active" ? "bg-green-100 text-green-600" :
-                          t.status === "completed" ? "bg-slate-100 text-slate-600" :
-                          "bg-amber-100 text-amber-600"
-                        }`}>
-                          {t.status === "active" ? "Đang diễn ra" :
-                           t.status === "completed" ? "Đã kết thúc" : "Bản nháp"}
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-red-400 hover:text-red-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("Xóa giải đấu này?")) {
-                            deleteTournament.mutate(t.id);
-                            if (selectedTournamentId === t.id) {
-                              setSelectedTournamentId(null);
-                            }
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Chi tiết giải đấu đã chọn */}
-              {selectedTournament && (
-                <div className="space-y-4 pt-4 border-t border-slate-200">
-                  <h3 className="font-black text-sm text-slate-800">{selectedTournament.name}</h3>
-                  
-                  {/* Nhập danh sách VĐV */}
-                  {selectedTournament.status === "draft" && (
-                    <Card className="p-4 bg-white border border-slate-100 rounded-2xl space-y-3">
-                      <ExcelUpload onDataLoaded={handleExcelData} />
-                      <textarea
-                        value={playerInput}
-                        onChange={(e) => setPlayerInput(e.target.value)}
-                        className="w-full h-24 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm"
-                        placeholder="Nhập danh sách VĐV (mỗi người 1 dòng)..."
-                      />
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase">Số đội/bảng</label>
-                          <select
-                            value={teamsPerGroup}
-                            onChange={(e) => setTeamsPerGroup(Number(e.target.value))}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-lg h-9 px-2 text-sm"
-                          >
-                            <option value={2}>2 đội/bảng</option>
-                            <option value={3}>3 đội/bảng</option>
-                            <option value={4}>4 đội/bảng</option>
-                          </select>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={handleGenerateTournament}
-                        disabled={generateTournament.isPending}
-                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl h-10"
-                      >
-                        <Shuffle className="w-3 h-3 mr-1" />
-                        {generateTournament.isPending ? "Đang tạo..." : "Tạo lịch đấu"}
-                      </Button>
-                    </Card>
-                  )}
-
-                  {/* Danh sách trận đấu */}
-                  {selectedTournament.matches && selectedTournament.matches.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-[10px] font-bold text-slate-500 uppercase">Lịch thi đấu</h4>
-                      {Object.entries(
-                        selectedTournament.matches.reduce((acc: any, match: any) => {
-                          if (!acc[match.groupName]) acc[match.groupName] = [];
-                          acc[match.groupName].push(match);
-                          return acc;
-                        }, {})
-                      ).map(([groupName, matches]: [string, any]) => (
-                        <Card key={groupName} className="p-3 bg-white border border-slate-100 rounded-2xl">
-                          <h5 className="font-black text-xs text-amber-600 mb-2">Bảng {groupName}</h5>
-                          <div className="space-y-2">
-                            {matches.map((match: any) => (
-                              <div
-                                key={match.id}
-                                className="flex items-center justify-between bg-slate-50 p-2 rounded-lg"
-                              >
-                                <div className="flex-1 text-[10px]">
-                                  <span className="font-bold">{match.team1Player1}/{match.team1Player2}</span>
-                                  <span className="text-slate-400 mx-1">vs</span>
-                                  <span className="font-bold">{match.team2Player1}/{match.team2Player2}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  {match.status === "pending" && (
-                                    <>
-                                      {assigningMatchId === match.id ? (
-                                        <select
-                                          autoFocus
-                                          className="text-[9px] bg-white border border-slate-200 rounded h-6 px-1"
-                                          onChange={(e) => {
-                                            if (e.target.value) {
-                                              handleAssignReferee(match.id, Number(e.target.value));
-                                            }
-                                          }}
-                                          onBlur={() => setAssigningMatchId(null)}
-                                        >
-                                          <option value="">Chọn TT...</option>
-                                          {referees?.map((r) => (
-                                            <option key={r.id} value={r.id}>{r.username}</option>
-                                          ))}
-                                        </select>
-                                      ) : (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => setAssigningMatchId(match.id)}
-                                          className="h-6 text-[9px] text-blue-500"
-                                        >
-                                          {match.refereeId ? (
-                                            <span className="text-slate-600">
-                                              {referees?.find(r => r.id === match.refereeId)?.username || "TT"}
-                                            </span>
-                                          ) : (
-                                            <><UserPlus className="w-3 h-3 mr-0.5" /> Add TT</>
-                                          )}
-                                        </Button>
-                                      )}
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleStartMatch(match.id)}
-                                        disabled={!match.refereeId || startMatch.isPending}
-                                        className="h-6 bg-green-500 hover:bg-green-600 text-white text-[9px] px-2 rounded"
-                                      >
-                                        <Play className="w-2 h-2" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  {match.status === "live" && (
-                                    <span className="text-[9px] font-bold text-red-500">Đang đấu</span>
-                                  )}
-                                  {match.status === "completed" && (
-                                    <span className="text-[9px] font-bold text-slate-400">Hoàn thành</span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Modal tạo giải */}
-              {showCreateModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <Card className="w-full max-w-sm p-4 bg-white rounded-2xl space-y-4">
-                    <h3 className="font-black text-lg text-slate-800">TẠO GIẢI ĐẤU MỚI</h3>
-                    <input
-                      type="text"
-                      value={newTournamentName}
-                      onChange={(e) => setNewTournamentName(e.target.value)}
-                      placeholder="Tên giải đấu"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-sm"
-                    />
-                    <textarea
-                      value={newTournamentDesc}
-                      onChange={(e) => setNewTournamentDesc(e.target.value)}
-                      placeholder="Mô tả (tùy chọn)"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl h-20 p-3 text-sm"
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Đội/bảng</label>
-                        <select
-                          value={teamsPerGroup}
-                          onChange={(e) => setTeamsPerGroup(Number(e.target.value))}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg h-9 px-2 text-sm"
-                        >
-                          <option value={2}>2 đội</option>
-                          <option value={3}>3 đội</option>
-                          <option value={4}>4 đội</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Điểm thắng</label>
-                        <select
-                          value={newTournamentWinScore}
-                          onChange={(e) => setNewTournamentWinScore(Number(e.target.value))}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg h-9 px-2 text-sm"
-                        >
-                          <option value={11}>11 điểm</option>
-                          <option value={15}>15 điểm</option>
-                          <option value={21}>21 điểm</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => setShowCreateModal(false)}
-                        variant="outline"
-                        className="flex-1 font-black text-xs rounded-xl h-10"
-                      >
-                        HỦY
-                      </Button>
-                      <Button
-                        onClick={handleCreateTournament}
-                        disabled={createTournament.isPending}
-                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl h-10"
-                      >
-                        {createTournament.isPending ? "Đang tạo..." : "TẠO"}
-                      </Button>
-                    </div>
-                  </Card>
-                </div>
-              )}
-            </TabsContent>
-          )}
         </Tabs>
       </div>
 
@@ -861,5 +679,46 @@ export default function RefereeTools() {
         compact={true}
       />
     </div>
+  );
+}
+
+// Custom Tab Button Component
+function TabButton({ 
+  active, 
+  onClick, 
+  icon, 
+  label, 
+  color,
+  locked = false 
+}: { 
+  active: boolean; 
+  onClick: () => void; 
+  icon: React.ReactNode; 
+  label: string; 
+  color: "blue" | "orange" | "indigo" | "amber";
+  locked?: boolean;
+}) {
+  const colorClasses = {
+    blue: "text-white",
+    orange: "text-white", 
+    indigo: "text-white",
+    amber: "text-white"
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={locked}
+      className={`
+        relative z-10 flex items-center justify-center gap-2 py-3 px-2 rounded-2xl
+        font-black uppercase text-[10px] tracking-wide transition-all duration-300
+        ${active ? colorClasses[color] : "text-slate-400 hover:text-slate-200"}
+        ${locked ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
+      `}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+      {locked && <Lock className="w-3 h-3" />}
+    </button>
   );
 }

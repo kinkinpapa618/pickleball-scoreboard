@@ -143,7 +143,7 @@ export function useGenerateTournament() {
       teamsPerGroup,
     }: {
       tournamentId: number;
-      players: string[];
+      players: string[] | any[];
       teamsPerGroup: number;
     }) => {
       const res = await apiRequest("POST", `/api/tournaments/${tournamentId}/generate`, {
@@ -194,6 +194,31 @@ export function useAssignReferee() {
   });
 }
 
+export function useAssignCourt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      matchId,
+      courtId,
+    }: {
+      tournamentId: number;
+      matchId: number;
+      courtId: number;
+    }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/tournaments/${tournamentId}/matches/${matchId}/assign-court`,
+        { courtId }
+      );
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tournaments/${variables.tournamentId}`] });
+    },
+  });
+}
+
 export function useStartTournamentMatch() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -214,6 +239,110 @@ export function useStartTournamentMatch() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/tournaments/${variables.tournamentId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+    },
+  });
+}
+
+// Settings hooks
+export function useSettings() {
+  return useQuery<schema.Setting[]>({
+    queryKey: ["/api/settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to fetch settings");
+      return res.json();
+    },
+  });
+}
+
+export function useUpdateSetting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      key,
+      value,
+      description,
+    }: {
+      key: string;
+      value: string;
+      description?: string;
+    }) => {
+      const res = await apiRequest("POST", "/api/settings", { key, value, description });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+    },
+  });
+}
+
+// Court hooks
+export function useCourts() {
+  return useQuery<schema.Court[]>({
+    queryKey: ["/api/courts"],
+    queryFn: async () => {
+      const res = await fetch("/api/courts");
+      if (!res.ok) throw new Error("Failed to fetch courts");
+      return res.json();
+    },
+    refetchInterval: 5000, // Cập nhật trạng thái sân mỗi 5s
+  });
+}
+
+export function useCourt(id: number) {
+  return useQuery<schema.Court>({
+    queryKey: [`/api/courts/${id}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/courts/${id}`);
+      if (!res.ok) throw new Error("Court not found");
+      return res.json();
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateCourt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (court: Omit<schema.InsertCourt, "id">) => {
+      const res = await apiRequest("POST", "/api/courts", court);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courts"] });
+    },
+  });
+}
+
+export function useUpdateCourt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<schema.Court>;
+    }) => {
+      const res = await apiRequest("PATCH", `/api/courts/${id}`, data);
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courts"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/courts/${variables.id}`] });
+    },
+  });
+}
+
+export function useDeleteCourt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/courts/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courts"] });
     },
   });
 }

@@ -11,16 +11,21 @@ export default defineConfig({
     allowedHosts: true,
   },
   plugins: [react()],
-  // 1. Chỉ định root là thư mục client
   root: path.resolve(__dirname, "client"),
   build: {
-    // 2. Build xong sẽ đẩy ra ngoài thư mục dist của root
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        // 3. Chỉ định file index.html nằm bên trong thư mục client
         main: path.resolve(__dirname, "client/index.html"),
+      },
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "wouter"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs", "@radix-ui/react-select"],
+          charts: ["recharts"],
+          utils: ["exceljs", "xlsx"],
+        },
       },
     },
   },
