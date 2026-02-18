@@ -8,6 +8,9 @@ import {
   tournamentMatches,
   settings,
   courts,
+  managerConnections,
+  chats,
+  notifications,
   type User,
   type InsertUser,
   type Match,
@@ -25,9 +28,14 @@ import {
   type InsertSetting,
   type Court,
   type InsertCourt,
+  type Chat,
+  type InsertChat,
+  type Notification,
+  type InsertNotification,
+  type NotificationType,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { nanoid } from "nanoid";
@@ -39,10 +47,19 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
-  getUsersByManagerId(managerId: number): Promise<User[]>; // Lấy user do manager tạo
+  getUsersByManagerId(managerId: number): Promise<User[]>;
+  getAllManagers(): Promise<User[]>;
   updateUser(id: number, data: Partial<User>): Promise<User>;
   createUser(user: InsertUser): Promise<User>;
   deleteUser(id: number): Promise<void>;
+
+  // Manager Connection methods (Referee theo dõi Manager)
+  getConnectedManagers(refereeId: number): Promise<User[]>;
+  getConnectedReferees(managerId: number): Promise<User[]>;
+  connectRefereeToManager(refereeId: number, managerId: number): Promise<void>;
+  disconnectRefereeFromManager(refereeId: number, managerId: number): Promise<void>;
+  isConnected(refereeId: number, managerId: number): Promise<boolean>;
+  getMatchesFromConnectedManagers(refereeId: number): Promise<Match[]>;
 
   // Player methods
   getPlayers(): Promise<any[]>;
@@ -79,6 +96,7 @@ export interface IStorage {
   getTournamentMatches(tournamentId: number): Promise<TournamentMatch[]>;
   getTournamentMatch(id: number): Promise<TournamentMatch | undefined>;
   getTournamentMatchByToken(token: string): Promise<TournamentMatch | undefined>;
+  getTournamentMatchByMatchId(matchId: number): Promise<TournamentMatch | undefined>;
   getMatchAccessLink(matchId: number): Promise<{ link: string; token: string } | null>;
   createTournamentMatch(match: InsertTournamentMatch): Promise<TournamentMatch>;
   createTournamentMatches(matches: InsertTournamentMatch[]): Promise<TournamentMatch[]>;
@@ -97,6 +115,19 @@ export interface IStorage {
   getSettings(): Promise<Setting[]>;
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(key: string, value: string, description?: string): Promise<Setting>;
+
+  // Chat methods
+  sendChat(senderId: number, message: string): Promise<Chat>;
+  getChats(limit?: number): Promise<Chat[]>;
+  getChatsWithSender(): Promise<(Chat & { sender: User })[]>;
+
+  // Notification methods
+  createNotification(data: InsertNotification): Promise<Notification>;
+  getNotifications(userId: number, limit?: number): Promise<Notification[]>;
+  getUnreadNotificationCount(userId: number): Promise<number>;
+  markNotificationAsRead(id: number): Promise<void>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
+  deleteNotification(id: number): Promise<void>;
 
   sessionStore: session.Store;
 }
@@ -155,6 +186,67 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  async getAllManagers(): Promise<User[]> {
+    return db.select().from(users).where(eq(users.role, "manager"));
+  }
+
+  // --- MANAGER CONNECTION METHODS ---
+  async getConnectedManagers(refereeId: number): Promise<User[]> {
+    const connections = await db
+      .select({
+        manager: users,
+      })
+      .from(managerConnections)
+      .innerJoin(users, eq(managerConnections.managerId, users.id))
+      .where(eq(managerConnections.refereeId, refereeId));
+    return connections.map((c) => c.manager);
+  }
+
+  async getConnectedReferees(managerId: number): Promise<User[]> {
+    const connections = await db
+      .select({
+        referee: users,
+      })
+      .from(managerConnections)
+      .innerJoin(users, eq(managerConnections.refereeId, users.id))
+      .where(eq(managerConnections.managerId, managerId));
+    return connections.map((c) => c.referee);
+  }
+
+  async connectRefereeToManager(refereeId: number, managerId: number): Promise<void> {
+    await db.insert(managerConnections).values({ refereeId, managerId });
+  }
+
+  async disconnectRefereeFromManager(refereeId: number, managerId: number): Promise<void> {
+    await db
+      .delete(managerConnections)
+      .where(and(eq(managerConnections.refereeId, refereeId), eq(managerConnections.managerId, managerId)));
+  }
+
+  async isConnected(refereeId: number, managerId: number): Promise<boolean> {
+    const [connection] = await db
+      .select()
+      .from(managerConnections)
+      .where(and(eq(managerConnections.refereeId, refereeId), eq(managerConnections.managerId, managerId)));
+    return !!connection;
+  }
+
+  async getMatchesFromConnectedManagers(refereeId: number): Promise<Match[]> {
+    const connections = await db
+      .select({ managerId: managerConnections.managerId })
+      .from(managerConnections)
+      .where(eq(managerConnections.refereeId, refereeId));
+
+    if (connections.length === 0) return [];
+
+    const managerIds = connections.map((c) => c.managerId);
+    return db
+      .select()
+      .from(matches)
+      .where(inArray(matches.creatorId, managerIds))
+      .orderBy(matches.date);
   }
 
   // --- PLAYER METHODS ---
@@ -349,6 +441,14 @@ export class DatabaseStorage implements IStorage {
     return match;
   }
 
+  async getTournamentMatchByMatchId(matchId: number): Promise<TournamentMatch | undefined> {
+    const [match] = await db
+      .select()
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.matchId, matchId));
+    return match;
+  }
+
   async getMatchAccessLink(matchId: number): Promise<{ link: string; token: string } | null> {
     const [match] = await db
       .select()
@@ -451,6 +551,80 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCourt(id: number): Promise<void> {
     await db.delete(courts).where(eq(courts.id, id));
+  }
+
+  // --- CHAT METHODS ---
+  async sendChat(senderId: number, message: string): Promise<Chat> {
+    const [chat] = await db.insert(chats).values({ senderId, message }).returning();
+    return chat;
+  }
+
+  async getChats(limit: number = 50): Promise<Chat[]> {
+    return db
+      .select()
+      .from(chats)
+      .orderBy(chats.createdAt)
+      .limit(limit);
+  }
+
+  async getChatsWithSender(): Promise<(Chat & { sender: User })[]> {
+    const results = await db
+      .select({
+        chat: chats,
+        sender: users,
+      })
+      .from(chats)
+      .innerJoin(users, eq(chats.senderId, users.id))
+      .orderBy(chats.createdAt);
+    
+    return results.map((r) => ({
+      ...r.chat,
+      sender: r.sender,
+    }));
+  }
+
+  // --- NOTIFICATION METHODS ---
+  async createNotification(data: InsertNotification): Promise<Notification> {
+    const [notification] = await db.insert(notifications).values({
+      ...data,
+      type: data.type as NotificationType,
+    }).returning();
+    return notification;
+  }
+
+  async getNotifications(userId: number, limit: number = 50): Promise<Notification[]> {
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(notifications.createdAt)
+      .limit(limit);
+  }
+
+  async getUnreadNotificationCount(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+    return result[0]?.count || 0;
+  }
+
+  async markNotificationAsRead(id: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, id));
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+  }
+
+  async deleteNotification(id: number): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.id, id));
   }
 }
 

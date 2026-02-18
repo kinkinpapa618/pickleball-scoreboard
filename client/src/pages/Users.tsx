@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import {
@@ -10,6 +11,7 @@ import {
   Trash2,
   Edit2,
   Plus,
+  Lock,
 } from "lucide-react";
 
 interface UserData {
@@ -22,10 +24,12 @@ interface UserData {
 }
 
 export default function Users() {
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasPermission, setHasPermission] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [formData, setFormData] = useState({
@@ -44,8 +48,14 @@ export default function Users() {
   const fetchUsers = async () => {
     try {
       const res = await fetch("/api/users");
+      if (res.status === 403) {
+        setHasPermission(false);
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
       setUsers(data);
+      setHasPermission(true);
     } catch (error) {
       toast({ title: "Lỗi tải dữ liệu", variant: "destructive" });
     } finally {
@@ -144,71 +154,89 @@ export default function Users() {
         </h1>
       </div>
 
-      {/* Add Button */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="w-full bg-blue-500 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"
-      >
-        <Plus className="w-5 h-5" /> Thêm người dùng
-      </button>
-
-      {/* Users List */}
-      {loading ? (
+      {!hasPermission ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Lock className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Không có quyền truy cập</h2>
+          <p className="text-slate-500 mb-6">
+            Chỉ Admin và Manager mới có thể quản lý Users
+          </p>
+          <button
+            onClick={() => setLocation("/profile")}
+            className="bg-blue-500 text-white px-6 py-3 rounded-xl font-bold"
+          >
+            Quay lại Profile
+          </button>
+        </div>
+      ) : loading ? (
         <div className="flex justify-center py-10">
           <div className="animate-spin h-8 w-8 border-2 border-orange-500 rounded-full border-t-transparent" />
         </div>
       ) : (
-        <div className="space-y-3">
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center font-black text-blue-600">
-                    {user.fullName
-                      ? user.fullName
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()
-                          .slice(0, 2)
-                      : user.username.slice(0, 2).toUpperCase()}
+        <div className="space-y-4">
+          {/* Add Button */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="w-full bg-blue-500 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2"
+          >
+            <Plus className="w-5 h-5" /> Thêm người dùng
+          </button>
+
+          {/* Users List */}
+          <div className="space-y-3">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center font-black text-blue-600">
+                      {user.fullName
+                        ? user.fullName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)
+                        : user.username.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900">
+                        {user.fullName || user.username}
+                      </h3>
+                      <p className="text-xs text-slate-400">@{user.username}</p>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadge(
+                          user.role
+                        )}`}
+                      >
+                        {getRoleLabel(user.role)}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900">
-                      {user.fullName || user.username}
-                    </h3>
-                    <p className="text-xs text-slate-400">@{user.username}</p>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadge(
-                        user.role
-                      )}`}
-                    >
-                      {getRoleLabel(user.role)}
-                    </span>
+                  <button
+                    onClick={() => setEditingUser(user)}
+                    className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition"
+                  >
+                    <Edit2 className="w-4 h-4 text-slate-500" />
+                  </button>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Phone className="w-4 h-4" />
+                    {user.phone}
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <CreditCard className="w-4 h-4" />
+                    {user.idCard}
                   </div>
                 </div>
-                <button
-                  onClick={() => setEditingUser(user)}
-                  className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition"
-                >
-                  <Edit2 className="w-4 h-4 text-slate-500" />
-                </button>
               </div>
-              <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-sm">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Phone className="w-4 h-4" />
-                  {user.phone}
-                </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <CreditCard className="w-4 h-4" />
-                  {user.idCard}
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

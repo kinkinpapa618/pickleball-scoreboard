@@ -1,4 +1,4 @@
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 
 const teams = [];
 const teamNames = [
@@ -16,18 +16,30 @@ function randomName() {
   return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
 }
 
-teamNames.forEach((teamName, index) => {
-  teams.push({
-    "STT": index + 1,
-    "Tên đội": teamName,
-    "Thành viên 1": randomName(),
-    "Thành viên 2": randomName()
+async function createTeams() {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Danh sách đội");
+
+  worksheet.columns = [
+    { header: "STT", key: "STT", width: 5 },
+    { header: "Tên đội", key: "Tên đội", width: 25 },
+    { header: "Thành viên 1", key: "Thành viên 1", width: 25 },
+    { header: "Thành viên 2", key: "Thành viên 2", width: 25 },
+  ];
+
+  worksheet.getRow(1).font = { bold: true };
+
+  teamNames.forEach((teamName, index) => {
+    worksheet.addRow({
+      "STT": index + 1,
+      "Tên đội": teamName,
+      "Thành viên 1": randomName(),
+      "Thành viên 2": randomName()
+    });
   });
-});
 
-const worksheet = XLSX.utils.json_to_sheet(teams);
-const workbook = XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách đội");
+  await workbook.xlsx.writeFile("danh_sach_doi_tournament.xlsx");
+  console.log("Đã tạo file danh_sach_doi_tournament.xlsx với 20 đội!");
+}
 
-XLSX.writeFile(workbook, "danh_sach_doi_tournament.xlsx");
-console.log("Đã tạo file danh_sach_doi_tournament.xlsx với 20 đội!");
+createTeams();

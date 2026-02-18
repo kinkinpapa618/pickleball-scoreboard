@@ -63,7 +63,7 @@ app.use((req, res, next) => {
     console.log("Đang chạy ở chế độ: PRODUCTION");
   }
 
-  const PORT = 5000;
+  const PORT = 5001;
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`[BMB PICKLEBALL] Server online tại cổng ${PORT}`);
   });

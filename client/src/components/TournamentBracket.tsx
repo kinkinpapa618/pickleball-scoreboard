@@ -423,7 +423,11 @@ function MatchResultModal({
     
     if (s1 === 0 && s2 === 0) return;
     
-    const winner = s1 > s2 ? match.player1! : match.player2!;
+    if (!match.player1 && !match.player2) return;
+    
+    const winner = s1 > s2 
+      ? (match.player1 ?? { id: "unknown", name: "Unknown" }) 
+      : (match.player2 ?? { id: "unknown", name: "Unknown" });
     onSubmit(winner, s1, s2);
   };
 

@@ -1,16 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
+import {
   insertMatchSchema,
   updateMatchSchema,
-  insertPlayerSchema, 
+  insertPlayerSchema,
   insertWorkScheduleSchema,
   insertTournamentSchema,
   insertTournamentPlayerSchema,
   insertTournamentMatchSchema,
   insertMatchSchema as matchSchema,
   insertCourtSchema,
+  insertNotificationSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -93,7 +94,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Dùng .partial() để cho phép gửi lên chỉ 1 vài trường cần update
     // Validate từng trường một thay vì validate cả object
     const { status, winnerTeam, endTime, scoreTeam1, scoreTeam2 } = req.body;
-    
+
+    // DEBUG
+    console.log(`[PATCH /api/matches/${id}] Body:`, JSON.stringify(req.body));
+
     // Build update data chỉ với các trường được gửi lên
     const updateData: any = {};
     if (status !== undefined) updateData.status = status;
@@ -102,12 +106,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (scoreTeam1 !== undefined) updateData.scoreTeam1 = scoreTeam1;
     if (scoreTeam2 !== undefined) updateData.scoreTeam2 = scoreTeam2;
 
+    console.log(`[PATCH /api/matches/${id}] Update data:`, JSON.stringify(updateData));
+
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
     }
 
     try {
       const updated = await storage.updateMatch(id, updateData);
+
+      // Cập nhật tournament_match status nếu trận đấu kết thúc
+      if (status === "finished") {
+        const tournamentMatch = await storage.getTournamentMatchByMatchId(id);
+        if (tournamentMatch) {
+          await storage.updateTournamentMatch(tournamentMatch.id, { status: "completed" });
+        }
+      }
+
       res.json(updated);
     } catch (error: any) {
       res.status(404).json({ message: error.message });
@@ -126,6 +141,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       refereeId: user?.id || null,
     };
     const match = await storage.createMatch(matchData);
+
+    // Tạo thông báo nếu có referee được assign
+    if (match.refereeId) {
+      await storage.createNotification({
+        userId: match.refereeId,
+        type: "match",
+        title: "Bạn được assign làm trọng tài",
+        message: `Trận đấu ${match.team1Player1}/${match.team1Player2} vs ${match.team2Player1}/${match.team2Player2}`,
+        link: `/match/${match.id}`,
+        data: { matchId: match.id },
+      });
+    }
+
     res.json(match);
   });
 
@@ -157,6 +185,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .json({ message: "Dữ liệu lịch công tác không hợp lệ" });
     }
     const schedule = await storage.createWorkSchedule(result.data);
+
+    // Tạo thông báo cho referee nếu có refereeId
+    if (schedule.refereeId) {
+      const referee = await storage.getUser(schedule.refereeId);
+      if (referee) {
+        await storage.createNotification({
+          userId: referee.id,
+          type: "schedule",
+          title: "Lịch công tác mới",
+          message: schedule.title + (schedule.description ? `: ${schedule.description}` : ""),
+          link: schedule.matchId ? `/match/${schedule.matchId}` : "/tools",
+          data: { scheduleId: schedule.id },
+        });
+      }
+    }
+
     res.json(schedule);
   });
 
@@ -366,9 +410,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 17. Lấy chi tiết giải đấu
   app.get("/api/tournaments/:id", async (req, res) => {
+    try {
     const id = parseInt(req.params.id as string);
     const user = req.user as any;
-    
+
     const tournament = await storage.getTournament(id);
     if (!tournament) {
       return res.status(404).json({ message: "Không tìm thấy giải đấu" });
@@ -381,12 +426,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const players = await storage.getTournamentPlayers(id);
     const matches = await storage.getTournamentMatches(id);
-    
+
     res.json({ ...tournament, players, matches });
+    } catch (error) {
+      console.error("Error fetching tournament:", error);
+      res.status(500).json({ message: "Lỗi server khi lấy thông tin giải đấu" });
+    }
+  });
+
+  // 17b. Cập nhật trạng thái giải đấu và gửi thông báo
+  app.patch("/api/tournaments/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      const user = req.user as any;
+      const { status } = req.body;
+
+      const tournament = await storage.getTournament(id);
+      if (!tournament) {
+        return res.status(404).json({ message: "Không tìm thấy giải đấu" });
+      }
+
+      if (user.role !== "admin" && tournament.creatorId !== user.id) {
+        return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa giải đấu này" });
+      }
+
+      const updated = await storage.updateTournament(id, { status });
+
+      // Tạo thông báo khi giải đấu bắt đầu
+      if (status === "active") {
+        // Lấy danh sách referee đã được assign
+        const matches = await storage.getTournamentMatches(id);
+        const refereeIds = [...new Set(matches.map(m => m.refereeId).filter(Boolean))];
+
+        for (const refereeId of refereeIds) {
+          if (refereeId) {
+            await storage.createNotification({
+              userId: refereeId,
+              type: "tournament",
+              title: "Giải đấu đã bắt đầu",
+              message: `${tournament.name} đã chính thức bắt đầu. Vui lòng kiểm tra lịch điều khiển của bạn.`,
+              link: `/tournament/${id}`,
+              data: { tournamentId: id },
+            });
+          }
+        }
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating tournament status:", error);
+      res.status(500).json({ message: "Lỗi server khi cập nhật trạng thái giải đấu" });
+    }
   });
 
   // 18. Cập nhật giải đấu
   app.patch("/api/tournaments/:id", async (req, res) => {
+    try {
     const id = parseInt(req.params.id as string);
     const user = req.user as any;
     
@@ -406,10 +501,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const updated = await storage.updateTournament(id, result.data);
     res.json(updated);
+    } catch (error) {
+      console.error("Error updating tournament:", error);
+      res.status(500).json({ message: "Lỗi server khi cập nhật giải đấu" });
+    }
   });
 
   // 19. Xóa giải đấu
   app.delete("/api/tournaments/:id", async (req, res) => {
+    try {
     const id = parseInt(req.params.id as string);
     const user = req.user as any;
     
@@ -425,6 +525,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.deleteTournamentPlayers(id);
     await storage.deleteTournament(id);
     res.json({ message: "Xóa giải đấu thành công" });
+    } catch (error) {
+      console.error("Error deleting tournament:", error);
+      res.status(500).json({ message: "Lỗi server khi xóa giải đấu" });
+    }
   });
 
   // 20. Thêm danh sách VĐV vào giải đấu và tạo lịch đấu
@@ -495,12 +599,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const m2 = groupMatches[j];
               
               if (m1 && m2) {
+                const player1Team1 = m1.player1 ?? "";
+                const player2Team1 = m1.player2 ?? "";
+                const player1Team2 = m2.player1 ?? "";
+                const player2Team2 = m2.player2 ?? "";
+                
+                if (!player1Team1 || !player2Team1 || !player1Team2 || !player2Team2) {
+                  continue;
+                }
+                
                 matchesToInsert.push({
                   tournamentId: id,
-                  team1Player1: m1.player1 || "",
-                  team1Player2: m1.player2 || "",
-                  team2Player1: m2.player1 || "",
-                  team2Player2: m2.player2 || "",
+                  team1Player1: player1Team1,
+                  team1Player2: player2Team1,
+                  team2Player1: player1Team2,
+                  team2Player2: player2Team2,
                   groupName,
                   round: currentRound,
                   matchOrder: matchOrder++,
@@ -528,12 +641,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const [groupName, groupData] of Object.entries(groups) as any[]) {
         const roundMatches = groupData.matches || [];
         for (const match of roundMatches) {
+          const homeParts = (match.home || "").split(" vs ");
+          const awayParts = (match.away || "").split(" vs ");
+          
+          const team1Player1 = homeParts[0] ?? "";
+          const team1Player2 = homeParts[1] ?? "";
+          const team2Player1 = awayParts[0] ?? "";
+          const team2Player2 = awayParts[1] ?? "";
+          
+          if (!team1Player1 || !team1Player2 || !team2Player1 || !team2Player2) {
+            continue;
+          }
+          
           matchesToInsert.push({
             tournamentId: id,
-            team1Player1: match.home.split(" vs ")[0] || "",
-            team1Player2: match.home.split(" vs ")[1] || "",
-            team2Player1: match.away.split(" vs ")[0] || "",
-            team2Player2: match.away.split(" vs ")[1] || "",
+            team1Player1,
+            team1Player2,
+            team2Player1,
+            team2Player2,
             groupName,
             round: 1,
             matchOrder: matchOrder++,
@@ -584,6 +709,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const updated = await storage.assignRefereeToMatch(matchId, refereeId);
+
+    // Lấy thông tin referee để tạo thông báo
+    const referee = await storage.getUser(refereeId);
+    const tournamentMatch = await storage.getTournamentMatch(matchId);
+
+    if (referee && tournamentMatch) {
+      await storage.createNotification({
+        userId: referee.id,
+        type: "match",
+        title: "Bạn được assign điều khiển trận đấu",
+        message: `${tournamentMatch.team1Player1}/${tournamentMatch.team1Player2} vs ${tournamentMatch.team2Player1}/${tournamentMatch.team2Player2} tại ${tournament.name}`,
+        link: `/trong-tai/${tournamentMatch.refereeToken}`,
+        data: { tournamentMatchId: matchId, tournamentId },
+      });
+    }
+
     res.json(updated);
   });
 
@@ -769,6 +910,233 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.deleteCourt(id);
     res.json({ message: "Xóa sân thành công" });
+  });
+
+  // === MANAGER CONNECTIONS API ===
+
+  // Lấy danh sách Managers (cho referee chọn kết nối)
+  app.get("/api/managers", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+    const managers = await storage.getAllManagers();
+    res.json(managers);
+  });
+
+  // Lấy danh sách Managers đã kết nối (của referee hiện tại)
+  app.get("/api/connected-managers", async (req, res) => {
+    const user = req.user as any;
+    if (!user || user.role !== "referee") {
+      return res.status(403).json({ message: "Chỉ referee mới có thể xem danh sách này" });
+    }
+    const connectedManagers = await storage.getConnectedManagers(user.id);
+    res.json(connectedManagers);
+  });
+
+  // Kết nối với Manager
+  app.post("/api/connect-manager/:managerId", async (req, res) => {
+    const user = req.user as any;
+    if (!user || user.role !== "referee") {
+      return res.status(403).json({ message: "Chỉ referee mới có thể kết nối" });
+    }
+    const managerId = parseInt(req.params.managerId);
+    const manager = await storage.getUser(managerId);
+    if (!manager || manager.role !== "manager") {
+      return res.status(404).json({ message: "Không tìm thấy Manager" });
+    }
+    const alreadyConnected = await storage.isConnected(user.id, managerId);
+    if (alreadyConnected) {
+      return res.status(400).json({ message: "Đã kết nối với Manager này" });
+    }
+    await storage.connectRefereeToManager(user.id, managerId);
+    res.json({ message: "Kết nối thành công", manager });
+  });
+
+  // Hủy kết nối với Manager
+  app.delete("/api/disconnect-manager/:managerId", async (req, res) => {
+    const user = req.user as any;
+    if (!user || user.role !== "referee") {
+      return res.status(403).json({ message: "Chỉ referee mới có thể hủy kết nối" });
+    }
+    const managerId = parseInt(req.params.managerId);
+    await storage.disconnectRefereeFromManager(user.id, managerId);
+    res.json({ message: "Hủy kết nối thành công" });
+  });
+
+  // Lấy trận đấu từ Managers đã kết nối
+  app.get("/api/matches/connected-managers", async (req, res) => {
+    const user = req.user as any;
+    if (!user || user.role !== "referee") {
+      return res.status(403).json({ message: "Chỉ referee mới có thể xem" });
+    }
+    const matches = await storage.getMatchesFromConnectedManagers(user.id);
+    res.json(matches);
+  });
+
+  // === CHAT API ===
+
+  // Gửi tin nhắn (Manager và Referee đã kết nối mới gửi được)
+  app.post("/api/chat", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const { message } = req.body;
+    if (!message || message.trim() === "") {
+      return res.status(400).json({ message: "Tin nhắn không được để trống" });
+    }
+
+    // Kiểm tra quyền: Chỉ manager hoặc referee đã kết nối mới gửi được
+    if (user.role === "manager") {
+      // Manager luôn có thể gửi tin nhắn
+    } else if (user.role === "referee") {
+      const connectedManagers = await storage.getConnectedManagers(user.id);
+      if (connectedManagers.length === 0) {
+        return res.status(403).json({ message: "Bạn chưa kết nối với Manager nào" });
+      }
+    } else {
+      return res.status(403).json({ message: "Không có quyền gửi tin nhắn" });
+    }
+
+    const chat = await storage.sendChat(user.id, message.trim());
+
+    // Tạo thông báo cho người nhận
+    const senderName = user.fullName || user.username;
+    const notificationMessage = message.trim().slice(0, 100) + (message.trim().length > 100 ? "..." : "");
+
+    if (user.role === "manager") {
+      // Gửi thông báo cho tất cả referee đã kết nối
+      const connectedReferees = await storage.getConnectedReferees(user.id);
+      for (const referee of connectedReferees) {
+        await storage.createNotification({
+          userId: referee.id,
+          type: "chat",
+          title: `Tin nhắn mới từ ${senderName}`,
+          message: notificationMessage,
+          link: "/chat",
+          data: { chatId: chat.id, senderId: user.id },
+        });
+      }
+    } else {
+      // Gửi thông báo cho tất cả manager đã kết nối
+      const connectedManagers = await storage.getConnectedManagers(user.id);
+      for (const manager of connectedManagers) {
+        await storage.createNotification({
+          userId: manager.id,
+          type: "chat",
+          title: `Tin nhắn mới từ ${senderName}`,
+          message: notificationMessage,
+          link: "/chat",
+          data: { chatId: chat.id, senderId: user.id },
+        });
+      }
+    }
+
+    res.json(chat);
+  });
+
+  // Lấy danh sách tin nhắn (Manager và Referee đã kết nối mới xem được)
+  app.get("/api/chat", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    // Kiểm tra quyền
+    if (user.role === "referee") {
+      const connectedManagers = await storage.getConnectedManagers(user.id);
+      if (connectedManagers.length === 0) {
+        return res.status(403).json({ message: "Bạn chưa kết nối với Manager nào" });
+      }
+    }
+
+    const chats = await storage.getChatsWithSender();
+    const chatsWithSenderInfo = chats.map((chat) => ({
+      id: chat.id,
+      senderId: chat.senderId,
+      senderName: chat.sender.fullName || chat.sender.username,
+      senderRole: chat.sender.role,
+      message: chat.message,
+      createdAt: chat.createdAt,
+    }));
+    res.json(chatsWithSenderInfo);
+  });
+
+  // Kiểm tra user có kết nối với manager nào không (dùng cho BottomNav)
+  app.get("/api/chat/has-connection", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ hasConnection: false });
+    }
+
+    if (user.role === "manager") {
+      return res.json({ hasConnection: true });
+    }
+
+    const connectedManagers = await storage.getConnectedManagers(user.id);
+    res.json({ hasConnection: connectedManagers.length > 0 });
+  });
+
+  // === NOTIFICATION APIs ===
+
+  // Lấy danh sách thông báo của user
+  app.get("/api/notifications", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    const notifications = await storage.getNotifications(user.id, limit);
+    res.json(notifications);
+  });
+
+  // Lấy số lượng thông báo chưa đọc
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const count = await storage.getUnreadNotificationCount(user.id);
+    res.json({ count });
+  });
+
+  // Đánh dấu một thông báo đã đọc
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    await storage.markNotificationAsRead(id);
+    res.json({ message: "Đã đánh dấu đã đọc" });
+  });
+
+  // Đánh dấu tất cả thông báo đã đọc
+  app.post("/api/notifications/mark-all-read", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    await storage.markAllNotificationsAsRead(user.id);
+    res.json({ message: "Đã đánh dấu tất cả đã đọc" });
+  });
+
+  // Xóa một thông báo
+  app.delete("/api/notifications/:id", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    await storage.deleteNotification(id);
+    res.json({ message: "Đã xóa thông báo" });
   });
 
   const httpServer = createServer(app);

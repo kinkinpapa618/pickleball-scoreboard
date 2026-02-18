@@ -1,4 +1,4 @@
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 
 const firstNames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Đặng", "Bùi", "Đỗ", "Ngô", "Vũ", "Phan", "Trương", "Võ", "Đinh", "Huỳnh"];
 const lastNames = ["Minh", "Hùng", "An", "Bảo", "Long", "Nam", "Khoa", "Phúc", "Thành", "Việt", "Dũng", "Tân", "Huy", "Lâm", "Phong", "Tuấn", "Khôi", "Ngọc", "Minh", "Quân"];
@@ -85,20 +85,28 @@ console.log(`   - Đôi Nữ: ${level4_2.filter(d => d["Nội dung"] === "Đôi 
 console.log(`\n📋 Level 4.4: ${level4_4.length} cặp`);
 console.log(`   - Đôi Nam: ${level4_4.filter(d => d["Nội dung"] === "Đôi Nam").length} cặp`);
 
-const worksheet = XLSX.utils.json_to_sheet(allData);
+async function createExcel() {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Danh sách cặp");
 
-worksheet["!cols"] = [
-  { wch: 5 },  // STT
-  { wch: 8 },  // Level
-  { wch: 15 }, // Nội dung
-  { wch: 20 }, // Tên VĐV 1
-  { wch: 20 }, // Tên VĐV 2
-  { wch: 10 }, // ID VĐV 1
-  { wch: 10 }, // ID VĐV 2
-];
+  worksheet.columns = [
+    { header: "STT", key: "STT", width: 5 },
+    { header: "Level", key: "Level", width: 8 },
+    { header: "Nội dung", key: "Nội dung", width: 15 },
+    { header: "Tên VĐV 1", key: "Tên VĐV 1", width: 20 },
+    { header: "Tên VĐV 2", key: "Tên VĐV 2", width: 20 },
+    { header: "ID VĐV 1", key: "ID VĐV 1", width: 10 },
+    { header: "ID VĐV 2", key: "ID VĐV 2", width: 10 },
+  ];
 
-const workbook = XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách cặp");
+  worksheet.getRow(1).font = { bold: true };
 
-XLSX.writeFile(workbook, "giai_demo_20_cap.xlsx");
-console.log("\n✓ Đã lưu file: giai_demo_20_cap.xlsx");
+  allData.forEach(row => {
+    worksheet.addRow(row);
+  });
+
+  await workbook.xlsx.writeFile("giai_demo_20_cap.xlsx");
+  console.log("\n✓ Đã lưu file: giai_demo_20_cap.xlsx");
+}
+
+createExcel();

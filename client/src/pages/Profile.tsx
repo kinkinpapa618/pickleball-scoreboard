@@ -17,6 +17,8 @@ import {
   ChevronRight,
   Moon,
   Sun,
+  Link2,
+  MessageCircle,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -46,8 +48,8 @@ export default function Profile() {
   const [editedUser, setEditedUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "info" | "stats" | "admin" | "manager"
-  >("info");
+    "stats" | "admin" | "manager" | "info"
+  >("stats");
 
   useEffect(() => {
     if (user) {
@@ -173,9 +175,42 @@ export default function Profile() {
             )}
           </button>
         </div>
+      </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3 mt-4">
+      {/* Stats Section - Always Visible */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-slate-900">Thống kê hoạt động</h3>
+          </div>
+        </div>
+
+        {editedUser.role === "referee" && (
+          <Link href="/connected-managers">
+            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-3 rounded-xl shadow-sm flex items-center justify-between hover:opacity-90 transition">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-white" />
+                <span className="font-bold text-white text-sm">Kết nối Manager</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-white/70" />
+            </div>
+          </Link>
+        )}
+
+        {(editedUser.role === "referee" || editedUser.role === "manager") && (
+          <Link href="/chat">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-3 rounded-xl shadow-sm flex items-center justify-between hover:opacity-90 transition">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-white" />
+                <span className="font-bold text-white text-sm">Chat nhóm</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-white/70" />
+            </div>
+          </Link>
+        )}
+
+        <div className="grid grid-cols-3 gap-3">
           <div className="bg-slate-50 rounded-xl p-3 text-center">
             <div className="text-xl font-black text-blue-600">
               {stats?.totalMatches || 0}
@@ -203,26 +238,6 @@ export default function Profile() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        <button
-          onClick={() => setActiveTab("info")}
-          className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
-            activeTab === "info"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-slate-500"
-          }`}
-        >
-          Thông tin
-        </button>
-        <button
-          onClick={() => setActiveTab("stats")}
-          className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
-            activeTab === "stats"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-slate-500"
-          }`}
-        >
-          Thống kê
-        </button>
         {editedUser.role === "admin" && (
           <button
             onClick={() => setActiveTab("admin")}
@@ -247,6 +262,26 @@ export default function Profile() {
             Quản lý
           </button>
         )}
+        <button
+          onClick={() => setActiveTab("stats")}
+          className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
+            activeTab === "stats"
+              ? "bg-blue-500 text-white"
+              : "bg-white text-slate-500"
+          }`}
+        >
+          Thống kê
+        </button>
+        <button
+          onClick={() => setActiveTab("info")}
+          className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
+            activeTab === "info"
+              ? "bg-blue-500 text-white"
+              : "bg-white text-slate-500"
+          }`}
+        >
+          Thông tin
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -333,49 +368,34 @@ export default function Profile() {
       )}
 
       {activeTab === "stats" && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <BarChart3 className="w-5 h-5 text-blue-500" />
-            <h3 className="font-bold text-slate-900">Thống kê hoạt động</h3>
-          </div>
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <h3 className="font-bold text-slate-900">Chi tiết thống kê</h3>
+            </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-50 rounded-xl p-4">
-              <Trophy className="w-5 h-5 text-orange-500 mb-2" />
-              <div className="text-2xl font-black text-slate-900">
-                {stats?.totalMatches || 0}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                <span className="text-slate-500 text-sm">Trận đã hoàn thành</span>
+                <span className="font-black text-emerald-500">
+                  {stats?.completedMatches || 0}
+                </span>
               </div>
-              <div className="text-xs text-slate-400">Tổng trận đấu</div>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-4">
-              <Calendar className="w-5 h-5 text-blue-500 mb-2" />
-              <div className="text-2xl font-black text-slate-900">
-                {stats?.totalSchedules || 0}
+              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                <span className="text-slate-500 text-sm">Trận chờ xử lý</span>
+                <span className="font-black text-orange-500">
+                  {stats?.pendingMatches || 0}
+                </span>
               </div>
-              <div className="text-xs text-slate-400">Lịch công tác</div>
-            </div>
-          </div>
-
-          <div className="space-y-3 mt-4">
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-500 text-sm">Trận đã hoàn thành</span>
-              <span className="font-black text-emerald-500">
-                {stats?.completedMatches || 0}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-500 text-sm">Trận chờ xử lý</span>
-              <span className="font-black text-orange-500">
-                {stats?.pendingMatches || 0}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-500 text-sm">
-                Công tác hoàn thành
-              </span>
-              <span className="font-black text-blue-500">
-                {stats?.completedSchedules || 0}
-              </span>
+              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                <span className="text-slate-500 text-sm">
+                  Công tác hoàn thành
+                </span>
+                <span className="font-black text-blue-500">
+                  {stats?.completedSchedules || 0}
+                </span>
+              </div>
             </div>
           </div>
         </div>

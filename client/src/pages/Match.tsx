@@ -77,7 +77,7 @@ export default function Match() {
   const winningScore = parseInt(search.get("win") || "11");
   const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
 
-  const { state, scorePoint, fault, undo, getMatchData, resetState } =
+  const { state, scorePoint, fault, undo, getMatchData, resetState, setWinner } =
     useGameLogic(winningScore, initialServer, names);
 
   const createMatch = useCreateMatch();
@@ -85,9 +85,24 @@ export default function Match() {
   const { data: serverMatch } = useMatch(matchId);
   const [saved, setSaved] = useState(false);
 
-  // --- KHÔI PHỤC ĐIỂM KHI VÀO TRẬN (nếu có matchId và đang live) ---
+  // --- KHÔI PHỤC ĐIỂM KHI VÀO TRẬN (nếu có matchId và đang live hoặc finished) ---
   useEffect(() => {
-    if (serverMatch && serverMatch.status === "live" && !state.winner) {
+    if (!serverMatch) return;
+
+    // Trường hợp 1: Trận đấu đã kết thúc - restore winner
+    if (serverMatch.status === "finished" && serverMatch.winnerTeam) {
+      if (state.winner !== serverMatch.winnerTeam) {
+        resetState({
+          score1: serverMatch.scoreTeam1,
+          score2: serverMatch.scoreTeam2,
+        });
+        setWinner(serverMatch.winnerTeam as 1 | 2);
+      }
+      return;
+    }
+
+    // Trường hợp 2: Trận đấu đang diễn ra - restore score
+    if (serverMatch.status === "live" && !state.winner) {
       if (
         serverMatch.scoreTeam1 !== state.score1 ||
         serverMatch.scoreTeam2 !== state.score2
@@ -360,17 +375,18 @@ export default function Match() {
   }, [isTimerRunning, matchStartTime]);
 
   useEffect(() => {
-    if (state.winner) {
+    if (state.winner && matchId > 0) {
       setIsTimerRunning(false);
-      // Lưu winner vào database khi trận đấu kết thúc
-      if (matchId > 0) {
+      // Tránh gọi API khi winner từ server (đã có sẵn)
+      const shouldSave = !serverMatch || serverMatch.winnerTeam !== state.winner;
+      if (shouldSave) {
         console.log("🏆 Match ended, saving winner:", state.winner);
         updateMatch.mutate({
           id: matchId,
           data: {
             winnerTeam: state.winner,
             status: "finished",
-            endTime: new Date(),
+            endTime: new Date() as any,
           },
         }, {
           onSuccess: (data) => {
@@ -380,6 +396,8 @@ export default function Match() {
             console.error("❌ Failed to update match status:", error);
           }
         });
+      } else {
+        console.log("ℹ️ Winner already saved on server:", state.winner);
       }
     }
   }, [state.winner, matchId]);

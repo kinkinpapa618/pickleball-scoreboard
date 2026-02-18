@@ -99,24 +99,19 @@ export function createBracket(players: BracketPlayer[]): BracketData {
       let status: BracketMatch["status"] = "pending";
 
       if (r === 1) {
-        // Vòng 1: Gán người chơi theo thứ tự seed
-        // Seed 1 vs Seed 8, Seed 4 vs Seed 5, Seed 3 vs Seed 6, Seed 2 vs Seed 7 (cho 8 người)
-        const seedOrder8 = [0, 7, 3, 4, 2, 5, 1, 6]; // Vị trí theo seed
+        const seedOrder8 = [0, 7, 3, 4, 2, 5, 1, 6];
         const seedOrder16 = [0, 15, 7, 8, 3, 12, 4, 13, 1, 14, 6, 9, 2, 11, 5, 10];
-        
-        const order = bracketSize === 8 ? seedOrder8 : (bracketSize === 16 ? seedOrder16 : null);
-        
-        const idx1 = order ? order[m * 2] : m * 2;
-        const idx2 = order ? order[m * 2 + 1] : m * 2 + 1;
+        const seedOrder32 = [0, 31, 15, 16, 7, 24, 8, 23, 3, 28, 19, 12, 11, 20, 27, 4, 5, 26, 21, 10, 13, 18, 29, 2, 1, 30, 14, 17, 25, 8, 22];
+
+        const order = bracketSize === 8 ? seedOrder8 : bracketSize === 16 ? seedOrder16 : seedOrder32;
+
+        const idx1 = order[m * 2];
+        const idx2 = order[m * 2 + 1];
 
         player1 = sortedPlayers[idx1] || null;
         player2 = sortedPlayers[idx2] || null;
 
-        // Kiểm tra BYE
         if (!player1 || !player2) {
-          status = "bye";
-        } else if (player1.seed === 1 || player2.seed === bracketSize) {
-          // Seed 1 vs Last seed = BYE
           status = "bye";
         }
       }

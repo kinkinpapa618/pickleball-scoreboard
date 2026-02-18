@@ -24,8 +24,17 @@ export function generateRoundRobin(players: string[]) {
   return matches;
 }
 
+function fisherYatesShuffle<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export function generateGroups(players: string[], teamsPerGroup: number = 4) {
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const shuffled = fisherYatesShuffle(players);
 
   const groups: Record<string, { name: string; players: string[]; matches: any[] }> = {};
   const groupNames = ["A", "B", "C", "D", "E", "F"];

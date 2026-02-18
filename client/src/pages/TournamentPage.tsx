@@ -86,7 +86,7 @@ export default function TournamentPage() {
   const assignCourt = useAssignCourt();
 
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null);
-  const { data: selectedTournament, refetch: refetchTournament } = useTournament(selectedTournamentId || 0);
+  const { data: selectedTournament, refetch: refetchTournament, error: tournamentError } = useTournament(selectedTournamentId || 0);
 
   const [step, setStep] = useState<"list" | "create" | "detail">("list");
   const [viewTab, setViewTab] = useState<"matches" | "bracket">("matches");
@@ -241,6 +241,19 @@ export default function TournamentPage() {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (tournamentError && selectedTournamentId) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Lỗi khi tải thông tin giải đấu</p>
+          <Button onClick={() => { setSelectedTournamentId(null); setStep("list"); }}>
+            Quay lại danh sách
+          </Button>
+        </div>
       </div>
     );
   }
@@ -584,9 +597,9 @@ export default function TournamentPage() {
                                 </Badge>
                               </div>
                               <p className="text-sm font-bold text-slate-800">
-                                {match.team1Player1}/{match.team1Player2}
+                                {match.team1Player1 || "?"}/{match.team1Player2 || "?"}
                                 <span className="text-slate-400 mx-2">vs</span>
-                                {match.team2Player1}/{match.team2Player2}
+                                {match.team2Player1 || "?"}/{match.team2Player2 || "?"}
                               </p>
                             </div>
 
@@ -613,10 +626,10 @@ export default function TournamentPage() {
                                   className="text-xs bg-slate-100 rounded-xl"
                                 >
                                   {match.refereeId ? (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-blue-600 font-bold">
-                                        {referees?.find(r => r.id === match.refereeId)?.username || "TT"}
-                                      </span>
+                                 <div className="flex items-center gap-1">
+                                       <span className="text-blue-600 font-bold">
+                                         {referees?.find(r => r.id === match.refereeId)?.username || `TT${match.refereeId || ""}`}
+                                       </span>
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -663,9 +676,9 @@ export default function TournamentPage() {
                                   className="text-xs bg-slate-100 rounded-xl"
                                 >
                                   {match.courtId ? (
-                                    <span className="text-green-600 font-bold">
-                                      Sân {courts.find(c => c.id === match.courtId)?.name || match.courtId}
-                                    </span>
+                                   <span className="text-green-600 font-bold">
+                                       Sân {courts.find(c => c.id === match.courtId)?.name || match.courtId || "?"}
+                                     </span>
                                   ) : (
                                     <span className="text-slate-400 text-xs">Sân</span>
                                   )}
@@ -749,13 +762,13 @@ function BracketView({ matches }: { matches: any[] }) {
                     }>
                       {match.status === "live" ? "LIVE" : match.status === "completed" ? "✓" : "○"}
                     </Badge>
-                    <div>
+                      <div>
                       <p className="text-sm font-bold text-slate-800">
-                        {match.team1Player1}/{match.team1Player2}
+                        {match.team1Player1 || "?"}/{match.team1Player2 || "?"}
                       </p>
                       <p className="text-xs text-slate-400">vs</p>
                       <p className="text-sm font-bold text-slate-800">
-                        {match.team2Player1}/{match.team2Player2}
+                        {match.team2Player1 || "?"}/{match.team2Player2 || "?"}
                       </p>
                     </div>
                   </div>

@@ -111,6 +111,9 @@ export const matches = pgTable("matches", {
    // Liên kết sân (Court) - trận đấu được tổ chức trên sân nào
   courtId: integer("court_id"), // Removed reference to avoid circular dependency
 
+  // Người tạo trận đấu (Manager)
+  creatorId: integer("creator_id").references(() => users.id),
+
   date: timestamp("date").defaultNow(),
 });
 
@@ -302,3 +305,60 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
 
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+
+// === 9. MANAGER CONNECTIONS (Referee theo dõi Manager) ===
+export const managerConnections = pgTable("manager_connections", {
+  id: serial("id").primaryKey(),
+  refereeId: integer("referee_id").references(() => users.id).notNull(),
+  managerId: integer("manager_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertManagerConnectionSchema = createInsertSchema(managerConnections).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ManagerConnection = typeof managerConnections.$inferSelect;
+export type InsertManagerConnection = z.infer<typeof insertManagerConnectionSchema>;
+
+// === 10. CHAT MESSAGES (Group chat giữa Manager và Referees) ===
+export const chats = pgTable("chats", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").references(() => users.id).notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChatSchema = createInsertSchema(chats).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Chat = typeof chats.$inferSelect;
+export type InsertChat = z.infer<typeof insertChatSchema>;
+
+// === 11. NOTIFICATIONS ===
+export const notificationTypes = ["chat", "match", "tournament", "schedule", "system"] as const;
+export type NotificationType = (typeof notificationTypes)[number];
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").$type<NotificationType>().notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  read: boolean("read").default(false).notNull(),
+  link: text("link"),
+  data: jsonb("data"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  read: true,
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;

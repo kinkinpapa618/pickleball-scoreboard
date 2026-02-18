@@ -1,8 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Home, Briefcase, User, Trophy, Settings, Layers } from "lucide-react";
+import { Home, Briefcase, Trophy, Layers, Settings } from "lucide-react";
+import { useNotifications } from "@/context/NotificationContext";
+import { useAuth } from "@/hooks/use-auth";
 
 export function BottomNav() {
   const [location] = useLocation();
+  const { unreadCount } = useNotifications();
 
   const navItems = [
     { href: "/", icon: Home, label: "TRANG CHỦ" },
@@ -19,10 +22,12 @@ export function BottomNav() {
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = location === item.href || location.startsWith(item.href + "/");
+          const isProfile = item.href === "/profile";
+
           return (
             <Link key={item.href} href={item.href}>
               <div
-                className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+                className={`relative flex flex-col items-center gap-1 cursor-pointer transition-colors ${
                   isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600"
                 }`}
               >
@@ -32,6 +37,9 @@ export function BottomNav() {
                 <span className="text-[9px] font-bold uppercase tracking-wide">
                   {item.label}
                 </span>
+                {isProfile && unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                )}
               </div>
             </Link>
           );

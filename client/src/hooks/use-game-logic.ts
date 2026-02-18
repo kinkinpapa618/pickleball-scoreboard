@@ -317,6 +317,13 @@ export function useGameLogic(
     };
   }, [state, names, getRemainingServes, checkDiagonalPositions]);
 
+  const setWinner = useCallback((winner: 1 | 2 | null) => {
+    setState((prev) => ({
+      ...prev,
+      winner,
+    }));
+  }, []);
+
   // ==============================================
   // TRẢ VỀ
   // ==============================================
@@ -326,9 +333,10 @@ export function useGameLogic(
     fault,
     undo,
     switchSides,
-    resetState, // Đã thêm resetState
+    resetState,
     getMatchData,
     getRemainingServes,
     checkDiagonalPositions,
+    setWinner,
   };
 }
