@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Calendar, MapPin, Trophy, ChevronRight, Save, User, Users } from "lucide-react";
+import { Plus, X, Calendar, MapPin, Trophy, ChevronRight, Save, User, Users, Image, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 
 const SINGLES_OPTIONS = [
@@ -29,12 +29,47 @@ interface TournamentFormData {
   date: string;
   time: string;
   location: string;
-  court: string;
+  courts: number;
+  level: string;
   levels: LevelContent[];
+  backdrop?: string;
 }
 
 interface CreateTournamentProps {
   onSubmit: (data: TournamentFormData) => void;
+}
+
+function resizeImage(file: File, maxSizeKB: number = 1024): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new (window.Image || (globalThis as any).Image)();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        const fileSizeKB = file.size / 1024;
+        if (fileSizeKB <= maxSizeKB) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
+        const scale = Math.sqrt(maxSizeKB / fileSizeKB);
+        width = Math.floor(width * scale);
+        height = Math.floor(height * scale);
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.9));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
@@ -43,14 +78,46 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
     date: "",
     time: "",
     location: "",
-    court: "",
+    courts: 1,
+    level: "",
     levels: [],
+    backdrop: undefined,
   });
 
   const [newLevel, setNewLevel] = useState("");
+  const [backdropPreview, setBackdropPreview] = useState<string | undefined>(formData.backdrop);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (field: keyof TournamentFormData, value: string) => {
+  const handleChange = (field: keyof TournamentFormData, value: string | number | undefined) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleBackdropUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (!validTypes.includes(file.type)) {
+      alert("Chỉ chấp nhận file JPEG, JPG, PNG");
+      return;
+    }
+
+    try {
+      const resized = await resizeImage(file, 1024);
+      setBackdropPreview(resized);
+      setFormData((prev) => ({ ...prev, backdrop: resized }));
+    } catch (err) {
+      console.error("Error resizing image:", err);
+      alert("Không thể xử lý ảnh");
+    }
+  };
+
+  const handleRemoveBackdrop = () => {
+    setBackdropPreview(undefined);
+    setFormData((prev) => ({ ...prev, backdrop: undefined }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleAddLevel = () => {
@@ -180,16 +247,82 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="court" className="text-white/70 text-xs font-bold uppercase">
-                Sân thi đấu
+              <Label htmlFor="courts" className="text-white/70 text-xs font-bold uppercase">
+                Số lượng sân đăng ký
               </Label>
               <Input
-                id="court"
-                placeholder="VD: Sân A, Sân B (tùy chọn)"
-                value={formData.court}
-                onChange={(e) => handleChange("court", e.target.value)}
+                id="courts"
+                type="number"
+                min={1}
+                max={20}
+                placeholder="VD: 2"
+                value={formData.courts}
+                onChange={(e) => handleChange("courts", parseInt(e.target.value) || 1)}
                 className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="level" className="text-white/70 text-xs font-bold uppercase">
+                Level (phân cách bằng dấu phẩy)
+              </Label>
+              <Input
+                id="level"
+                placeholder="VD: 4.0, 4.5, 5.0"
+                value={formData.level}
+                onChange={(e) => handleChange("level", e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-900/80 border-white/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-white/80 text-sm font-bold uppercase tracking-wider">
+              Backdrop giải đấu
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-white/70 text-xs font-bold uppercase">
+                Ảnh backdrop (JPEG, JPG, PNG - dưới 1MB)
+              </Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png"
+                onChange={handleBackdropUpload}
+                className="hidden"
+              />
+              {backdropPreview ? (
+                <div className="relative">
+                  <img
+                    src={backdropPreview}
+                    alt="Backdrop preview"
+                    className="w-full h-40 object-cover rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleRemoveBackdrop}
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-20 border-dashed border-white/20 text-white/50 hover:border-[#ccff00] hover:text-[#ccff00]"
+                >
+                  <Upload className="w-5 h-5 mr-2" />
+                  Tải ảnh backdrop
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

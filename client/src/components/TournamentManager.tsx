@@ -15,11 +15,12 @@ import {
   ChevronRight,
   Settings2,
   Upload,
+  Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTournament } from "@/context/TournamentContext";
 import CreateTournament from "./CreateTournament";
-import { ExcelUpload } from "./ExcelUpload";
+import { ExcelUpload, PlayerData } from "./ExcelUpload";
 import {
   TournamentFormat,
   Player,
@@ -31,6 +32,30 @@ import {
 } from "@/lib/tournament-advanced";
 import { TournamentBracket } from "./TournamentBracket";
 import { createBracket, BracketData, BracketPlayer, updateBracketMatch as updateBracketFn } from "@/lib/tournament-bracket";
+import {
+  suggestGroupingMethod,
+  calculateOptimalGroups,
+  distributeSeedsEvenly,
+  generateGroupNames,
+  groupByCategory,
+  type GroupSuggestion,
+} from "@/lib/tournament-grouping";
+
+interface LevelContent {
+  level: string;
+  contents: string[];
+}
+
+type TournamentFormData = {
+  name: string;
+  date: string;
+  time: string;
+  location: string;
+  courts: number;
+  level: string;
+  levels: LevelContent[];
+  backdrop?: string;
+};
 
 // --- 1. ĐGHĨAỊNH N KIỂU DỮ LIỆU ---
 type FormatOption = {
@@ -69,14 +94,7 @@ export default function TournamentManager() {
   const { showToast } = useTournament();
 
   // --- STATE ---
-  const [tournamentInfo, setTournamentInfo] = useState<{
-    name: string;
-    date: string;
-    time: string;
-    location: string;
-    court: string;
-    levels: { level: string; contents: string[] }[];
-  } | null>(null);
+  const [tournamentInfo, setTournamentInfo] = useState<TournamentFormData | null>(null);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [format, setFormat] = useState<TournamentFormat>("ROUND_ROBIN");
@@ -85,9 +103,23 @@ export default function TournamentManager() {
   const [bracketData, setBracketData] = useState<BracketData | null>(null);
   const [currentView, setCurrentView] = useState<"upload" | "format" | "tournament">("upload");
   const [showFormatSettings, setShowFormatSettings] = useState(false);
+  const [parsedPlayerData, setParsedPlayerData] = useState<PlayerData[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<ReturnType<typeof groupByCategory>>([]);
+  const [selectedCategoryFormat, setSelectedCategoryFormat] = useState<Record<string, TournamentFormat>>({});
 
   // --- XỬ LÝ UPLOAD FILE ---
   const handleDataLoaded = (data: string[] | import("./ExcelUpload").PlayerData[]) => {
+    setParsedPlayerData(data as PlayerData[]);
+    
+    const groups = groupByCategory(data as PlayerData[]);
+    setCategoryGroups(groups);
+    
+    const formats: Record<string, TournamentFormat> = {};
+    groups.forEach(g => {
+      formats[g.category] = g.suggestedFormat.format;
+    });
+    setSelectedCategoryFormat(formats);
+
     const playerNames = Array.isArray(data) && typeof data[0] === "string" 
       ? data as string[] 
       : (data as import("./ExcelUpload").PlayerData[]).reduce<string[]>((acc, p) => {
@@ -259,23 +291,62 @@ export default function TournamentManager() {
               </h2>
             </div>
 
-            <ExcelUpload onDataLoaded={handleDataLoaded} />
+            <ExcelUpload onDataLoaded={handleDataLoaded} mode="tournament-v2" />
 
             {players.length > 0 && (
-              <div className="mt-6 p-4 bg-[#ccff00]/10 rounded-2xl border border-[#ccff00]/20">
-                <p className="text-[#ccff00] text-sm font-bold">
-                  ✓ Đã tải {players.length} VĐV
-                </p>
-                <p className="text-white/50 text-xs mt-1">
-                  {players.slice(0, 5).map(p => p.name).join(", ")}
-                  {players.length > 5 && ` + ${players.length - 5} người khác`}
-                </p>
-                <Button
-                  onClick={() => setCurrentView("format")}
-                  className="mt-4 bg-[#ccff00] text-black font-black italic"
-                >
-                  Tiếp tục <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
+              <div className="mt-6 space-y-4">
+                {/* Hiển thị thông tin các nội dung đăng ký */}
+                {categoryGroups.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-white font-bold text-sm uppercase">Gợi ý phương thức chia bảng:</h3>
+                    {categoryGroups.map((group) => (
+                      <div key={group.category} className="p-4 bg-slate-900/50 rounded-xl border border-white/5">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <span className="text-[#ccff00] font-bold">{group.category}</span>
+                            <span className="text-white/50 text-xs ml-2">({group.totalPairs} cặp)</span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-blue-500/10 rounded-lg p-3 mb-3">
+                          <div className="flex items-center gap-2 text-blue-400 text-xs font-bold mb-1">
+                            <Info className="w-3 h-3" />
+                            GỢI Ý: {group.suggestedFormat.formatName}
+                          </div>
+                          <p className="text-white/60 text-xs">{group.suggestedFormat.reason}</p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {suggestGroupingMethod(group.totalPairs).map((suggestion) => (
+                            <button
+                              key={suggestion.format}
+                              onClick={() => setSelectedCategoryFormat(prev => ({ ...prev, [group.category]: suggestion.format }))}
+                              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                selectedCategoryFormat[group.category] === suggestion.format
+                                  ? "bg-[#ccff00] text-black"
+                                  : "bg-white/5 text-white/60 hover:bg-white/10"
+                              }`}
+                            >
+                              {suggestion.formatName}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="p-4 bg-[#ccff00]/10 rounded-2xl border border-[#ccff00]/20">
+                  <p className="text-[#ccff00] text-sm font-bold">
+                    ✓ Đã tải {players.length} VĐV ({parsedPlayerData.length} cặp)
+                  </p>
+                  <Button
+                    onClick={() => setCurrentView("format")}
+                    className="mt-4 bg-[#ccff00] text-black font-black italic"
+                  >
+                    Tiếp tục <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
               </div>
             )}
           </motion.section>

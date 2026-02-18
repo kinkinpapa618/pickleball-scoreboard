@@ -10,22 +10,34 @@ export interface PlayerData {
   player3?: string;
   player4?: string;
   level?: string;
+  level1?: string;
+  level2?: string;
   category?: string;
   pairIndex?: number;
+  seed?: number;
+}
+
+export interface ParsedTournamentData {
+  players: PlayerData[];
+  categories: string[];
+  levels: string[];
+  totalPairs: number;
 }
 
 interface ExcelUploadProps {
   onDataLoaded: (players: PlayerData[] | string[]) => void;
-  mode?: "simple" | "tournament";
+  mode?: "simple" | "tournament" | "tournament-v2";
+  onParsedData?: (data: ParsedTournamentData) => void;
 }
 
-export function ExcelUpload({ onDataLoaded, mode = "simple" }: ExcelUploadProps) {
+export function ExcelUpload({ onDataLoaded, mode = "simple", onParsedData }: ExcelUploadProps) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
     levels: string[];
     categories: string[];
     totalPlayers: number;
+    totalPairs: number;
   } | null>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +60,6 @@ export function ExcelUpload({ onDataLoaded, mode = "simple" }: ExcelUploadProps)
 
         const rows: any[] = [];
         worksheet.eachRow((row) => {
-          // row.values is 1-indexed array
           const values = [];
           for (let i = 1; i <= row.cellCount; i++) {
             values.push(row.getCell(i).value);
@@ -58,74 +69,119 @@ export function ExcelUpload({ onDataLoaded, mode = "simple" }: ExcelUploadProps)
 
         if (rows.length < 2) throw new Error("File trống!");
 
-        // Get headers (first row)
         const headers: string[] = rows[0].map((h: any) => String(h || "").toLowerCase().trim());
-        
-        // Find column indices - support 4 player columns for doubles
-        const p1Idx = headers.findIndex(h => h.includes("vdv 1") || h.includes("tên vđv 1") || h.includes("player1"));
-        const p2Idx = headers.findIndex(h => h.includes("vdv 2") || h.includes("tên vđv 2") || h.includes("player2"));
-        const p3Idx = headers.findIndex(h => h.includes("vdv 3") || h.includes("tên vđv 3") || h.includes("player3"));
-        const p4Idx = headers.findIndex(h => h.includes("vdv 4") || h.includes("tên vđv 4") || h.includes("player4"));
-        const levelIdx = headers.findIndex(h => h.includes("level"));
-        const catIdx = headers.findIndex(h => h.includes("nội dung") || h.includes("category"));
-        const sttIdx = headers.findIndex(h => h.includes("stt") || h.includes("cặp"));
         
         const players: PlayerData[] = [];
         const levels = new Set<string>();
         const categories = new Set<string>();
 
-        // Parse data rows (skip header)
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          if (!row || row.length === 0) continue;
+        if (mode === "tournament-v2") {
+          const sttIdx = headers.findIndex(h => h.includes("stt"));
+          const catIdx = headers.findIndex(h => h.includes("nội dung"));
+          const p1Idx = headers.findIndex(h => h.includes("vđv 1") || h.includes("tên vđv 1") || h.includes("player1") || h.includes("tên vdv 1"));
+          const level1Idx = headers.findIndex(h => h.includes("level vdv1") || h.includes("level vđv1"));
+          const p2Idx = headers.findIndex(h => h.includes("vđv 2") || h.includes("tên vđv 2") || h.includes("player2") || h.includes("tên vdv 2"));
+          const level2Idx = headers.findIndex(h => h.includes("level vdv2") || h.includes("level vđv2"));
+          const seedIdx = headers.findIndex(h => h.includes("hạt giống") || h.includes("hạt giống") || h.includes("seed"));
 
-          const p1 = p1Idx >= 0 && row[p1Idx] ? String(row[p1Idx]).trim() : "";
-          const p2 = p2Idx >= 0 && row[p2Idx] ? String(row[p2Idx]).trim() : "";
-          const p3 = p3Idx >= 0 && row[p3Idx] ? String(row[p3Idx]).trim() : "";
-          const p4 = p4Idx >= 0 && row[p4Idx] ? String(row[p4Idx]).trim() : "";
-          
-          // Skip empty rows
-          if (!p1 && !p2 && !p3 && !p4) continue;
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
 
-          const level = levelIdx >= 0 && row[levelIdx] ? String(row[levelIdx]).trim() : undefined;
-          const category = catIdx >= 0 && row[catIdx] ? String(row[catIdx]).trim() : undefined;
-          const pairIndex = sttIdx >= 0 && row[sttIdx] ? Number(row[sttIdx]) : undefined;
+            const p1 = p1Idx >= 0 && row[p1Idx] ? String(row[p1Idx]).trim() : "";
+            const p2 = p2Idx >= 0 && row[p2Idx] ? String(row[p2Idx]).trim() : "";
+            
+            if (!p1 && !p2) continue;
 
-          if (level) levels.add(level);
-          if (category) categories.add(category);
+            const category = catIdx >= 0 && row[catIdx] ? String(row[catIdx]).trim() : "";
+            const level1 = level1Idx >= 0 && row[level1Idx] ? String(row[level1Idx]).trim() : "";
+            const level2 = level2Idx >= 0 && row[level2Idx] ? String(row[level2Idx]).trim() : "";
+            const seed = seedIdx >= 0 && row[seedIdx] ? (row[seedIdx] === 1 || row[seedIdx] === "1" ? 1 : undefined) : undefined;
+            const pairIndex = sttIdx >= 0 && row[sttIdx] ? Number(row[sttIdx]) : i;
 
-          players.push({
-            player1: p1 || undefined,
-            player2: p2 || undefined,
-            player3: p3 || undefined,
-            player4: p4 || undefined,
-            level: level || undefined,
-            category: category || undefined,
-            pairIndex: pairIndex
+            if (category) categories.add(category);
+            if (level1) levels.add(level1);
+            if (level2) levels.add(level2);
+
+            players.push({
+              player1: p1 || undefined,
+              player2: p2 || undefined,
+              level1: level1 || undefined,
+              level2: level2 || undefined,
+              category: category || undefined,
+              pairIndex: pairIndex,
+              seed: seed,
+            });
+          }
+
+          if (players.length === 0) throw new Error("Không tìm thấy dữ liệu VĐV!");
+
+          setPreview({
+            levels: Array.from(levels),
+            categories: Array.from(categories),
+            totalPlayers: players.length * 2,
+            totalPairs: players.length,
           });
-        }
 
-        if (players.length === 0) throw new Error("Không tìm thấy dữ liệu VĐV!");
+          if (onParsedData) {
+            onParsedData({
+              players,
+              categories: Array.from(categories),
+              levels: Array.from(levels),
+              totalPairs: players.length,
+            });
+          }
 
-        // If simple mode, return just names (flatten)
-        if (mode === "simple") {
-          const allNames: string[] = [];
-          players.forEach(p => {
-            if (p.player1) allNames.push(p.player1);
-            if (p.player2) allNames.push(p.player2);
-            if (p.player3) allNames.push(p.player3);
-            if (p.player4) allNames.push(p.player4);
-          });
-          onDataLoaded(allNames);
+          onDataLoaded(players);
         } else {
-          // If tournament mode and has level/category, show preview
+          const p1Idx = headers.findIndex(h => h.includes("vdv 1") || h.includes("tên vđv 1") || h.includes("player1"));
+          const p2Idx = headers.findIndex(h => h.includes("vdv 2") || h.includes("tên vđv 2") || h.includes("player2"));
+          const p3Idx = headers.findIndex(h => h.includes("vdv 3") || h.includes("tên vđv 3") || h.includes("player3"));
+          const p4Idx = headers.findIndex(h => h.includes("vdv 4") || h.includes("tên vđv 4") || h.includes("player4"));
+          const levelIdx = headers.findIndex(h => h.includes("level"));
+          const catIdx = headers.findIndex(h => h.includes("nội dung") || h.includes("category"));
+          const sttIdx = headers.findIndex(h => h.includes("stt") || h.includes("cặp"));
+
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+
+            const p1 = p1Idx >= 0 && row[p1Idx] ? String(row[p1Idx]).trim() : "";
+            const p2 = p2Idx >= 0 && row[p2Idx] ? String(row[p2Idx]).trim() : "";
+            const p3 = p3Idx >= 0 && row[p3Idx] ? String(row[p3Idx]).trim() : "";
+            const p4 = p4Idx >= 0 && row[p4Idx] ? String(row[p4Idx]).trim() : "";
+            
+            if (!p1 && !p2 && !p3 && !p4) continue;
+
+            const level = levelIdx >= 0 && row[levelIdx] ? String(row[levelIdx]).trim() : undefined;
+            const category = catIdx >= 0 && row[catIdx] ? String(row[catIdx]).trim() : undefined;
+            const pairIndex = sttIdx >= 0 && row[sttIdx] ? Number(row[sttIdx]) : undefined;
+
+            if (level) levels.add(level);
+            if (category) categories.add(category);
+
+            players.push({
+              player1: p1 || undefined,
+              player2: p2 || undefined,
+              player3: p3 || undefined,
+              player4: p4 || undefined,
+              level: level || undefined,
+              category: category || undefined,
+              pairIndex: pairIndex,
+            });
+          }
+
+          if (players.length === 0) throw new Error("Không tìm thấy dữ liệu VĐV!");
+
           if (levels.size > 0 || categories.size > 0) {
             setPreview({
               levels: Array.from(levels),
               categories: Array.from(categories),
-              totalPlayers: players.length
+              totalPlayers: players.length,
+              totalPairs: players.length,
             });
           }
+
           onDataLoaded(players);
         }
       } catch (err: any) {
@@ -139,8 +195,13 @@ export function ExcelUpload({ onDataLoaded, mode = "simple" }: ExcelUploadProps)
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("DanhSach");
 
-    if (mode === "tournament") {
-      // Template for doubles - 4 players per match (2 vs 2)
+    if (mode === "tournament-v2") {
+      worksheet.addRow(["STT", "Nội dung", "Tên VĐV 1", "Level VĐV1", "Tên VĐV 2", "Level VĐV2", "Hạt giống"]);
+      worksheet.addRow([1, "Đôi Nam", "Nguyễn Văn A", "4.2", "Trần Văn B", "4.0", 1]);
+      worksheet.addRow([2, "Đôi Nữ", "Lê Thị C", "4.4", "Phạm Thị D", "4.2", ""]);
+      worksheet.addRow([3, "Đôi Nam-Nữ", "Hoàng Văn E", "4.0", "Ngô Thị F", "4.2", ""]);
+      worksheet.addRow([4, "Đôi Hỗn Hợp", "Vũ Văn G", "4.5", "Đặng Thị H", "4.4", 2]);
+    } else if (mode === "tournament") {
       worksheet.addRow(["STT", "Level", "Nội dung", "Tên VĐV 1", "Tên VĐV 2", "Tên VĐV 3", "Tên VĐV 4"]);
       worksheet.addRow([1, "4.2", "Đôi Nam-Nữ", "Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D"]);
       worksheet.addRow([2, "4.2", "Đôi Nữ", "Hoàng Văn E", "Đặng Văn F", "Ngô Văn G", "Vũ Văn H"]);
@@ -158,7 +219,7 @@ export function ExcelUpload({ onDataLoaded, mode = "simple" }: ExcelUploadProps)
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = mode === "tournament" ? "Mau_Giai_Dau_Pickleball.xlsx" : "Mau_Danh_Sach_VDV.xlsx";
+    a.download = mode === "tournament-v2" ? "Mau_Dang_Ky_VDV.xlsx" : (mode === "tournament" ? "Mau_Giai_Dau_Pickleball.xlsx" : "Mau_Danh_Sach_VDV.xlsx");
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -218,7 +279,8 @@ export function ExcelUpload({ onDataLoaded, mode = "simple" }: ExcelUploadProps)
           </div>
           
           <p className="text-xs text-slate-400">
-            Tổng: <span className="text-white font-bold">{preview.totalPlayers}</span> VĐV
+            Tổng: <span className="text-white font-bold">{preview.totalPlayers}</span> VĐV 
+            ({preview.totalPairs} cặp)
           </p>
         </div>
       )}
@@ -229,7 +291,7 @@ export function ExcelUpload({ onDataLoaded, mode = "simple" }: ExcelUploadProps)
         onClick={handleDownloadTemplate}
         data-testid="button-download-template"
       >
-        {mode === "tournament" ? "Tải file mẫu giải đấu" : "Tải file Excel mẫu"}
+        {mode === "tournament-v2" ? "Tải file mẫu đăng ký VĐV" : (mode === "tournament" ? "Tải file mẫu giải đấu" : "Tải file Excel mẫu")}
       </Button>
     </div>
   );
