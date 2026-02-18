@@ -35,7 +35,7 @@ import {
   type NotificationType,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, sql, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { nanoid } from "nanoid";
@@ -69,8 +69,12 @@ export interface IStorage {
   getMatches(): Promise<Match[]>;
   getMatch(id: number): Promise<Match | undefined>;
   getMatchesByReferee(refereeId: number): Promise<Match[]>;
+  getUserMatches(userId: number, limit: number, offset: number): Promise<Match[]>;
+  getUserMatchCount(userId: number): Promise<number>;
+  getOldMatchesBeyondPages(userId: number, pageLimit: number, perPage: number): Promise<Match[]>;
   createMatch(match: InsertMatch): Promise<Match>;
   updateMatch(id: number, data: Partial<Match>): Promise<Match>;
+  deleteMatch(id: number): Promise<void>;
 
   // Work Schedule methods
   getWorkSchedules(refereeId?: number): Promise<WorkSchedule[]>;
@@ -292,6 +296,38 @@ export class DatabaseStorage implements IStorage {
     return updatedMatch;
   }
 
+  async deleteMatch(id: number): Promise<void> {
+    await db.delete(matches).where(eq(matches.id, id));
+  }
+
+  async getUserMatches(userId: number, limit: number, offset: number): Promise<Match[]> {
+    return db
+      .select()
+      .from(matches)
+      .where(eq(matches.refereeId, userId))
+      .orderBy(matches.date, desc(matches.id))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getUserMatchCount(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(matches)
+      .where(eq(matches.refereeId, userId));
+    return Number(result[0]?.count || 0);
+  }
+
+  async getOldMatchesBeyondPages(userId: number, pageLimit: number, perPage: number): Promise<Match[]> {
+    const maxOffset = pageLimit * perPage;
+    return db
+      .select()
+      .from(matches)
+      .where(eq(matches.refereeId, userId))
+      .orderBy(matches.date, desc(matches.id))
+      .offset(maxOffset);
+  }
+
   // --- WORK SCHEDULE METHODS ---
   async getWorkSchedules(refereeId?: number): Promise<WorkSchedule[]> {
     if (refereeId) {
@@ -340,52 +376,80 @@ export class DatabaseStorage implements IStorage {
 
   // --- TOURNAMENT METHODS ---
   async getTournaments(creatorId?: number): Promise<Tournament[]> {
-    if (creatorId) {
-      return db
-        .select()
-        .from(tournaments)
-        .where(eq(tournaments.creatorId, creatorId))
-        .orderBy(tournaments.createdAt);
+    try {
+      if (creatorId) {
+        return await db
+          .select()
+          .from(tournaments)
+          .where(eq(tournaments.creatorId, creatorId));
+      }
+      return await db.select().from(tournaments);
+    } catch (e) {
+      console.error("Error getting tournaments:", e);
+      return [];
     }
-    return db.select().from(tournaments).orderBy(tournaments.createdAt);
   }
 
   async getTournament(id: number): Promise<Tournament | undefined> {
-    const [tournament] = await db
-      .select()
-      .from(tournaments)
-      .where(eq(tournaments.id, id));
-    return tournament;
+    try {
+      const [tournament] = await db
+        .select()
+        .from(tournaments)
+        .where(eq(tournaments.id, id));
+      return tournament;
+    } catch (e) {
+      console.error("Error getting tournament:", e);
+      return undefined;
+    }
   }
 
   async createTournament(insertTournament: InsertTournament): Promise<Tournament> {
-    const [tournament] = await db
-      .insert(tournaments)
-      .values(insertTournament)
-      .returning();
-    return tournament;
+    try {
+      const [tournament] = await db
+        .insert(tournaments)
+        .values(insertTournament)
+        .returning();
+      return tournament;
+    } catch (e) {
+      console.error("Error creating tournament:", e);
+      throw e;
+    }
   }
 
   async updateTournament(id: number, data: Partial<Tournament>): Promise<Tournament> {
-    const [updated] = await db
-      .update(tournaments)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(tournaments.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(tournaments)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(tournaments.id, id))
+        .returning();
+      return updated;
+    } catch (e) {
+      console.error("Error updating tournament:", e);
+      throw e;
+    }
   }
 
   async deleteTournament(id: number): Promise<void> {
-    await db.delete(tournaments).where(eq(tournaments.id, id));
+    try {
+      await db.delete(tournaments).where(eq(tournaments.id, id));
+    } catch (e) {
+      console.error("Error deleting tournament:", e);
+      throw e;
+    }
   }
 
   // --- TOURNAMENT PLAYER METHODS ---
   async getTournamentPlayers(tournamentId: number): Promise<TournamentPlayer[]> {
-    return db
-      .select()
-      .from(tournamentPlayers)
-      .where(eq(tournamentPlayers.tournamentId, tournamentId))
-      .orderBy(tournamentPlayers.seed);
+    try {
+      return await db
+        .select()
+        .from(tournamentPlayers)
+        .where(eq(tournamentPlayers.tournamentId, tournamentId));
+    } catch (e) {
+      console.error("Error getting tournament players:", e);
+      return [];
+    }
   }
 
   async createTournamentPlayer(player: InsertTournamentPlayer): Promise<TournamentPlayer> {
@@ -418,11 +482,30 @@ export class DatabaseStorage implements IStorage {
 
   // --- TOURNAMENT MATCH METHODS ---
   async getTournamentMatches(tournamentId: number): Promise<TournamentMatch[]> {
-    return db
-      .select()
-      .from(tournamentMatches)
-      .where(eq(tournamentMatches.tournamentId, tournamentId))
-      .orderBy(tournamentMatches.groupName, tournamentMatches.matchOrder);
+    try {
+      return await db
+        .select()
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.tournamentId, tournamentId));
+    } catch (e) {
+      console.error("Error getting tournament matches:", e);
+      return [];
+    }
+  }
+
+  async getTournamentMatchesSimple(tournamentId: number): Promise<any[]> {
+    try {
+      const result = await db.execute(
+        sql`SELECT id, tournament_id, match_id, team1_player1, team1_player2, 
+            team2_player1, team2_player2, group_name, round, match_order, 
+            status, referee_id, court_id, created_at 
+            FROM tournament_matches WHERE tournament_id = ${tournamentId}`
+      );
+      return result.rows as any[];
+    } catch (e) {
+      console.error("Error getting tournament matches simple:", e);
+      return [];
+    }
   }
 
   async getTournamentMatch(id: number): Promise<TournamentMatch | undefined> {

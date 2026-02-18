@@ -173,7 +173,7 @@ export default function TournamentPage() {
       });
       
       // Lấy link truy cập cho trọng tài
-      const accessRes = await fetch(`/api/tournaments/${selectedTournamentId}/matches/${matchId}/access-link`);
+      const accessRes = await fetch(`/api/tournaments/${selectedTournamentId}/matches/${matchId}/access-link`, { credentials: "same-origin" });
       const accessData = await accessRes.json();
       
       if (accessData.link) {
@@ -636,7 +636,7 @@ export default function TournamentPage() {
                                         className="h-6 px-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg"
                                         onClick={async (e) => {
                                           e.stopPropagation();
-                                          const accessRes = await fetch(`/api/tournaments/${selectedTournamentId}/matches/${match.id}/access-link`);
+                                          const accessRes = await fetch(`/api/tournaments/${selectedTournamentId}/matches/${match.id}/access-link`, { credentials: "same-origin" });
                                           const accessData = await accessRes.json();
                                           if (accessData.link) {
                                             const fullLink = `${window.location.origin}${accessData.link}`;

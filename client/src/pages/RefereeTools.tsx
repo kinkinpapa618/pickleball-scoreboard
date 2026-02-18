@@ -7,30 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Play,
-  History,
-  GitPullRequest,
   Search,
   Shuffle,
   Users,
   Settings2,
-  Coins,
   ArrowRight,
-  Activity,
   Eye,
-  ChevronLeft,
-  ChevronRight,
-  Lock,
   Trophy,
   Trash2,
-  UserPlus,
-  Plus,
   Zap,
   Layers,
   Calendar,
+  Coins,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useCreateMatch,
+  useMyMatches,
   useMatches,
   useTournaments,
   useTournament,
@@ -40,6 +35,7 @@ import {
   useAssignReferee,
   useStartTournamentMatch,
   useDeleteTournament,
+  useDeleteMatch,
   useCourts,
 } from "@/hooks/use-api";
 import { ExcelUpload } from "@/components/ExcelUpload";
@@ -51,10 +47,12 @@ export default function RefereeTools() {
   const createMatch = useCreateMatch();
 
   const isManager = user?.role === "manager" || user?.role === "admin";
+  const isAdmin = user?.role === "admin";
 
   const [activeTab, setActiveTab] = useState("create");
-  const [page, setPage] = useState(1);
-  const { data: matchesData } = useMatches(page);
+  const [historyPage, setHistoryPage] = useState(1);
+  const { data: myMatchesData } = useMyMatches(historyPage);
+  const { data: matchesData } = useMatches(1);
 
   const handleTabChange = (value: string) => {
     if (!user && (value === "history" || value === "draw" || value === "tournament")) {
@@ -87,6 +85,7 @@ export default function RefereeTools() {
   const assignReferee = useAssignReferee();
   const startMatch = useStartTournamentMatch();
   const deleteTournament = useDeleteTournament();
+  const deleteMatch = useDeleteMatch();
   const { data: referees } = useReferees();
   const { data: courts = [] } = useCourts();
 
@@ -292,48 +291,32 @@ export default function RefereeTools() {
       </div>
 
       <div className="flex-1 max-w-md mx-auto w-full">
-        {/* CUSTOM BEAUTIFUL TABS */}
-        <div className="mb-6">
-          <div className="relative bg-slate-900/50 rounded-3xl p-1.5 backdrop-blur-xl border border-white/10">
-            {/* Active Tab Indicator */}
-            <motion.div 
-              className="absolute top-1.5 h-[calc(100%-12px)] bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl shadow-lg shadow-blue-500/25"
-              animate={{
-                left: activeTab === "create" ? "4px" : 
-                      activeTab === "history" ? isManager ? "calc(25% + 4px)" : "calc(33.33% + 4px)" :
-                      activeTab === "draw" ? isManager ? "calc(50% + 4px)" : "calc(66.66% + 4px)" :
-                      "calc(75% + 4px)",
-                width: isManager ? "calc(25% - 8px)" : "calc(33.33% - 8px)"
-              }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            />
-            
-            <div className={`relative flex ${isManager ? 'grid grid-cols-3' : 'grid grid-cols-3'}`}>
-              <TabButton 
-                active={activeTab === "create"} 
-                onClick={() => handleTabChange("create")}
-                icon={<Play className="w-4 h-4" />}
-                label="Trận đấu"
-                color="blue"
-              />
-              <TabButton 
-                active={activeTab === "history"} 
-                onClick={() => handleTabChange("history")}
-                icon={<History className="w-4 h-4" />}
-                label="Lịch sử"
-                color="orange"
-                locked={!user}
-              />
-              <TabButton 
-                active={activeTab === "draw"} 
-                onClick={() => handleTabChange("draw")}
-                icon={<GitPullRequest className="w-4 h-4" />}
-                label="Bốc thăm"
-                color="indigo"
-                locked={!user}
-              />
-            </div>
-          </div>
+        {/* TABS */}
+        <div className="flex gap-1 mb-4 bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() => handleTabChange("create")}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
+              activeTab === "create" ? "bg-blue-500 text-white shadow" : "text-slate-500 hover:bg-slate-200"
+            }`}
+          >
+            Trận đấu
+          </button>
+          <button
+            onClick={() => handleTabChange("history")}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
+              activeTab === "history" ? "bg-blue-500 text-white shadow" : "text-slate-500 hover:bg-slate-200"
+            }`}
+          >
+            Lịch sử
+          </button>
+          <button
+            onClick={() => handleTabChange("draw")}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
+              activeTab === "draw" ? "bg-blue-500 text-white shadow" : "text-slate-500 hover:bg-slate-200"
+            }`}
+          >
+            Bốc thăm
+          </button>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -471,12 +454,12 @@ export default function RefereeTools() {
                 </span>
                 <div className="flex-grow border-t border-white/5"></div>
               </div>
-              <textarea
-                value={playerInput}
-                onChange={(e) => setPlayerInput(e.target.value)}
-                className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-900 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
-                placeholder="Nhập danh sách VĐV, mỗi người một dòng..."
-              />
+                <textarea
+                  value={playerInput}
+                  onChange={(e) => setPlayerInput(e.target.value)}
+                  className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-black focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                  placeholder="Nhập danh sách VĐV, mỗi người một dòng..."
+                />
               <Button
                 onClick={handleDraw}
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black italic rounded-2xl h-14 shadow-lg uppercase tracking-widest"
@@ -531,139 +514,188 @@ export default function RefereeTools() {
             value="history"
             className="space-y-4 animate-in slide-in-from-left-4 duration-300"
           >
-            <div className="relative mb-4">
-              <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
-              <Input
-                placeholder="Tìm kiếm trận đấu..."
-                className="pl-12 h-12 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-blue-500/20"
-              />
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black text-slate-800 uppercase italic">
+                Lịch sử trận đấu
+              </h2>
+              <span className="text-xs font-bold text-slate-400 uppercase">
+                {myMatchesData?.pagination.total || 0} trận
+              </span>
             </div>
 
+            {/* Match List */}
             <div className="space-y-3">
-              <AnimatePresence mode="popLayout">
-                {matchesData
-                  ?.sort((a, b) => {
-                    if (a.status === "live" && b.status !== "live") return -1;
-                    if (a.status !== "live" && b.status === "live") return 1;
-                    return b.id - a.id;
-                  })
-                  .map((match) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+              {myMatchesData?.matches.map((match) => {
+                const isLive = match.status === "live";
+                const isCompleted = match.status === "completed";
+                const isPending = match.status === "pending";
+                const winner = match.winnerTeam as 1 | 2 | null;
+                const isServer1 = match.isServer1;
+                const serverNumber = match.serverNumber || 1;
+
+                return (
+                  <div
                     key={match.id}
-                    className="bg-white border border-slate-200 rounded-2xl overflow-hidden group shadow-xl hover:shadow-2xl transition-all"
+                    className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
                   >
-                    {/* Header: EYE + PLAY (trái) | LIVE/DONE (phải) */}
-                    <div className="flex items-center justify-between py-2 px-3 bg-slate-50 border-b border-slate-100">
+                    {/* Header: Status (trái) | Actions (phải) */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
+                      {/* Status */}
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            window.open(`/match-view/${match.id}`, "_blank")
-                          }
-                          className="h-7 w-7 rounded-md bg-slate-200 hover:bg-blue-500 hover:text-white transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            const url = `/match?matchId=${match.id}&t1p1=${encodeURIComponent(match.team1Player1)}&t1p2=${encodeURIComponent(match.team1Player2)}&t2p1=${encodeURIComponent(match.team2Player1)}&t2p2=${encodeURIComponent(match.team2Player2)}&win=${match.winningScore}&serve=1`;
-                            window.open(url, "_blank");
-                          }}
-                          className="h-7 w-7 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                        >
-                          <Play className="w-3.5 h-3.5 fill-current" />
-                        </Button>
+                        {isLive && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-red-500 font-black italic text-xs">LIVE</span>
+                          </div>
+                        )}
+                        {isPending && (
+                          <span className="text-yellow-500 font-bold text-[10px] uppercase tracking-wider">
+                            Pending...
+                          </span>
+                        )}
+                        {isCompleted && (
+                          <span className="text-green-500 font-bold text-[10px] uppercase tracking-wider">
+                            Complete
+                          </span>
+                        )}
                       </div>
-                      {match.status === "live" ? (
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 rounded">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                          <span className="text-red-500 font-black italic text-xs">LIVE</span>
-                        </div>
-                      ) : (
-                        <span className="text-green-500 font-bold text-[10px] uppercase">DONE</span>
-                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        {/* EYE - Chỉ hiện khi completed */}
+                        {isCompleted && (
+                          <button
+                            onClick={() => window.open(`/match-view/${match.id}`, "_blank")}
+                            className="h-7 w-7 rounded-md bg-slate-200 hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {/* PLAY - Chỉ hiện khi live */}
+                        {isLive && (
+                          <button
+                            onClick={() => {
+                              const url = `/match?matchId=${match.id}&t1p1=${encodeURIComponent(match.team1Player1)}&t1p2=${encodeURIComponent(match.team1Player2)}&t2p1=${encodeURIComponent(match.team2Player1)}&t2p2=${encodeURIComponent(match.team2Player2)}&win=${match.winningScore}&serve=1`;
+                              window.open(url, "_blank");
+                            }}
+                            className="h-7 w-7 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center justify-center"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                          </button>
+                        )}
+
+                        {/* RECYCLEBIN - Luôn hiện */}
+                        <button
+                          onClick={() => {
+                            if (confirm("Bạn có chắc muốn xóa trận đấu này?")) {
+                              deleteMatch.mutate(match.id);
+                            }
+                          }}
+                          className="h-7 w-7 rounded-md bg-red-100 text-red-500 hover:bg-red-200 hover:text-red-600 transition-colors flex items-center justify-center"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Team 1 Row - nền xanh nếu đang serve */}
-                    <div
-                      className={`flex items-center justify-between px-4 py-3 transition-colors ${match.isServer1 ? "bg-blue-50" : "bg-white"}`}
-                    >
-                      <div className={`flex flex-col ${match.isServer1 ? "text-black" : "text-slate-900"}`}>
-                        <span className="text-lg font-black italic uppercase leading-tight">
-                          {match.team1Player1}
-                        </span>
-                        <span className="text-lg font-black italic uppercase leading-tight opacity-80">
+                    {/* Team 1 */}
+                    <div className={`flex items-center justify-between px-4 py-3 ${isServer1 ? "bg-blue-50" : "bg-white"}`}>
+                      <div className={`flex flex-col ${isServer1 ? "text-black" : "text-slate-900"}`}>
+                        <div className="flex items-center gap-1">
+                          {winner === 1 && <Trophy className="w-4 h-4 text-yellow-500" />}
+                          <span className={`font-black italic uppercase leading-tight ${winner === 1 ? "text-lg" : "text-base"}`}>
+                            {match.team1Player1}
+                          </span>
+                        </div>
+                        <span className={`font-black italic uppercase leading-tight opacity-80 ${winner === 1 ? "text-lg" : "text-base"}`}>
                           {match.team1Player2}
                         </span>
-                        </div>
-                      <div className="flex items-center gap-3">
-                        {/* Score T1 */}
+                      </div>
+                      <div className="flex items-center gap-2">
                         <span className="text-2xl font-black text-blue-600 leading-none">{match.scoreTeam1}</span>
-                        {/* Serve dots */}
-                        <div className="flex flex-col gap-1">
-                          <div className={`w-4 h-4 rounded-full ${match.isServer1 && match.serverNumber >= 1 ? "bg-red-500 animate-pulse" : "bg-slate-200"}`} />
-                          <div className={`w-4 h-4 rounded-full ${match.isServer1 && match.serverNumber >= 2 ? "bg-red-500 animate-pulse" : "bg-slate-200"}`} />
+                        <div className="flex flex-col gap-0.5">
+                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${isServer1 && serverNumber >= 1 ? "bg-green-500" : "bg-slate-200"} ${isServer1 && serverNumber >= 1 ? "animate-pulse" : ""}`} />
+                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${isServer1 && serverNumber >= 2 ? "bg-green-500" : "bg-slate-200"} ${isServer1 && serverNumber >= 2 ? "animate-pulse" : ""}`} />
                         </div>
                       </div>
                     </div>
 
                     <div className="h-px bg-slate-100" />
 
-                    {/* Team 2 Row */}
-                    <div
-                      className={`flex items-center justify-between px-4 py-3 transition-colors ${match.isServer2 ? "bg-blue-50" : "bg-white"}`}
-                    >
-                      <div className={`flex flex-col ${match.isServer2 ? "text-black" : "text-slate-900"}`}>
-                        <span className="text-lg font-black italic uppercase leading-tight">
-                          {match.team2Player1}
-                        </span>
-                        <span className="text-lg font-black italic uppercase leading-tight opacity-80">
+                    {/* Team 2 */}
+                    <div className={`flex items-center justify-between px-4 py-3 ${!isServer1 ? "bg-blue-50" : "bg-white"}`}>
+                      <div className={`flex flex-col ${!isServer1 ? "text-black" : "text-slate-900"}`}>
+                        <div className="flex items-center gap-1">
+                          {winner === 2 && <Trophy className="w-4 h-4 text-yellow-500" />}
+                          <span className={`font-black italic uppercase leading-tight ${winner === 2 ? "text-lg" : "text-base"}`}>
+                            {match.team2Player1}
+                          </span>
+                        </div>
+                        <span className={`font-black italic uppercase leading-tight opacity-80 ${winner === 2 ? "text-lg" : "text-base"}`}>
                           {match.team2Player2}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        {/* Score T2 */}
+                      <div className="flex items-center gap-2">
                         <span className="text-2xl font-black text-orange-600 leading-none">{match.scoreTeam2}</span>
-                        {/* Serve dots */}
-                        <div className="flex flex-col gap-1">
-                          <div className={`w-4 h-4 rounded-full ${match.isServer2 && match.serverNumber >= 1 ? "bg-red-500 animate-pulse" : "bg-slate-200"}`} />
-                          <div className={`w-4 h-4 rounded-full ${match.isServer2 && match.serverNumber >= 2 ? "bg-red-500 animate-pulse" : "bg-slate-200"}`} />
+                        <div className="flex flex-col gap-0.5">
+                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${!isServer1 && serverNumber >= 1 ? "bg-green-500" : "bg-slate-200"} ${!isServer1 && serverNumber >= 1 ? "animate-pulse" : ""}`} />
+                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${!isServer1 && serverNumber >= 2 ? "bg-green-500" : "bg-slate-200"} ${!isServer1 && serverNumber >= 2 ? "animate-pulse" : ""}`} />
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                  </div>
+                );
+              })}
+
+              {(!myMatchesData?.matches || myMatchesData.matches.length === 0) && (
+                <div className="text-center py-12">
+                  <Trophy className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+                    Chưa có trận đấu nào
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Phân trang */}
-            <div className="flex justify-center items-center gap-6 pt-6">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">
-                Page {page}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            </div>
+            {/* Pagination */}
+            {myMatchesData && myMatchesData.pagination.totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 pt-4">
+                <button
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                  disabled={historyPage === 1}
+                  className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, myMatchesData.pagination.totalPages) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setHistoryPage(pageNum)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                          historyPage === pageNum
+                            ? "bg-blue-500 text-white"
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setHistoryPage((p) => p + 1)}
+                  disabled={!myMatchesData.pagination.hasMore}
+                  className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </TabsContent>
 
         </Tabs>
@@ -679,46 +711,5 @@ export default function RefereeTools() {
         compact={true}
       />
     </div>
-  );
-}
-
-// Custom Tab Button Component
-function TabButton({ 
-  active, 
-  onClick, 
-  icon, 
-  label, 
-  color,
-  locked = false 
-}: { 
-  active: boolean; 
-  onClick: () => void; 
-  icon: React.ReactNode; 
-  label: string; 
-  color: "blue" | "orange" | "indigo" | "amber";
-  locked?: boolean;
-}) {
-  const colorClasses = {
-    blue: "text-white",
-    orange: "text-white", 
-    indigo: "text-white",
-    amber: "text-white"
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={locked}
-      className={`
-        relative z-10 flex items-center justify-center gap-2 py-3 px-2 rounded-2xl
-        font-black uppercase text-[10px] tracking-wide transition-all duration-300
-        ${active ? colorClasses[color] : "text-slate-400 hover:text-slate-200"}
-        ${locked ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
-      `}
-    >
-      {icon}
-      <span className="hidden sm:inline">{label}</span>
-      {locked && <Lock className="w-3 h-3" />}
-    </button>
   );
 }

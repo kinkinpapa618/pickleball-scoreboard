@@ -4,8 +4,18 @@ import path from "path";
 import { setupAuth } from "./auth";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Force UTF-8 encoding for JSON responses
+app.use((_req, res, next) => {
+  const originalJson = res.json;
+  res.json = function(body) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return originalJson.call(this, body);
+  };
+  next();
+});
 
 // Middleware log request
 app.use((req, res, next) => {
@@ -63,8 +73,8 @@ app.use((req, res, next) => {
     console.log("Đang chạy ở chế độ: PRODUCTION");
   }
 
-  const PORT = 5001;
-  server.listen(PORT, "0.0.0.0", () => {
+  const PORT = process.env.PORT || 5000;
+  server.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`[BMB PICKLEBALL] Server online tại cổng ${PORT}`);
   });
 })();

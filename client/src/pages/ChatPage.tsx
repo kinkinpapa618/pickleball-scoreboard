@@ -55,7 +55,7 @@ export default function ChatPage() {
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch("/api/chat");
+      const res = await fetch("/api/chat", { credentials: "same-origin" });
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
@@ -75,6 +75,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ message: newMessage }),
       });
 
@@ -188,7 +189,7 @@ export default function ChatPage() {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Nhập tin nhắn..."
-            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 sm:py-3 text-sm sm:text-base text-slate-900 focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 sm:py-3 text-sm sm:text-base text-black focus:outline-none focus:border-blue-500"
           />
           <button
             type="submit"

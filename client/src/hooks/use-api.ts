@@ -7,7 +7,7 @@ export function useMatches(page: number = 1) {
   return useQuery<schema.Match[]>({
     queryKey: ["/api/matches", page],
     queryFn: async () => {
-      const res = await fetch(`/api/matches?page=${page}`);
+      const res = await fetch(`/api/matches?page=${page}`, { credentials: "same-origin" });
       return res.json();
     },
     refetchInterval: 3000, // Cập nhật danh sách mỗi 3s
@@ -19,7 +19,7 @@ export function useMatch(id: number) {
   return useQuery<schema.Match>({
     queryKey: [`/api/matches/${id}`],
     queryFn: async () => {
-      const res = await fetch(`/api/matches/${id}`);
+      const res = await fetch(`/api/matches/${id}`, { credentials: "same-origin" });
       if (!res.ok) throw new Error("Match not found");
       return res.json();
     },
@@ -55,11 +55,11 @@ export function useUpdateMatch() {
       return res.json();
     },
     onSuccess: (_data, variables) => {
-      // Sử dụng variables để lấy ID
-      queryClient.invalidateQueries({
-        queryKey: [`/api/matches/${variables.id}`],
-      });
+      queryClient.invalidateQueries({ queryKey: [`/api/matches/${variables.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-matches"] });
+      // Force refetch immediately
+      queryClient.refetchQueries({ queryKey: ["/api/my-matches"] });
     },
   });
 }
@@ -69,7 +69,7 @@ export function useTournaments() {
   return useQuery<schema.Tournament[]>({
     queryKey: ["/api/tournaments"],
     queryFn: async () => {
-      const res = await fetch("/api/tournaments");
+      const res = await fetch("/api/tournaments", { credentials: "same-origin" });
       if (!res.ok) throw new Error("Failed to fetch tournaments");
       return res.json();
     },
@@ -80,7 +80,7 @@ export function useTournament(id: number) {
   return useQuery<schema.Tournament & { players: schema.TournamentPlayer[]; matches: schema.TournamentMatch[] }>({
     queryKey: [`/api/tournaments/${id}`],
     queryFn: async () => {
-      const res = await fetch(`/api/tournaments/${id}`);
+      const res = await fetch(`/api/tournaments/${id}`, { credentials: "same-origin" });
       if (!res.ok) throw new Error("Tournament not found");
       return res.json();
     },
@@ -134,6 +134,42 @@ export function useDeleteTournament() {
   });
 }
 
+export function useDeleteMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/matches/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-matches"] });
+    },
+  });
+}
+
+interface MyMatchesResponse {
+  matches: schema.Match[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
+
+export function useMyMatches(page: number = 1) {
+  return useQuery<MyMatchesResponse>({
+    queryKey: ["/api/my-matches", page],
+    queryFn: async () => {
+      const res = await fetch(`/api/my-matches?page=${page}`, { credentials: "same-origin", cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch matches");
+      return res.json();
+    },
+    refetchInterval: 1000,
+    staleTime: 0,
+  });
+}
+
 export function useGenerateTournament() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -162,7 +198,7 @@ export function useReferees() {
   return useQuery<schema.User[]>({
     queryKey: ["/api/referees"],
     queryFn: async () => {
-      const res = await fetch("/api/referees");
+      const res = await fetch("/api/referees", { credentials: "same-origin" });
       if (!res.ok) throw new Error("Failed to fetch referees");
       return res.json();
     },
@@ -248,7 +284,7 @@ export function useSettings() {
   return useQuery<schema.Setting[]>({
     queryKey: ["/api/settings"],
     queryFn: async () => {
-      const res = await fetch("/api/settings");
+      const res = await fetch("/api/settings", { credentials: "same-origin" });
       if (!res.ok) throw new Error("Failed to fetch settings");
       return res.json();
     },
@@ -281,7 +317,7 @@ export function useCourts() {
   return useQuery<schema.Court[]>({
     queryKey: ["/api/courts"],
     queryFn: async () => {
-      const res = await fetch("/api/courts");
+      const res = await fetch("/api/courts", { credentials: "same-origin" });
       if (!res.ok) throw new Error("Failed to fetch courts");
       return res.json();
     },
@@ -293,7 +329,7 @@ export function useCourt(id: number) {
   return useQuery<schema.Court>({
     queryKey: [`/api/courts/${id}`],
     queryFn: async () => {
-      const res = await fetch(`/api/courts/${id}`);
+      const res = await fetch(`/api/courts/${id}`, { credentials: "same-origin" });
       if (!res.ok) throw new Error("Court not found");
       return res.json();
     },

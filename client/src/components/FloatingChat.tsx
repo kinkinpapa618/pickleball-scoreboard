@@ -20,6 +20,10 @@ export function FloatingChat() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [unreadCount, setUnreadCount] = useState(0);
+  const [lastReadId, setLastReadId] = useState(() => {
+    const saved = localStorage.getItem("chat_last_read_id");
+    return saved ? parseInt(saved) : 0;
+  });
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -28,8 +32,14 @@ export function FloatingChat() {
   }, []);
 
   useEffect(() => {
-    if (!isOpen && messages.length > 0) {
-      setUnreadCount(messages.length);
+    if (messages.length > 0) {
+      const savedLastReadId = parseInt(localStorage.getItem("chat_last_read_id") || "0");
+      setLastReadId(savedLastReadId);
+      
+      if (!isOpen) {
+        const newUnread = messages.filter(m => m.id > savedLastReadId).length;
+        setUnreadCount(newUnread);
+      }
     }
   }, [messages, isOpen]);
 
@@ -40,7 +50,7 @@ export function FloatingChat() {
   const fetchMessages = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/chat");
+      const res = await fetch("/api/chat", { credentials: "same-origin" });
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
@@ -111,6 +121,7 @@ export function FloatingChat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ message: newMessage }),
       });
 
@@ -139,6 +150,11 @@ export function FloatingChat() {
           onClick={() => {
             setIsOpen(true);
             setUnreadCount(0);
+            if (messages.length > 0) {
+              const latestId = Math.max(...messages.map(m => m.id));
+              setLastReadId(latestId);
+              localStorage.setItem("chat_last_read_id", latestId.toString());
+            }
           }}
           className="w-14 h-14 bg-blue-500 rounded-full shadow-lg shadow-blue-500/30 flex items-center justify-center text-white hover:bg-blue-600 transition-colors relative"
         >
@@ -248,7 +264,7 @@ export function FloatingChat() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Nhập tin nhắn..."
-                className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 text-sm text-black focus:outline-none focus:border-blue-500"
               />
               <button
                 type="submit"

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Briefcase, Trophy, Layers, Settings } from "lucide-react";
+import { Home, Target, Layers, Trophy, Settings } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -9,7 +9,7 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/", icon: Home, label: "TRANG CHỦ" },
-    { href: "/tools", icon: Briefcase, label: "CÔNG CỤ" },
+    { href: "/tools", icon: Target, label: "PICKLEBALL" },
     { href: "/tournament", icon: Layers, label: "GIẢI ĐẤU" },
     { href: "/users", icon: Trophy, label: "THÀNH VIÊN" },
     { href: "/profile", icon: Settings, label: "TÀI KHOẢN" },

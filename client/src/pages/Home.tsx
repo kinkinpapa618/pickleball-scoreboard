@@ -41,11 +41,11 @@ export default function Home() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/user").then((res) => {
+      fetch("/api/user", { credentials: "same-origin" }).then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
       }),
-      fetch("/api/work-schedules").then((res) => res.json()),
+      fetch("/api/work-schedules", { credentials: "same-origin" }).then((res) => res.json()),
     ])
       .then(async ([userData, scheduleData]) => {
         setUser(userData as User);
@@ -56,6 +56,7 @@ export default function Home() {
           try {
             const statsRes = await fetch(
               `/api/stats/referee/${(userData as User).id}`,
+              { credentials: "same-origin" }
             );
             if (statsRes.ok) {
               const statsData = (await statsRes.json()) as RefereeStats;

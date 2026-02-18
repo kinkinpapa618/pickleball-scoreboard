@@ -15,3 +15,4 @@ This file is created to trigger a manual checkpoint as requested by the user.
 - Removed chat tab from BottomNav, replaced with floating chat icon
 - Added badge notification to FloatingChat icon
 - Updated FloatingChat messages display: others on left with icon & name, current user on right
+- Added credentials: "same-origin" to ALL fetch API calls across the app to fix 401 unauthorized errors

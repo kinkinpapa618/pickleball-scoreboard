@@ -377,22 +377,22 @@ export default function Match() {
   useEffect(() => {
     if (state.winner && matchId > 0) {
       setIsTimerRunning(false);
-      // Tránh gọi API khi winner từ server (đã có sẵn)
       const shouldSave = !serverMatch || serverMatch.winnerTeam !== state.winner;
       if (shouldSave) {
         console.log("🏆 Match ended, saving winner:", state.winner);
+        // Proper type handling
         updateMatch.mutate({
           id: matchId,
           data: {
-            winnerTeam: state.winner,
-            status: "finished",
-            endTime: new Date() as any,
+            winnerTeam: state.winner as number,
+            status: "completed" as const,
+            endTime: new Date(),
           },
         }, {
           onSuccess: (data) => {
-            console.log("✅ Match status updated to finished:", data);
+            console.log("✅ Match status updated to completed:", data);
           },
-          onError: (error) => {
+          onError: (error: any) => {
             console.error("❌ Failed to update match status:", error);
           }
         });

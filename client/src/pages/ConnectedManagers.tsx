@@ -43,8 +43,8 @@ export default function ConnectedManagers() {
   const fetchData = async () => {
     try {
       const [connectedRes, allRes] = await Promise.all([
-        fetch("/api/connected-managers"),
-        fetch("/api/managers"),
+        fetch("/api/connected-managers", { credentials: "same-origin" }),
+        fetch("/api/managers", { credentials: "same-origin" }),
       ]);
       
       if (connectedRes.ok) {
@@ -67,6 +67,7 @@ export default function ConnectedManagers() {
     try {
       const res = await fetch(`/api/connect-manager/${managerId}`, {
         method: "POST",
+        credentials: "same-origin",
       });
       if (res.ok) {
         toast({ title: "Kết nối thành công" });
@@ -85,6 +86,7 @@ export default function ConnectedManagers() {
     try {
       const res = await fetch(`/api/disconnect-manager/${managerId}`, {
         method: "DELETE",
+        credentials: "same-origin",
       });
       if (res.ok) {
         toast({ title: "Hủy kết nối thành công" });

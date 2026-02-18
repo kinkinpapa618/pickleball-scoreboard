@@ -198,7 +198,7 @@ export default function AdminPanel() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/users");
+      const res = await fetch("/api/users", { credentials: "same-origin" });
       if (res.ok) setUsers(await res.json());
     } catch (e) {
       toast({ title: "Lỗi tải users", variant: "destructive" });
@@ -207,7 +207,7 @@ export default function AdminPanel() {
 
   const fetchSchedules = async () => {
     try {
-      const res = await fetch("/api/work-schedules");
+      const res = await fetch("/api/work-schedules", { credentials: "same-origin" });
       if (res.ok) setSchedules(await res.json());
     } catch (e) {
       toast({ title: "Lỗi tải lịch", variant: "destructive" });
@@ -216,7 +216,7 @@ export default function AdminPanel() {
 
   const fetchMatches = async () => {
     try {
-      const res = await fetch("/api/matches");
+      const res = await fetch("/api/matches", { credentials: "same-origin" });
       if (res.ok) setMatches(await res.json());
     } catch (e) {
       toast({ title: "Lỗi tải trận", variant: "destructive" });
@@ -225,7 +225,7 @@ export default function AdminPanel() {
 
   const fetchTournaments = async () => {
     try {
-      const res = await fetch("/api/tournaments");
+      const res = await fetch("/api/tournaments", { credentials: "same-origin" });
       if (res.ok) setTournaments(await res.json());
     } catch (e) {
       toast({ title: "Lỗi tải giải", variant: "destructive" });
@@ -239,6 +239,7 @@ export default function AdminPanel() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(userForm),
       });
       if (res.ok) {
@@ -262,6 +263,7 @@ export default function AdminPanel() {
       const res = await fetch(`/api/users/${editingUser.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           fullName: editingUser.fullName,
           phone: editingUser.phone,
@@ -288,6 +290,7 @@ export default function AdminPanel() {
       const res = await fetch("/api/work-schedules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           ...scheduleForm,
           refereeId: scheduleForm.refereeId ? parseInt(scheduleForm.refereeId) : null,
@@ -313,6 +316,7 @@ export default function AdminPanel() {
       const res = await fetch(`/api/work-schedules/${editingSchedule.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(editingSchedule),
       });
       if (res.ok) {
@@ -330,7 +334,7 @@ export default function AdminPanel() {
   const handleDeleteSchedule = async (id: number) => {
     if (!confirm("Xóa lịch công tác?")) return;
     try {
-      const res = await fetch(`/api/work-schedules/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/work-schedules/${id}`, { method: "DELETE", credentials: "same-origin" });
       if (res.ok) {
         toast({ title: "Xóa thành công" });
         fetchSchedules();
@@ -648,12 +652,12 @@ export default function AdminPanel() {
           <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
             <h2 className="text-lg font-black">Thêm User mới</h2>
             <form onSubmit={handleAddUser} className="space-y-3">
-              <input type="text" placeholder="Tên đăng nhập" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="password" placeholder="Mật khẩu" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="text" placeholder="Họ tên" value={userForm.fullName} onChange={e => setUserForm({...userForm, fullName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <input type="text" placeholder="Số điện thoại" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="text" placeholder="Căn cước/CMND" value={userForm.idCard} onChange={e => setUserForm({...userForm, idCard: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="username" name="username" placeholder="Tên đăng nhập" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
+              <input type="password" id="password" name="password" placeholder="Mật khẩu" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
+              <input type="text" id="fullName" name="fullName" placeholder="Họ tên" value={userForm.fullName} onChange={e => setUserForm({...userForm, fullName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
+              <input type="text" id="phone" name="phone" placeholder="Số điện thoại" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
+              <input type="text" id="idCard" name="idCard" placeholder="Căn cước/CMND" value={userForm.idCard} onChange={e => setUserForm({...userForm, idCard: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
+              <select id="role" name="role" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
                 <option value="referee">Trọng tài</option>
                 <option value="manager">Quản lý</option>
                 <option value="admin">Admin</option>
@@ -673,10 +677,10 @@ export default function AdminPanel() {
           <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
             <h2 className="text-lg font-black">Sửa User</h2>
             <form onSubmit={handleUpdateUser} className="space-y-3">
-              <input type="text" placeholder="Họ tên" value={editingUser.fullName || ""} onChange={e => setEditingUser({...editingUser, fullName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <input type="text" placeholder="Số điện thoại" value={editingUser.phone} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <input type="text" placeholder="Căn cước/CMND" value={editingUser.idCard} onChange={e => setEditingUser({...editingUser, idCard: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <select value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="editFullName" name="fullName" placeholder="Họ tên" value={editingUser.fullName || ""} onChange={e => setEditingUser({...editingUser, fullName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
+              <input type="text" id="editPhone" name="phone" placeholder="Số điện thoại" value={editingUser.phone} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
+              <input type="text" id="editIdCard" name="idCard" placeholder="Căn cước/CMND" value={editingUser.idCard} onChange={e => setEditingUser({...editingUser, idCard: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
+              <select id="editRole" name="role" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
                 <option value="referee">Trọng tài</option>
                 <option value="manager">Quản lý</option>
                 <option value="admin">Admin</option>
@@ -696,11 +700,11 @@ export default function AdminPanel() {
           <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
             <h2 className="text-lg font-black">Thêm Lịch Công Tác</h2>
             <form onSubmit={handleAddSchedule} className="space-y-3">
-              <input type="text" placeholder="Tiêu đề" value={scheduleForm.title} onChange={e => setScheduleForm({...scheduleForm, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <textarea placeholder="Mô tả" value={scheduleForm.description} onChange={e => setScheduleForm({...scheduleForm, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20" />
-              <input type="datetime-local" value={scheduleForm.date} onChange={e => setScheduleForm({...scheduleForm, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="text" placeholder="Địa điểm" value={scheduleForm.location} onChange={e => setScheduleForm({...scheduleForm, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <select value={scheduleForm.refereeId} onChange={e => setScheduleForm({...scheduleForm, refereeId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="scheduleTitle" name="title" placeholder="Tiêu đề" value={scheduleForm.title} onChange={e => setScheduleForm({...scheduleForm, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
+              <textarea id="scheduleDescription" name="description" placeholder="Mô tả" value={scheduleForm.description} onChange={e => setScheduleForm({...scheduleForm, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20" />
+              <input type="datetime-local" id="scheduleDate" name="date" value={scheduleForm.date} onChange={e => setScheduleForm({...scheduleForm, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
+              <input type="text" id="scheduleLocation" name="location" placeholder="Địa điểm" value={scheduleForm.location} onChange={e => setScheduleForm({...scheduleForm, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
+              <select id="scheduleRefereeId" name="refereeId" value={scheduleForm.refereeId} onChange={e => setScheduleForm({...scheduleForm, refereeId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
                 <option value="">Chọn Trọng tài...</option>
                 {users.filter(u => u.role === "referee").map(u => (
                   <option key={u.id} value={u.id}>{u.fullName || u.username}</option>
@@ -721,10 +725,10 @@ export default function AdminPanel() {
           <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
             <h2 className="text-lg font-black">Sửa Lịch Công Tác</h2>
             <form onSubmit={handleUpdateSchedule} className="space-y-3">
-              <input type="text" placeholder="Tiêu đề" value={editingSchedule.title} onChange={e => setEditingSchedule({...editingSchedule, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <textarea placeholder="Mô tả" value={editingSchedule.description || ""} onChange={e => setEditingSchedule({...editingSchedule, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20" />
-              <input type="text" placeholder="Địa điểm" value={editingSchedule.location || ""} onChange={e => setEditingSchedule({...editingSchedule, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <select value={editingSchedule.status} onChange={e => setEditingSchedule({...editingSchedule, status: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="editScheduleTitle" name="title" placeholder="Tiêu đề" value={editingSchedule.title} onChange={e => setEditingSchedule({...editingSchedule, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
+              <textarea id="editScheduleDescription" name="description" placeholder="Mô tả" value={editingSchedule.description || ""} onChange={e => setEditingSchedule({...editingSchedule, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20" />
+              <input type="text" id="editScheduleLocation" name="location" placeholder="Địa điểm" value={editingSchedule.location || ""} onChange={e => setEditingSchedule({...editingSchedule, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
+              <select id="editScheduleStatus" name="status" value={editingSchedule.status} onChange={e => setEditingSchedule({...editingSchedule, status: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
                 <option value="assigned">Chờ</option>
                 <option value="completed">Hoàn thành</option>
                 <option value="cancelled">Hủy</option>
@@ -748,7 +752,7 @@ export default function AdminPanel() {
               <div className="text-slate-400">vs</div>
               <div className="font-bold">{selectedMatch.team2Player1}/{selectedMatch.team2Player2}</div>
             </div>
-            <select value={assignForm.refereeId} onChange={e => setAssignForm({...assignForm, refereeId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+            <select id="assignRefereeId" name="refereeId" value={assignForm.refereeId} onChange={e => setAssignForm({...assignForm, refereeId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
               <option value="">Chọn Trọng tài...</option>
               {users.filter(u => u.role === "referee").map(u => (
                 <option key={u.id} value={u.id}>{u.fullName || u.username}</option>

@@ -47,7 +47,7 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/users");
+      const res = await fetch("/api/users", { credentials: "same-origin" });
       if (res.status === 403) {
         setHasPermission(false);
         setLoading(false);

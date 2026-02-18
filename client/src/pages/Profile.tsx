@@ -49,7 +49,11 @@ export default function Profile() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [activeTab, setActiveTab] = useState<
     "stats" | "admin" | "manager" | "info"
-  >("stats");
+  >(() => {
+    if (user?.role === "admin") return "admin";
+    if (user?.role === "manager") return "manager";
+    return "info";
+  });
 
   useEffect(() => {
     if (user) {
@@ -68,7 +72,7 @@ export default function Profile() {
   const fetchStats = async () => {
     if (!user) return;
     try {
-      const res = await fetch(`/api/stats/referee/${user.id}`);
+      const res = await fetch(`/api/stats/referee/${user.id}`, { credentials: "same-origin" });
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -84,6 +88,7 @@ export default function Profile() {
       const res = await fetch(`/api/users/${editedUser.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           fullName: editedUser.fullName,
           phone: editedUser.phone,
