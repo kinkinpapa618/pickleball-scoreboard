@@ -114,7 +114,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updateData: any = {};
     if (status !== undefined) updateData.status = status;
     if (winnerTeam !== undefined) updateData.winnerTeam = winnerTeam;
-    if (endTime !== undefined) updateData.endTime = endTime;
+    if (endTime !== undefined) {
+      // Convert ISO string to Date object for drizzle
+      const dateVal = typeof endTime === 'string' ? new Date(endTime) : endTime;
+      updateData.endTime = dateVal;
+    }
     if (scoreTeam1 !== undefined) updateData.scoreTeam1 = scoreTeam1;
     if (scoreTeam2 !== undefined) updateData.scoreTeam2 = scoreTeam2;
     if (isServer1 !== undefined) updateData.isServer1 = isServer1;

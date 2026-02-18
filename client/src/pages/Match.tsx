@@ -386,7 +386,7 @@ export default function Match() {
           data: {
             winnerTeam: state.winner as number,
             status: "completed" as const,
-            endTime: new Date(),
+            endTime: new Date().toISOString() as any,
           },
         }, {
           onSuccess: (data) => {
