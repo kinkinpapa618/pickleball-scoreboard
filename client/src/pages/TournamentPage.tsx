@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExcelUpload, PlayerData } from "@/components/ExcelUpload";
+import CreateTournament from "@/components/CreateTournament";
 import {
   useTournaments,
   useTournament,
@@ -355,102 +356,35 @@ export default function TournamentPage() {
       {/* STEP 2: CREATE TOURNAMENT */}
       {step === "create" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Card className="bg-white border-slate-100 rounded-3xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-800">
-                <Plus className="w-5 h-5 text-blue-500" />
-                Tạo giải đấu mới
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Tên giải đấu *</label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="VD: Giải Pickleball Cup 2024"
-                  className="bg-slate-50 border-slate-200 rounded-xl"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Ngày *</label>
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="bg-slate-50 border-slate-200 rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Giờ</label>
-                  <Input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="bg-slate-50 border-slate-200 rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Địa điểm *</label>
-                <Input
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="VD: Sân Pickleball Quận 1"
-                  className="bg-slate-50 border-slate-200 rounded-xl"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Level</label>
-                <Input
-                  value={formData.level}
-                  onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                  placeholder="4.2,4.4"
-                  className="bg-slate-50 border-slate-200 rounded-xl"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Số đội/bảng</label>
-                <select
-                  value={formData.teamsPerGroup}
-                  onChange={(e) => setFormData({ ...formData, teamsPerGroup: Number(e.target.value) })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3"
-                >
-                  <option value={2}>2 đội/bảng</option>
-                  <option value={3}>3 đội/bảng</option>
-                  <option value={4}>4 đội/bảng</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Mô tả</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Mô tả thêm về giải đấu..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 h-20"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button onClick={() => setStep("list")} variant="outline" className="flex-1 rounded-2xl">
-                  Quay lại
-                </Button>
-                <Button
-                  onClick={handleCreateTournament}
-                  disabled={createTournament.isPending}
-                  className="flex-1 bg-blue-500 text-white font-bold rounded-2xl"
-                >
-                  {createTournament.isPending ? "Đang tạo..." : "Tạo giải"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <CreateTournament onSubmit={async (data) => {
+            try {
+              const result = await createTournament.mutateAsync({
+                name: data.name,
+                description: null,
+                date: data.date,
+                time: data.time || null,
+                location: data.location,
+                level: data.level,
+                content: JSON.stringify(data.levels),
+                teamsPerGroup: data.courts,
+                status: "draft",
+              });
+              
+              setSelectedTournamentId(result.id);
+              setStep("detail");
+            } catch (error) {
+              console.error("Error creating tournament:", error);
+              alert("Không thể tạo giải đấu!");
+            }
+          }} />
+          
+          <Button 
+            variant="outline" 
+            onClick={() => setStep("list")}
+            className="mt-4 w-full"
+          >
+            Quay lại
+          </Button>
         </motion.div>
       )}
 
