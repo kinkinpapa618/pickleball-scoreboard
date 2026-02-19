@@ -37,6 +37,7 @@ PORT = "5001"
 deploymentTarget = "autoscale"
 run = ["sh", "-c", "NODE_ENV=production node ./dist/index.cjs"]
 build = ["npm", "run", "build"]
+publicDir = "dist/public"
 
 [workflows]
 runButton = "Project"
