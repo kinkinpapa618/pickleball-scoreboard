@@ -1,6 +1,0 @@
-{
-  "name": "xlsx",
-  "version": "0.0.0",
-  "description": "Empty stub replacing vulnerable xlsx@0.18.5. All Excel processing uses exceljs.",
-  "main": "index.js"
-}
