@@ -30,12 +30,12 @@ import ChatPage from "@/pages/ChatPage";
 function RestrictedPage({ feature }: { feature: string }) {
   const [, setLocation] = useLocation();
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8FAFC] p-4 text-center">
-      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 text-center">
+      <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mb-4">
         <Lock className="w-8 h-8 text-red-500" />
       </div>
-      <h2 className="text-xl font-bold text-slate-900 mb-2">Không có quyền truy cập</h2>
-      <p className="text-slate-500 mb-6">Chỉ Admin và Manager mới có thể sử dụng {feature}</p>
+      <h2 className="text-xl font-bold text-foreground mb-2">Không có quyền truy cập</h2>
+      <p className="text-muted-foreground mb-6">Chỉ Admin và Manager mới có thể sử dụng {feature}</p>
       <button
         onClick={() => setLocation("/profile")}
         className="bg-blue-500 text-white px-6 py-3 rounded-xl font-bold"
@@ -56,7 +56,7 @@ function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     );
@@ -79,7 +79,7 @@ function AdminRoute({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     );
@@ -156,14 +156,14 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen pb-20 bg-white text-foreground`}>
+    <div className="min-h-screen pb-20 bg-background text-foreground">
       <Router />
       {/* BottomNav thường chỉ hiện khi đã đăng nhập */}
       <ConditionalBottomNav />

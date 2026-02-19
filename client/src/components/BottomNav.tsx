@@ -18,7 +18,7 @@ export function BottomNav() {
   if (location.includes("/match") || location.includes("/trong-tai")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-50 shadow-lg">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border pb-safe z-50 shadow-lg">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = location === item.href || location.startsWith(item.href + "/");
@@ -28,7 +28,7 @@ export function BottomNav() {
             <Link key={item.href} href={item.href}>
               <div
                 className={`relative flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-                  isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600"
+                  isActive ? "text-blue-600" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <item.icon

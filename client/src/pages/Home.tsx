@@ -51,7 +51,6 @@ export default function Home() {
         setUser(userData as User);
         setSchedules((scheduleData as WorkSchedule[]).slice(0, 3));
 
-        // Get referee stats
         if (userData && (userData as User).id) {
           try {
             const statsRes = await fetch(
@@ -66,7 +65,6 @@ export default function Home() {
               });
             }
           } catch {
-            // Ignore stats error
           }
         }
         setLoading(false);
@@ -75,7 +73,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 space-y-6 pb-20 font-sans text-slate-900">
+    <div className="min-h-screen bg-background p-4 space-y-6 pb-20 font-sans text-foreground">
       <div className="flex justify-between items-center py-4">
         <div>
           <motion.h3
@@ -85,11 +83,11 @@ export default function Home() {
           >
             TRONGTAISO.COM
           </motion.h3>
-          <p className="text-slate-400 text-[10px] tracking-[0.2em] uppercase font-bold">
+          <p className="text-muted-foreground text-[10px] tracking-[0.2em] uppercase font-bold">
             Referee Management
           </p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
           <Activity className="w-5 h-5 text-blue-600" />
         </div>
       </div>
@@ -97,7 +95,7 @@ export default function Home() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="rounded-[2.5rem] bg-gradient-to-br from-blue-500 to-cyan-400 p-6 shadow-xl shadow-blue-200/50 relative overflow-hidden"
+        className="rounded-[2.5rem] bg-gradient-to-br from-blue-500 to-cyan-400 p-6 shadow-xl shadow-blue-200/50 dark:shadow-blue-900/30 relative overflow-hidden"
       >
         <div className="relative z-10 text-white">
           <h2 className="text-2xl font-black mb-1">
@@ -126,12 +124,12 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white border border-slate-100 p-5 rounded-[2rem] shadow-sm"
+          className="bg-card border border-border p-5 rounded-[2rem] shadow-sm"
         >
-          <div className="text-slate-400 text-[10px] uppercase font-black mb-2 tracking-wider">
+          <div className="text-muted-foreground text-[10px] uppercase font-black mb-2 tracking-wider">
             Tổng trận
           </div>
-          <div className="text-3xl font-black text-slate-800">
+          <div className="text-3xl font-black text-foreground">
             {stats.total}
           </div>
         </motion.div>
@@ -139,7 +137,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white border border-slate-100 p-5 rounded-[2rem] shadow-sm"
+          className="bg-card border border-border p-5 rounded-[2rem] shadow-sm"
         >
           <div className="text-orange-400 text-[10px] uppercase font-black mb-2 tracking-wider">
             Tháng này
@@ -152,7 +150,7 @@ export default function Home() {
 
       <div className="space-y-4">
         <div className="flex justify-between items-center px-1">
-          <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+          <h3 className="text-lg font-black text-foreground flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-blue-500" /> Lịch phân công
           </h3>
           <button
@@ -165,7 +163,7 @@ export default function Home() {
 
         <div className="space-y-3">
           {loading ? (
-            <div className="bg-white p-4 rounded-3xl border border-slate-50 shadow-sm text-center text-slate-400 text-sm">
+            <div className="bg-card p-4 rounded-3xl border border-border shadow-sm text-center text-muted-foreground text-sm">
               Đang tải...
             </div>
           ) : schedules.length > 0 ? (
@@ -175,10 +173,10 @@ export default function Home() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white p-4 rounded-3xl border border-slate-50 shadow-sm flex items-center gap-4 cursor-pointer hover:border-blue-200 transition-colors"
+                className="bg-card p-4 rounded-3xl border border-border shadow-sm flex items-center gap-4 cursor-pointer hover:border-blue-200 dark:hover:border-blue-500/30 transition-colors"
                 onClick={() => setLocation("/profile")}
               >
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex flex-col items-center justify-center text-blue-600">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/20 flex flex-col items-center justify-center text-blue-600">
                   <span className="text-[10px] font-bold uppercase">
                     {new Date(schedule.date).toLocaleDateString("vi-VN", {
                       weekday: "short",
@@ -189,19 +187,19 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-slate-800 text-sm">
+                  <h4 className="font-bold text-foreground text-sm">
                     {schedule.title}
                   </h4>
-                  <p className="text-slate-400 text-[11px] flex items-center gap-1">
+                  <p className="text-muted-foreground text-[11px] flex items-center gap-1">
                     <MapPin className="w-3 h-3" />{" "}
                     {schedule.location || "Sân Pickleball"}
                   </p>
                 </div>
-                <ChevronRight className="text-slate-300 w-5 h-5" />
+                <ChevronRight className="text-muted-foreground w-5 h-5" />
               </motion.div>
             ))
           ) : (
-            <div className="bg-white p-4 rounded-3xl border border-slate-50 shadow-sm text-center text-slate-400 text-sm">
+            <div className="bg-card p-4 rounded-3xl border border-border shadow-sm text-center text-muted-foreground text-sm">
               Chưa có lịch phân công.
             </div>
           )}
