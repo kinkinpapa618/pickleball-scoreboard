@@ -24,14 +24,19 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Trust proxy khi chạy sau reverse proxy (Replit deployment)
+  app.set("trust proxy", 1);
+
   // 1. Cấu hình Session (Lưu phiên đăng nhập)
+  const isProduction = process.env.NODE_ENV === "production";
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "pickleball_secret_key",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore, // Đảm bảo trong storage.ts có export sessionStore
     cookie: {
-      secure: app.get("env") === "production",
+      secure: isProduction,
+      sameSite: isProduction ? "none" as const : "lax" as const,
       maxAge: 24 * 60 * 60 * 1000, // 24 giờ
     },
   };
