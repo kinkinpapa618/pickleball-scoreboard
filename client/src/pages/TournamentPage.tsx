@@ -380,13 +380,13 @@ export default function TournamentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 pb-24 font-sans text-slate-900">
-      <div className="flex justify-between items-center py-4">
-        <div>
+    <div className="min-h-screen bg-[#F8FAFC] p-4 pb-24 font-sans text-slate-900 overflow-x-hidden max-w-full">
+      <div className="flex justify-between items-center py-4 gap-2">
+        <div className="min-w-0">
           <motion.h3
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-2xl font-black italic tracking-tighter text-blue-600"
+            className="text-2xl font-black italic tracking-tighter text-blue-600 truncate"
           >
             TRONGTAISO.COM
           </motion.h3>
@@ -394,7 +394,7 @@ export default function TournamentPage() {
             Tournament Management
           </p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
           <Trophy className="w-5 h-5 text-blue-600" />
         </div>
       </div>
@@ -442,40 +442,40 @@ export default function TournamentPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
                       groupingMethod === "seed"
                         ? "border-blue-500 bg-blue-50"
                         : "border-slate-200 hover:border-blue-300"
                     }`}
                     onClick={() => setGroupingMethod("seed")}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 ${
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
                         groupingMethod === "seed" ? "bg-blue-500 border-blue-500" : "border-slate-300"
                       }`} />
-                      <div>
-                        <h4 className="font-bold text-slate-800">Theo hạt giống</h4>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-800 text-sm">Theo hạt giống</h4>
                         <p className="text-xs text-slate-500 mt-1">Chia theo thứ tự hạt giống</p>
                       </div>
                     </div>
                   </div>
 
                   <div
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
                       groupingMethod === "random"
                         ? "border-blue-500 bg-blue-50"
                         : "border-slate-200 hover:border-blue-300"
                     }`}
                     onClick={() => setGroupingMethod("random")}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 ${
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
                         groupingMethod === "random" ? "bg-blue-500 border-blue-500" : "border-slate-300"
                       }`} />
-                      <div>
-                        <h4 className="font-bold text-slate-800">Ngẫu nhiên</h4>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-800 text-sm">Ngẫu nhiên</h4>
                         <p className="text-xs text-slate-500 mt-1">Chia bảng ngẫu nhiên</p>
                       </div>
                     </div>
@@ -597,9 +597,9 @@ export default function TournamentPage() {
 
       {step === "list" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-black text-slate-800">Giải đấu của bạn</h2>
-            <Button onClick={() => setStep("create")} className="bg-blue-500 text-white font-bold rounded-2xl">
+          <div className="flex justify-between items-center gap-2">
+            <h2 className="text-lg font-black text-slate-800 min-w-0 truncate">Giải đấu của bạn</h2>
+            <Button onClick={() => setStep("create")} className="bg-blue-500 text-white font-bold rounded-2xl shrink-0">
               <Trophy className="w-4 h-4 mr-2" /> Tạo giải
             </Button>
           </div>
@@ -608,24 +608,24 @@ export default function TournamentPage() {
             {tournaments?.map((t: any) => (
               <Card key={t.id} className="bg-white border border-slate-100 shadow-sm">
                 <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <div 
-                      className="cursor-pointer flex-1"
+                      className="cursor-pointer flex-1 min-w-0"
                       onClick={() => {
                         setSelectedTournamentId(t.id);
                         setStep("detail");
                       }}
                     >
-                      <h3 className="font-black text-slate-800">{t.name}</h3>
-                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                      <h3 className="font-black text-slate-800 truncate">{t.name}</h3>
+                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 flex-wrap">
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {t.date}
+                          <Calendar className="w-3 h-3 shrink-0" /> <span className="truncate">{t.date}</span>
                         </span>
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {t.location}
+                          <MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{t.location}</span>
                         </span>
                       </div>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 mt-2 flex-wrap">
                         <Badge className={t.status === "active" ? "bg-green-500" : t.status === "completed" ? "bg-slate-400" : "bg-amber-500"}>
                           {t.status === "active" ? "Đang đấu" : t.status === "completed" ? "Đã xong" : "Nháp"}
                         </Badge>
@@ -656,7 +656,7 @@ export default function TournamentPage() {
                         })()}
                       </div>
                     </div>
-                    <div className="flex gap-1 ml-4">
+                    <div className="flex gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -712,23 +712,23 @@ export default function TournamentPage() {
 
           <Card className="bg-white border border-slate-200 shadow-sm mb-4">
             <CardContent className="p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-xl font-black text-slate-800">{tournament.name}</h2>
-                  <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+              <div className="flex justify-between items-start mb-4 gap-2">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl font-black text-slate-800 truncate">{tournament.name}</h2>
+                  <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 flex-wrap">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> {tournament.date}
+                      <Calendar className="w-3 h-3 shrink-0" /> <span className="truncate">{tournament.date}</span>
                     </span>
                     {tournament.time && (
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {tournament.time}
+                        <Clock className="w-3 h-3 shrink-0" /> {tournament.time}
                       </span>
                     )}
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {tournament.location}
+                      <MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{tournament.location}</span>
                     </span>
                   </div>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-2 flex-wrap">
                     <Badge className={tournament.status === "active" ? "bg-green-500" : tournament.status === "completed" ? "bg-slate-400" : "bg-amber-500"}>
                       {tournament.status === "active" ? "Đang đấu" : tournament.status === "completed" ? "Đã xong" : "Nháp"}
                     </Badge>
@@ -763,7 +763,7 @@ export default function TournamentPage() {
                   <img
                     src={tournament.backdrop.startsWith('/') ? tournament.backdrop : `/backdrop-uploads/${tournament.backdrop}`}
                     alt="Backdrop"
-                    className="w-24 h-16 object-cover rounded-lg"
+                    className="w-24 h-16 object-cover rounded-lg shrink-0"
                   />
                 )}
               </div>
@@ -875,21 +875,21 @@ export default function TournamentPage() {
                             : "Chờ"}
                         </Badge>
                       </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="font-medium">
+                      <div className="flex justify-between items-center text-sm gap-1">
+                        <span className="font-medium min-w-0 truncate flex-1 text-left">
                           {match.team1Player1}
                           {match.team1Player2 && ` / ${match.team1Player2}`}
                         </span>
-                        <span className="text-slate-400 mx-2">vs</span>
-                        <span className="font-medium">
+                        <span className="text-slate-400 shrink-0">vs</span>
+                        <span className="font-medium min-w-0 truncate flex-1 text-right">
                           {match.team2Player1}
                           {match.team2Player2 && ` / ${match.team2Player2}`}
                         </span>
                       </div>
                       {match.status === "pending" && (
-                        <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+                        <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100 flex-wrap">
                           <select
-                            className="text-xs border rounded px-2 py-1"
+                            className="text-xs border rounded px-2 py-1 min-w-0 flex-1"
                             onChange={(e) =>
                               e.target.value &&
                               handleAssignReferee(match.id, parseInt(e.target.value))
@@ -904,7 +904,7 @@ export default function TournamentPage() {
                             ))}
                           </select>
                           <select
-                            className="text-xs border rounded px-2 py-1"
+                            className="text-xs border rounded px-2 py-1 min-w-0 flex-1"
                             onChange={(e) =>
                               e.target.value &&
                               handleAssignCourt(match.id, parseInt(e.target.value))
@@ -922,7 +922,7 @@ export default function TournamentPage() {
                             <Button
                               size="sm"
                               onClick={() => handleStartMatch(match.id)}
-                              className="bg-green-500 text-white text-xs ml-auto"
+                              className="bg-green-500 text-white text-xs shrink-0"
                             >
                               Bắt đầu
                             </Button>
