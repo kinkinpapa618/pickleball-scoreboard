@@ -1,9 +1,10 @@
 import { db } from './server/db';
+import { sql } from 'drizzle-orm';
 
 async function migrate() {
   console.log('Creating notifications table...');
 
-  await db.execute(`
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS notifications (
       id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id) NOT NULL,
@@ -17,8 +18,8 @@ async function migrate() {
     )
   `);
 
-  await db.execute(`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`);
-  await db.execute(`CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, read) WHERE read = FALSE`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, read) WHERE read = FALSE`);
 
   console.log('Notifications table created successfully!');
 }
