@@ -479,6 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         winningScore: req.body.winningScore || 11,
         status: "draft",
         creatorId: user.id,
+        backdrop: req.body.backdrop,
       });
       res.json(tournament);
     } catch (error: any) {
@@ -662,10 +663,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     if (isNewFormat) {
       // Format mới: mỗi phần tử là object chứa 4 VĐV
-      // Gom nhóm theo level/category để tạo bảng
+      // Gom nhóm theo level để tạo bảng
       const byLevel: Record<string, any[]> = {};
       
       playerData.forEach((p: any) => {
+        // Sử dụng trực tiếp level từ file Excel
         const level = p.level || "Default";
         if (!byLevel[level]) byLevel[level] = [];
         byLevel[level].push(p);

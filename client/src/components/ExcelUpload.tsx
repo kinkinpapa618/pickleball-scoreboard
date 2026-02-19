@@ -26,7 +26,7 @@ export interface ParsedTournamentData {
 
 interface ExcelUploadProps {
   onDataLoaded: (players: PlayerData[] | string[]) => void;
-  mode?: "simple" | "tournament" | "tournament-v2";
+  mode?: "simple" | "tournament" | "tournament-v2" | "tournament-level";
   onParsedData?: (data: ParsedTournamentData) => void;
 }
 
@@ -206,6 +206,12 @@ export function ExcelUpload({ onDataLoaded, mode = "simple", onParsedData }: Exc
       worksheet.addRow([1, "4.2", "Đôi Nam-Nữ", "Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D"]);
       worksheet.addRow([2, "4.2", "Đôi Nữ", "Hoàng Văn E", "Đặng Văn F", "Ngô Văn G", "Vũ Văn H"]);
       worksheet.addRow([3, "4.4", "Đôi Nam", "Phạm Văn I", "Trần Văn J", "Lê Văn K", "Nguyễn Văn L"]);
+    } else if (mode === "tournament-level") {
+      worksheet.addRow(["STT", "Tên Player 1", "Tên Player 2", "Level Cặp Đấu", "Hạt Giống"]);
+      worksheet.addRow([1, "Nguyễn Văn A", "Trần Văn B", "4.2", 1]);
+      worksheet.addRow([2, "Lê Thị C", "Phạm Thị D", "4.4", ""]);
+      worksheet.addRow([3, "Hoàng Văn E", "Đặng Văn F", "4.2", ""]);
+      worksheet.addRow([4, "Ngô Thị G", "Vũ Văn H", "4.0", 2]);
     } else {
       worksheet.addRow(["Họ và Tên"]);
       worksheet.addRow(["Nguyễn Văn A"]);
@@ -219,7 +225,7 @@ export function ExcelUpload({ onDataLoaded, mode = "simple", onParsedData }: Exc
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = mode === "tournament-v2" ? "Mau_Dang_Ky_VDV.xlsx" : (mode === "tournament" ? "Mau_Giai_Dau_Pickleball.xlsx" : "Mau_Danh_Sach_VDV.xlsx");
+    a.download = mode === "tournament-v2" ? "Mau_Dang_Ky_VDV.xlsx" : (mode === "tournament" ? "Mau_Giai_Dau_Pickleball.xlsx" : (mode === "tournament-level" ? "Mau_DS_Cap_Dau.xlsx" : "Mau_Danh_Sach_VDV.xlsx"));
     a.click();
     URL.revokeObjectURL(url);
   };

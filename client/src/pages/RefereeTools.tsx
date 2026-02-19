@@ -566,7 +566,7 @@ export default function RefereeTools() {
                         {/* EYE - Chỉ hiện khi completed */}
                         {isCompleted && (
                           <button
-                            onClick={() => window.open(`/match-view/${match.id}`, "_blank")}
+                            onClick={() => window.open(`/match-detail/${match.id}`, "_blank")}
                             className="h-7 w-7 rounded-md bg-slate-200 hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center"
                           >
                             <Eye className="w-3.5 h-3.5" />

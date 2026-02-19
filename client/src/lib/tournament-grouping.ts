@@ -25,6 +25,9 @@ export interface SeedDistribution {
 export function suggestGroupingMethod(totalPairs: number): GroupSuggestion[] {
   const suggestions: GroupSuggestion[] = [];
 
+  const isPowerOf2 = (n: number) => Math.log2(n) % 1 === 0;
+  const isDivisibleBy4 = (n: number) => n % 4 === 0;
+
   if (totalPairs <= 2) {
     suggestions.push({
       format: "ROUND_ROBIN",
@@ -39,37 +42,58 @@ export function suggestGroupingMethod(totalPairs: number): GroupSuggestion[] {
       formatName: "Vòng tròn (Round Robin)",
       description: "Mỗi cặp đấu với tất cả các cặp còn lại",
       numGroups: 1,
-      reason: "Phù hợp với 3-6 cặp - ai cũng được thi đấu nhiều",
+      reason: "Gợi ý: 3-6 đội (Đánh vòng tròn tốn khá nhiều thời gian)",
     });
-    suggestions.push({
-      format: "GROUP_KNOCKOUT",
-      formatName: "Chia bảng + Loại trực tiếp",
-      description: "Chia bảng vòng tròn, Top vào vòng loại trực tiếp",
-      numGroups: 2,
-      reason: "Kết hợp công bằng và kịch tính",
-    });
-  } else if (totalPairs <= 16) {
-    suggestions.push({
-      format: "GROUP_KNOCKOUT",
-      formatName: "Chia bảng + Loại trực tiếp",
-      description: "Chia bảng vòng tròn, Top vào vòng loại trực tiếp",
-      numGroups: Math.ceil(totalPairs / 4),
-      reason: "Mô hình chuẩn của giải lớn - công bằng & kịch tính",
-    });
+    if (isDivisibleBy4(totalPairs)) {
+      suggestions.push({
+        format: "GROUP_KNOCKOUT",
+        formatName: "Chia bảng + Loại trực tiếp",
+        description: "Chia bảng vòng tròn, Top vào vòng loại trực tiếp",
+        numGroups: Math.ceil(totalPairs / 4),
+        reason: "Gợi ý: Số chia hết cho 4 để chia đều vào các bảng",
+      });
+    }
+  } else if (isPowerOf2(totalPairs)) {
     suggestions.push({
       format: "ELIMINATION",
       formatName: "Loại trực tiếp (Knockout)",
       description: "Thua 1 trận là bị loại",
       numGroups: 1,
-      reason: "Nhanh - gọn - kịch tính, tiết kiệm thời gian",
+      reason: "Gợi ý: 4, 8, 16, 32... (Lũy thừa của 2 để sơ đồ đẹp nhất)",
     });
+    if (totalPairs >= 8) {
+      suggestions.push({
+        format: "GROUP_KNOCKOUT",
+        formatName: "Chia bảng + Loại trực tiếp",
+        description: "Chia bảng vòng tròn, Top vào vòng loại trực tiếp",
+        numGroups: Math.min(4, Math.ceil(totalPairs / 4)),
+        reason: "Kết hợp công bằng vòng bảng và kịch tính knockout",
+      });
+    }
+  } else if (isDivisibleBy4(totalPairs) || totalPairs > 16) {
+    suggestions.push({
+      format: "GROUP_KNOCKOUT",
+      formatName: "Chia bảng + Loại trực tiếp",
+      description: "Chia bảng vòng tròn, Top vào vòng loại trực tiếp",
+      numGroups: Math.max(2, Math.ceil(totalPairs / 4)),
+      reason: "Gợi ý: 8, 12, 16... (Số chia hết cho 4 để chia đều vào các bảng)",
+    });
+    if (isPowerOf2(totalPairs) || totalPairs >= 16) {
+      suggestions.push({
+        format: "ELIMINATION",
+        formatName: "Loại trực tiếp (Knockout)",
+        description: "Thua 1 trận là bị loại",
+        numGroups: 1,
+        reason: "Nhanh - gọn - kịch tính, tiết kiệm thời gian",
+      });
+    }
   } else {
     suggestions.push({
       format: "GROUP_KNOCKOUT",
       formatName: "Chia bảng + Loại trực tiếp",
       description: "Chia bảng vòng tròn, Top vào vòng loại trực tiếp",
       numGroups: Math.ceil(totalPairs / 4),
-      reason: "Giải quyết nhiều cặp, có tính công bằng cao",
+      reason: "Số đội không phải lũy thừa của 2, chia bảng phù hợp nhất",
     });
   }
 
@@ -88,30 +112,42 @@ export function distributeSeedsEvenly<T extends { seed?: number }>(
   players: T[],
   numGroups: number
 ): T[][] {
-  const seededPlayers = players
-    .map((p, idx) => ({ ...p, originalIndex: idx }))
-    .filter(p => p.seed !== undefined && p.seed > 0)
-    .sort((a, b) => a.seed! - b.seed!);
+  if (numGroups <= 0) return [];
+  if (players.length === 0) return Array.from({ length: numGroups }, () => []);
 
-  const unseededPlayers = players
-    .map((p, idx) => ({ ...p, originalIndex: idx }))
-    .filter(p => !p.seed || p.seed <= 0);
+  const playersPerGroup = Math.ceil(players.length / numGroups);
+
+  const seededPlayers = players
+    .map((p, idx) => ({ player: p, originalIndex: idx, seed: p.seed ?? Infinity }))
+    .sort((a, b) => a.seed - b.seed);
+
+  const unseeded = seededPlayers.filter(p => p.seed === Infinity);
+  const seeded = seededPlayers.filter(p => p.seed !== Infinity);
 
   const groups: T[][] = Array.from({ length: numGroups }, () => []);
 
-  seededPlayers.forEach((player, idx) => {
+  seeded.forEach((item, idx) => {
     const groupIdx = idx % numGroups;
-    groups[groupIdx].push(players[player.originalIndex] as T);
+    groups[groupIdx].push(item.player);
   });
 
-  let currentGroup = 0;
-  unseededPlayers.forEach((player) => {
-    while (groups[currentGroup].length >= Math.ceil(players.length / numGroups)) {
-      currentGroup = (currentGroup + 1) % numGroups;
-    }
-    groups[currentGroup].push(players[player.originalIndex] as T);
-    currentGroup = (currentGroup + 1) % numGroups;
+  const groupCapacities = groups.map((_, idx) => {
+    const base = Math.floor(players.length / numGroups);
+    const remainder = players.length % numGroups;
+    return base + (idx < remainder ? 1 : 0);
   });
+
+  const currentCounts = groups.map(g => g.length);
+  let groupIdx = 0;
+
+  for (const item of unseeded) {
+    while (currentCounts[groupIdx] >= groupCapacities[groupIdx]) {
+      groupIdx = (groupIdx + 1) % numGroups;
+    }
+    groups[groupIdx].push(item.player);
+    currentCounts[groupIdx]++;
+    groupIdx = (groupIdx + 1) % numGroups;
+  }
 
   return groups;
 }

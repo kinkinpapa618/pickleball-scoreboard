@@ -501,7 +501,20 @@ export class DatabaseStorage implements IStorage {
             status, referee_id, court_id, created_at 
             FROM tournament_matches WHERE tournament_id = ${tournamentId}`
       );
-      return result.rows as any[];
+      
+      return result.rows.map((row: any) => ({
+        ...row,
+        team1Player1: row.team1_player1,
+        team1Player2: row.team1_player2,
+        team2Player1: row.team2_player1,
+        team2Player2: row.team2_player2,
+        refereeId: row.referee_id,
+        courtId: row.court_id,
+        matchOrder: row.match_order,
+        groupName: row.group_name,
+        matchId: row.match_id,
+        tournamentId: row.tournament_id,
+      }));
     } catch (e) {
       console.error("Error getting tournament matches simple:", e);
       return [];

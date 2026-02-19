@@ -301,7 +301,9 @@ export function updateRoundRobinMatch(
     return match;
   });
 
-  const standings = calculateStandings(newMatches, [...new Set(newMatches.map(m => [m.player1, m.player2]).flat())]);
+  const allPlayers = newMatches.flatMap(m => [m.player1, m.player2]);
+  const uniquePlayers = Array.from(new Set(allPlayers.map(p => p.id))).map(id => allPlayers.find(p => p.id === id)!);
+  const standings = calculateStandings(newMatches, uniquePlayers);
 
   return { matches: newMatches, standings };
 }
@@ -401,6 +403,19 @@ export function generateTournament(
   format: TournamentFormat,
   numGroups?: number
 ): TournamentData {
+  if (players.length === 0) {
+    throw new Error("Danh sách người chơi không được rỗng");
+  }
+
+  if (format === "GROUP_KNOCKOUT") {
+    if (!numGroups || numGroups < 2) {
+      numGroups = Math.min(4, Math.ceil(players.length / 4));
+    }
+    if (numGroups > players.length) {
+      throw new Error("Số bảng không được lớn hơn số người chơi");
+    }
+  }
+
   const baseData: TournamentData = {
     format,
     players,
@@ -408,17 +423,26 @@ export function generateTournament(
 
   switch (format) {
     case "ROUND_ROBIN": {
+      if (players.length < 2) {
+        throw new Error("Round Robin cần ít nhất 2 người chơi");
+      }
       const { matches, standings } = generateRoundRobin(players);
       return { ...baseData, rrMatches: matches, rrStandings: standings };
     }
 
     case "ELIMINATION": {
+      if (players.length < 2) {
+        throw new Error("Elimination cần ít nhất 2 người chơi");
+      }
       const { rounds, allMatches } = generateElimination(players);
       return { ...baseData, eliminationRounds: rounds, eliminationMatches: allMatches };
     }
 
     case "GROUP_KNOCKOUT": {
-      const { groups, knockoutMatches, roundNames } = generateGroupKnockout(players, numGroups || 4);
+      if (players.length < 4) {
+        throw new Error("Group + Knockout cần ít nhất 4 người chơi");
+      }
+      const { groups, knockoutMatches, roundNames } = generateGroupKnockout(players, numGroups!);
       return { ...baseData, groups, knockoutMatches, knockoutRoundNames: roundNames, numGroups };
     }
 

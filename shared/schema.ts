@@ -184,6 +184,8 @@ export const tournaments = pgTable("tournaments", {
   time: time("time"),
   location: text("location"),
   court: text("court"), // Tên sân mặc định
+  courts: integer("courts").default(0), // Số lượng sân đăng ký
+  backdrop: text("backdrop"), // Base64 encoded backdrop image
   
   // Người tạo giải đấu
   creatorId: integer("creator_id").references(() => users.id).notNull(),

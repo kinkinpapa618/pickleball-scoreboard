@@ -177,14 +177,17 @@ export function useGenerateTournament() {
       tournamentId,
       players,
       teamsPerGroup,
+      groupingMethod,
     }: {
       tournamentId: number;
       players: string[] | any[];
       teamsPerGroup: number;
+      groupingMethod?: string;
     }) => {
       const res = await apiRequest("POST", `/api/tournaments/${tournamentId}/generate`, {
         players,
         teamsPerGroup,
+        groupingMethod,
       });
       return res.json();
     },

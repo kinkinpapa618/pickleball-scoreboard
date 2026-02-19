@@ -41,9 +41,23 @@ import {
   type GroupSuggestion,
 } from "@/lib/tournament-grouping";
 
+interface ContentInfo {
+  id: string;
+  name: string;
+  players: PlayerEntry[];
+}
+
+interface PlayerEntry {
+  stt: number;
+  player1: string;
+  player2: string;
+  level: string;
+  seed?: number;
+}
+
 interface LevelContent {
   level: string;
-  contents: string[];
+  contents: ContentInfo[];
 }
 
 type TournamentFormData = {

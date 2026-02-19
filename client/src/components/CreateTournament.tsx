@@ -3,26 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Calendar, MapPin, Trophy, ChevronRight, Save, User, Users, Image, Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, MapPin, Trophy, ChevronRight, Save, Upload } from "lucide-react";
 import { motion } from "framer-motion";
-
-const SINGLES_OPTIONS = [
-  { id: "don_nam", label: "Đơn Nam" },
-  { id: "don_nu", label: "Đơn Nữ" },
-];
-
-const DOUBLES_OPTIONS = [
-  { id: "doi_nam", label: "Đôi Nam" },
-  { id: "doi_nu", label: "Đôi Nữ" },
-  { id: "doi_nam_nu", label: "Đôi Nam-Nữ" },
-  { id: "doi_hon", label: "Đôi Hỗn Hợp" },
-];
-
-interface LevelContent {
-  level: string;
-  contents: string[];
-}
 
 interface TournamentFormData {
   name: string;
@@ -31,13 +14,21 @@ interface TournamentFormData {
   location: string;
   courts: number;
   level: string;
-  levels: LevelContent[];
+  content: string;
   backdrop?: string;
 }
 
 interface CreateTournamentProps {
   onSubmit: (data: TournamentFormData) => void;
+  initialData?: TournamentFormData;
 }
+
+const CONTENT_OPTIONS = [
+  { id: "doi_nam", label: "Đôi Nam" },
+  { id: "doi_nu", label: "Đôi Nữ" },
+  { id: "doi_nam_nu", label: "Đôi Nam-Nữ" },
+  { id: "doi_hon", label: "Đôi Hỗn Hợp" },
+];
 
 function resizeImage(file: File, maxSizeKB: number = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -72,20 +63,19 @@ function resizeImage(file: File, maxSizeKB: number = 1024): Promise<string> {
   });
 }
 
-export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
+export default function CreateTournament({ onSubmit, initialData }: CreateTournamentProps) {
   const [formData, setFormData] = useState<TournamentFormData>({
-    name: "",
-    date: "",
-    time: "",
-    location: "",
-    courts: 1,
-    level: "",
-    levels: [],
-    backdrop: undefined,
+    name: initialData?.name || "",
+    date: initialData?.date || "",
+    time: initialData?.time || "",
+    location: initialData?.location || "",
+    courts: initialData?.courts || 0,
+    level: initialData?.level || "",
+    content: initialData?.content || "",
+    backdrop: initialData?.backdrop || undefined,
   });
 
-  const [newLevel, setNewLevel] = useState("");
-  const [backdropPreview, setBackdropPreview] = useState<string | undefined>(formData.backdrop);
+  const [backdropPreview, setBackdropPreview] = useState<string | undefined>(initialData?.backdrop);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (field: keyof TournamentFormData, value: string | number | undefined) => {
@@ -120,44 +110,30 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
     }
   };
 
-  const handleAddLevel = () => {
-    if (newLevel && !formData.levels.find(l => l.level === newLevel)) {
-      setFormData((prev) => ({
-        ...prev,
-        levels: [...prev.levels, { level: newLevel, contents: [] }],
-      }));
-      setNewLevel("");
-    }
-  };
-
-  const handleRemoveLevel = (levelToRemove: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      levels: prev.levels.filter((l) => l.level !== levelToRemove),
-    }));
-  };
-
-  const handleContentToggle = (level: string, contentId: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      levels: prev.levels.map((l) => {
-        if (l.level === level) {
-          const newContents = checked
-            ? [...l.contents, contentId]
-            : l.contents.filter((c) => c !== contentId);
-          return { ...l, contents: newContents };
-        }
-        return l;
-      }),
-    }));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name || !formData.date || !formData.location || formData.courts <= 0) {
+      alert("Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+    if (!formData.level) {
+      alert("Vui lòng nhập level");
+      return;
+    }
+    if (!formData.content) {
+      alert("Vui lòng chọn nội dung thi đấu");
+      return;
+    }
     onSubmit(formData);
   };
 
-  const isValid = formData.name && formData.date && formData.location && formData.levels.length > 0;
+  const isValid =
+    formData.name &&
+    formData.date &&
+    formData.location &&
+    formData.courts > 0 &&
+    formData.level &&
+    formData.content;
 
   return (
     <motion.div
@@ -166,29 +142,29 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
       className="space-y-6"
     >
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-[#ccff00]/10 rounded-xl flex items-center justify-center">
-          <Trophy className="w-5 h-5 text-[#ccff00]" />
+        <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
+          <Trophy className="w-5 h-5 text-blue-500" />
         </div>
         <div>
-          <h2 className="text-white font-black italic text-xl uppercase tracking-tighter">
-            Tạo giải đấu mới
+          <h2 className="text-slate-900 font-black italic text-xl uppercase tracking-tighter">
+            {initialData ? "Chỉnh sửa giải đấu" : "Tạo giải đấu mới"}
           </h2>
-          <p className="text-white/40 text-xs font-medium">
+          <p className="text-slate-500 text-xs font-medium">
             Nhập thông tin giải đấu
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card className="bg-slate-900/80 border-white/5">
+        <Card className="bg-white border border-slate-200 shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-white/80 text-sm font-bold uppercase tracking-wider">
+            <CardTitle className="text-slate-800 text-sm font-bold uppercase tracking-wider">
               Thông tin giải đấu
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-white/70 text-xs font-bold uppercase">
+              <Label htmlFor="name" className="text-slate-700 text-xs font-bold uppercase">
                 Tên giải đấu <span className="text-rose-500">*</span>
               </Label>
               <Input
@@ -196,28 +172,28 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
                 placeholder="VD: Giải Pickleball HCM 2024"
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
+                className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-white/70 text-xs font-bold uppercase">
+                <Label htmlFor="date" className="text-slate-700 text-xs font-bold uppercase">
                   Ngày thi đấu <span className="text-rose-500">*</span>
                 </Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
                     id="date"
                     type="date"
                     value={formData.date}
                     onChange={(e) => handleChange("date", e.target.value)}
-                    className="bg-white/5 border-white/10 text-white pl-10 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
+                    className="bg-slate-50 border border-slate-200 text-slate-900 pl-10 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time" className="text-white/70 text-xs font-bold uppercase">
+                <Label htmlFor="time" className="text-slate-700 text-xs font-bold uppercase">
                   Giờ thi đấu
                 </Label>
                 <Input
@@ -225,67 +201,89 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
                   type="time"
                   value={formData.time}
                   onChange={(e) => handleChange("time", e.target.value)}
-                  className="bg-white/5 border-white/10 text-white focus:border-[#ccff00] focus:ring-[#ccff00]/20"
+                  className="bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location" className="text-white/70 text-xs font-bold uppercase">
+              <Label htmlFor="location" className="text-slate-700 text-xs font-bold uppercase">
                 Địa điểm <span className="text-rose-500">*</span>
               </Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   id="location"
                   placeholder="VD: Sân Pickleball Quận 1, TP.HCM"
                   value={formData.location}
                   onChange={(e) => handleChange("location", e.target.value)}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-10 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
+                  className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 pl-10 focus:border-blue-500 focus:ring-blue-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="courts" className="text-slate-700 text-xs font-bold uppercase">
+                  Số lượng sân đăng ký <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  id="courts"
+                  type="number"
+                  min={1}
+                  max={20}
+                  placeholder="VD: 2"
+                  value={formData.courts || ""}
+                  onChange={(e) => handleChange("courts", parseInt(e.target.value) || 0)}
+                  className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="level" className="text-slate-700 text-xs font-bold uppercase">
+                  Level <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  id="level"
+                  placeholder="VD: 4.0"
+                  value={formData.level}
+                  onChange={(e) => handleChange("level", e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="courts" className="text-white/70 text-xs font-bold uppercase">
-                Số lượng sân đăng ký
+              <Label className="text-slate-700 text-xs font-bold uppercase">
+                Nội dung thi đấu <span className="text-rose-500">*</span>
               </Label>
-              <Input
-                id="courts"
-                type="number"
-                min={1}
-                max={20}
-                placeholder="VD: 2"
-                value={formData.courts}
-                onChange={(e) => handleChange("courts", parseInt(e.target.value) || 1)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="level" className="text-white/70 text-xs font-bold uppercase">
-                Level (phân cách bằng dấu phẩy)
-              </Label>
-              <Input
-                id="level"
-                placeholder="VD: 4.0, 4.5, 5.0"
-                value={formData.level}
-                onChange={(e) => handleChange("level", e.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
-              />
+              <Select
+                value={formData.content}
+                onValueChange={(value) => handleChange("content", value)}
+              >
+                <SelectTrigger className="bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-blue-500/20">
+                  <SelectValue placeholder="Chọn nội dung thi đấu" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTENT_OPTIONS.map((content) => (
+                    <SelectItem key={content.id} value={content.id}>
+                      {content.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/80 border-white/5">
+        <Card className="bg-white border border-slate-200 shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-white/80 text-sm font-bold uppercase tracking-wider">
+            <CardTitle className="text-slate-800 text-sm font-bold uppercase tracking-wider">
               Backdrop giải đấu
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-white/70 text-xs font-bold uppercase">
+              <Label className="text-slate-700 text-xs font-bold uppercase">
                 Ảnh backdrop (JPEG, JPG, PNG - dưới 1MB)
               </Label>
               <input
@@ -309,7 +307,7 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
                     onClick={handleRemoveBackdrop}
                     className="absolute top-2 right-2"
                   >
-                    <X className="w-4 h-4" />
+                    Xóa
                   </Button>
                 </div>
               ) : (
@@ -317,7 +315,7 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
                   type="button"
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-20 border-dashed border-white/20 text-white/50 hover:border-[#ccff00] hover:text-[#ccff00]"
+                  className="w-full h-20 border-dashed border-slate-300 text-slate-500 hover:border-blue-500 hover:text-blue-500"
                 >
                   <Upload className="w-5 h-5 mr-2" />
                   Tải ảnh backdrop
@@ -327,109 +325,13 @@ export default function CreateTournament({ onSubmit }: CreateTournamentProps) {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/80 border-white/5">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-white/80 text-sm font-bold uppercase tracking-wider">
-              Level & Nội dung thi đấu <span className="text-rose-500">*</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-white/70 text-xs font-bold uppercase">
-                Thêm level
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="VD: 4.0, 4.5, 5.0"
-                  value={newLevel}
-                  onChange={(e) => setNewLevel(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddLevel())}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#ccff00] focus:ring-[#ccff00]/20"
-                />
-                <Button
-                  type="button"
-                  onClick={handleAddLevel}
-                  className="bg-[#ccff00] hover:bg-[#b8e600] text-black"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {formData.levels.length > 0 && (
-              <div className="space-y-4">
-                {formData.levels.map((levelData) => (
-                  <div key={levelData.level} className="bg-white/5 rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#ccff00] font-bold">Level {levelData.level}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLevel(levelData.level)}
-                        className="text-white/50 hover:text-rose-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
-                        <User className="w-4 h-4" />
-                        ĐÁNH ĐƠN
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 pl-6">
-                        {SINGLES_OPTIONS.map((option) => (
-                          <label
-                            key={`${levelData.level}-${option.id}`}
-                            className="flex items-center gap-2 cursor-pointer group"
-                          >
-                            <Checkbox
-                              id={`${levelData.level}-${option.id}`}
-                              checked={levelData.contents.includes(option.id)}
-                              onCheckedChange={(checked: boolean) => handleContentToggle(levelData.level, option.id, checked)}
-                              className="border-white/20 data-[state=checked]:bg-[#ccff00] data-[state=checked]:border-[#ccff00]"
-                            />
-                            <span className="text-white/70 text-sm group-hover:text-white">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
-                        <Users className="w-4 h-4" />
-                        ĐÁNH ĐÔI
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 pl-6">
-                        {DOUBLES_OPTIONS.map((option) => (
-                          <label
-                            key={`${levelData.level}-${option.id}`}
-                            className="flex items-center gap-2 cursor-pointer group"
-                          >
-                            <Checkbox
-                              id={`${levelData.level}-${option.id}`}
-                              checked={levelData.contents.includes(option.id)}
-                              onCheckedChange={(checked: boolean) => handleContentToggle(levelData.level, option.id, checked)}
-                              className="border-white/20 data-[state=checked]:bg-[#ccff00] data-[state=checked]:border-[#ccff00]"
-                            />
-                            <span className="text-white/70 text-sm group-hover:text-white">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         <Button
           type="submit"
           disabled={!isValid}
           className={`w-full py-6 rounded-2xl font-black italic text-sm uppercase tracking-wider transition-all ${
             isValid
-              ? "bg-[#ccff00] hover:bg-[#b8e600] text-black shadow-[0_10px_30px_rgba(204,255,0,0.2)]"
-              : "bg-white/5 text-white/30 cursor-not-allowed"
+              ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+              : "bg-slate-200 text-slate-400 cursor-not-allowed"
           }`}
         >
           <Save className="w-4 h-4 mr-2" />
