@@ -10,7 +10,6 @@ import {
   insertTournamentPlayerSchema,
   insertTournamentMatchSchema,
   insertMatchSchema as matchSchema,
-  insertCourtSchema,
   insertNotificationSchema,
 } from "@shared/schema";
 
@@ -472,7 +471,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: req.body.date,
         time: req.body.time,
         location: req.body.location,
-        court: req.body.court,
         level: req.body.level,
         content: req.body.content,
         teamsPerGroup: req.body.teamsPerGroup || 4,
@@ -853,26 +851,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(accessLink);
   });
 
-  // 22b. Assign court vào trận đấu trong giải
-  app.post("/api/tournaments/:tournamentId/matches/:matchId/assign-court", async (req, res) => {
-    const tournamentId = parseInt(req.params.tournamentId as string);
-    const matchId = parseInt(req.params.matchId as string);
-    const { courtId } = req.body;
-    const user = req.user as any;
-
-    const tournament = await storage.getTournament(tournamentId);
-    if (!tournament) {
-      return res.status(404).json({ message: "Không tìm thấy giải đấu" });
-    }
-
-    if (user.role !== "admin" && tournament.creatorId !== user.id) {
-      return res.status(403).json({ message: "Bạn không có quyền chỉnh sửa giải đấu này" });
-    }
-
-    const updated = await storage.updateTournamentMatch(matchId, { courtId });
-    res.json(updated);
-  });
-
   // 23. Tạo trận đấu thực tế từ tournament match (để bắt đầu thi đấu)
   app.post("/api/tournaments/:tournamentId/matches/:matchId/start", async (req, res) => {
     const tournamentId = parseInt(req.params.tournamentId as string);
@@ -956,73 +934,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const setting = await storage.setSetting(key, String(value), description);
     res.json(setting);
-  });
-
-  // === COURT ROUTES ===
-  // Lấy danh sách sân
-  app.get("/api/courts", async (req, res) => {
-    const courts = await storage.getCourts();
-    res.json(courts);
-  });
-
-  // Lấy chi tiết một sân
-  app.get("/api/courts/:id", async (req, res) => {
-    const id = parseInt(req.params.id as string);
-    const court = await storage.getCourt(id);
-    if (!court) {
-      return res.status(404).json({ message: "Không tìm thấy sân" });
-    }
-    res.json(court);
-  });
-
-  // Tạo sân mới (chỉ admin/manager)
-  app.post("/api/courts", async (req, res) => {
-    const user = req.user as any;
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
-      return res.status(403).json({ message: "Không có quyền tạo sân" });
-    }
-
-    const result = insertCourtSchema.safeParse(req.body);
-    if (!result.success) {
-      return res.status(400).json({ message: "Dữ liệu sân không hợp lệ" });
-    }
-
-    const court = await storage.createCourt(result.data);
-    res.json(court);
-  });
-
-  // Cập nhật sân
-  app.patch("/api/courts/:id", async (req, res) => {
-    const id = parseInt(req.params.id as string);
-    const user = req.user as any;
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
-      return res.status(403).json({ message: "Không có quyền cập nhật sân" });
-    }
-
-    const court = await storage.getCourt(id);
-    if (!court) {
-      return res.status(404).json({ message: "Không tìm thấy sân" });
-    }
-
-    const updated = await storage.updateCourt(id, req.body);
-    res.json(updated);
-  });
-
-  // Xóa sân
-  app.delete("/api/courts/:id", async (req, res) => {
-    const id = parseInt(req.params.id as string);
-    const user = req.user as any;
-    if (!user || (user.role !== "admin" && user.role !== "manager")) {
-      return res.status(403).json({ message: "Không có quyền xóa sân" });
-    }
-
-    const court = await storage.getCourt(id);
-    if (!court) {
-      return res.status(404).json({ message: "Không tìm thấy sân" });
-    }
-
-    await storage.deleteCourt(id);
-    res.json({ message: "Xóa sân thành công" });
   });
 
   // === MANAGER CONNECTIONS API ===

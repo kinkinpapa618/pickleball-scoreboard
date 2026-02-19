@@ -36,11 +36,9 @@ import {
   useGenerateTournament,
   useReferees,
   useAssignReferee,
-  useAssignCourt,
   useStartTournamentMatch,
   useDeleteTournament,
   useUpdateTournament,
-  useCourts,
 } from "@/hooks/use-api";
 import { useLocation } from "wouter";
 
@@ -57,7 +55,6 @@ interface MatchFromDB {
   matchOrder: number | null;
   status: "pending" | "scheduled" | "live" | "completed";
   refereeId: number | null;
-  courtId: number | null;
   scheduledAt: string | null;
 }
 
@@ -72,7 +69,6 @@ interface TournamentFromDB {
   content: unknown;
   status: "draft" | "active" | "completed" | "cancelled";
   teamsPerGroup: number | null;
-  courts: number;
   backdrop?: string;
 }
 
@@ -111,7 +107,6 @@ export default function TournamentPage() {
     date: "",
     time: "",
     location: "",
-    courts: 0,
     level: "",
     content: "",
     backdrop: undefined as string | undefined,
@@ -123,17 +118,14 @@ export default function TournamentPage() {
   const generateTournament = useGenerateTournament();
   const referees = useReferees();
   const assignReferee = useAssignReferee();
-  const assignCourt = useAssignCourt();
   const startMatch = useStartTournamentMatch();
   const deleteTournament = useDeleteTournament();
   const updateTournament = useUpdateTournament();
-  const courts = useCourts();
 
   const [playersByLevel, setPlayersByLevel] = useState<Record<string, PlayerEntry[]>>({});
   const [teamsPerGroup, setTeamsPerGroup] = useState(2);
   const [groupingMethod, setGroupingMethod] = useState("seed");
   const [assigningMatchId, setAssigningMatchId] = useState<number | null>(null);
-  const [assigningCourtMatchId, setAssigningCourtMatchId] = useState<number | null>(null);
   const [pendingContents, setPendingContents] = useState<{ level: string; content: string; name: string }[]>([]);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [pendingTournamentId, setPendingTournamentId] = useState<number | null>(null);
@@ -152,7 +144,7 @@ export default function TournamentPage() {
   };
 
   const handleCreateTournament = async (data: any) => {
-    if (!data.name || !data.date || !data.location || !data.courts || !data.content) {
+    if (!data.name || !data.date || !data.location || !data.content) {
       alert("Vui lòng nhập đầy đủ thông tin!");
       return;
     }
@@ -299,16 +291,6 @@ export default function TournamentPage() {
     }
   };
 
-  const handleAssignCourt = async (matchId: number, courtId: number) => {
-    if (!selectedTournamentId) return;
-    try {
-      await assignCourt.mutateAsync({ tournamentId: selectedTournamentId, matchId, courtId });
-      refetchTournament();
-    } catch (error) {
-      console.error("Error assigning court:", error);
-    }
-  };
-
   const handleStartMatch = async (matchId: number) => {
     if (!selectedTournamentId) return;
     try {
@@ -333,7 +315,6 @@ export default function TournamentPage() {
       date: tournament.date ? new Date(tournament.date).toISOString().split('T')[0] : "",
       time: tournament.time || "",
       location: tournament.location || "",
-      courts: tournament.teamsPerGroup || 0,
       level: tournament.level || "",
       content: content,
       backdrop: tournament.backdrop || undefined,
@@ -355,7 +336,6 @@ export default function TournamentPage() {
           location: data.location,
           level: data.level,
           content: JSON.stringify([data.content]),
-          teamsPerGroup: data.courts,
           status: "draft",
           backdrop: data.backdrop,
         },
@@ -512,7 +492,7 @@ export default function TournamentPage() {
                       location: pendingData.location,
                       level: pendingData.level,
                       content: JSON.stringify([pendingData.content]),
-                      teamsPerGroup: pendingData.courts,
+                      teamsPerGroup: teamsPerGroup,
                       status: "draft",
                       backdrop: pendingData.backdrop,
                     });
@@ -629,9 +609,6 @@ export default function TournamentPage() {
                         <Badge className={t.status === "active" ? "bg-green-500" : t.status === "completed" ? "bg-slate-400" : "bg-amber-500"}>
                           {t.status === "active" ? "Đang đấu" : t.status === "completed" ? "Đã xong" : "Nháp"}
                         </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {t.courts} sân
-                        </Badge>
                         {t.level && (
                           <Badge variant="outline" className="text-xs">
                             Level {t.level}
@@ -731,9 +708,6 @@ export default function TournamentPage() {
                   <div className="flex gap-2 mt-2 flex-wrap">
                     <Badge className={tournament.status === "active" ? "bg-green-500" : tournament.status === "completed" ? "bg-slate-400" : "bg-amber-500"}>
                       {tournament.status === "active" ? "Đang đấu" : tournament.status === "completed" ? "Đã xong" : "Nháp"}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {tournament.courts} sân
                     </Badge>
                     {tournament.level && (
                       <Badge variant="outline" className="text-xs">
@@ -903,22 +877,7 @@ export default function TournamentPage() {
                               </option>
                             ))}
                           </select>
-                          <select
-                            className="text-xs border rounded px-2 py-1 min-w-0 flex-1"
-                            onChange={(e) =>
-                              e.target.value &&
-                              handleAssignCourt(match.id, parseInt(e.target.value))
-                            }
-                            defaultValue=""
-                          >
-                            <option value="">Chọn sân</option>
-                            {courts.data?.map((c: any) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                          </select>
-                          {match.refereeId && match.courtId && (
+                          {match.refereeId && (
                             <Button
                               size="sm"
                               onClick={() => handleStartMatch(match.id)}

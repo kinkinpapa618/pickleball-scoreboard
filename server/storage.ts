@@ -7,7 +7,6 @@ import {
   tournamentPlayers,
   tournamentMatches,
   settings,
-  courts,
   managerConnections,
   chats,
   notifications,
@@ -26,8 +25,6 @@ import {
   type InsertTournamentMatch,
   type Setting,
   type InsertSetting,
-  type Court,
-  type InsertCourt,
   type Chat,
   type InsertChat,
   type Notification,
@@ -107,13 +104,6 @@ export interface IStorage {
   deleteTournamentMatches(tournamentId: number): Promise<void>;
   updateTournamentMatch(id: number, data: Partial<TournamentMatch>): Promise<TournamentMatch>;
   assignRefereeToMatch(matchId: number, refereeId: number): Promise<TournamentMatch>;
-
-  // Court methods
-  getCourts(): Promise<Court[]>;
-  getCourt(id: number): Promise<Court | undefined>;
-  createCourt(court: InsertCourt): Promise<Court>;
-  updateCourt(id: number, data: Partial<Court>): Promise<Court>;
-  deleteCourt(id: number): Promise<void>;
 
   // Settings methods
   getSettings(): Promise<Setting[]>;
@@ -498,7 +488,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT id, tournament_id, match_id, team1_player1, team1_player2, 
             team2_player1, team2_player2, group_name, round, match_order, 
-            status, referee_id, court_id, created_at 
+            status, referee_id, created_at 
             FROM tournament_matches WHERE tournament_id = ${tournamentId}`
       );
       
@@ -509,7 +499,6 @@ export class DatabaseStorage implements IStorage {
         team2Player1: row.team2_player1,
         team2Player2: row.team2_player2,
         refereeId: row.referee_id,
-        courtId: row.court_id,
         matchOrder: row.match_order,
         groupName: row.group_name,
         matchId: row.match_id,
@@ -619,34 +608,6 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return setting;
-  }
-
-  // --- COURT METHODS ---
-  async getCourts(): Promise<Court[]> {
-    return db.select().from(courts).orderBy(courts.name);
-  }
-
-  async getCourt(id: number): Promise<Court | undefined> {
-    const [court] = await db.select().from(courts).where(eq(courts.id, id));
-    return court;
-  }
-
-  async createCourt(insertCourt: InsertCourt): Promise<Court> {
-    const [court] = await db.insert(courts).values(insertCourt).returning();
-    return court;
-  }
-
-  async updateCourt(id: number, data: Partial<Court>): Promise<Court> {
-    const [court] = await db
-      .update(courts)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(courts.id, id))
-      .returning();
-    return court;
-  }
-
-  async deleteCourt(id: number): Promise<void> {
-    await db.delete(courts).where(eq(courts.id, id));
   }
 
   // --- CHAT METHODS ---

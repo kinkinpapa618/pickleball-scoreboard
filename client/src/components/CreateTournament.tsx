@@ -12,7 +12,6 @@ interface TournamentFormData {
   date: string;
   time: string;
   location: string;
-  courts: number;
   level: string;
   content: string;
   backdrop?: string;
@@ -69,7 +68,6 @@ export default function CreateTournament({ onSubmit, initialData }: CreateTourna
     date: initialData?.date || "",
     time: initialData?.time || "",
     location: initialData?.location || "",
-    courts: initialData?.courts || 0,
     level: initialData?.level || "",
     content: initialData?.content || "",
     backdrop: initialData?.backdrop || undefined,
@@ -112,7 +110,7 @@ export default function CreateTournament({ onSubmit, initialData }: CreateTourna
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.date || !formData.location || formData.courts <= 0) {
+    if (!formData.name || !formData.date || !formData.location) {
       alert("Vui lòng nhập đầy đủ thông tin");
       return;
     }
@@ -131,7 +129,6 @@ export default function CreateTournament({ onSubmit, initialData }: CreateTourna
     formData.name &&
     formData.date &&
     formData.location &&
-    formData.courts > 0 &&
     formData.level &&
     formData.content;
 
@@ -222,34 +219,17 @@ export default function CreateTournament({ onSubmit, initialData }: CreateTourna
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="courts" className="text-slate-700 text-xs font-bold uppercase">
-                  Số lượng sân đăng ký <span className="text-rose-500">*</span>
-                </Label>
-                <Input
-                  id="courts"
-                  type="number"
-                  min={1}
-                  max={20}
-                  placeholder="VD: 2"
-                  value={formData.courts || ""}
-                  onChange={(e) => handleChange("courts", parseInt(e.target.value) || 0)}
-                  className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="level" className="text-slate-700 text-xs font-bold uppercase">
-                  Level <span className="text-rose-500">*</span>
-                </Label>
-                <Input
-                  id="level"
-                  placeholder="VD: 4.0"
-                  value={formData.level}
-                  onChange={(e) => handleChange("level", e.target.value)}
-                  className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="level" className="text-slate-700 text-xs font-bold uppercase">
+                Level <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                id="level"
+                placeholder="VD: 4.0"
+                value={formData.level}
+                onChange={(e) => handleChange("level", e.target.value)}
+                className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20"
+              />
             </div>
 
             <div className="space-y-2">

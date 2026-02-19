@@ -65,7 +65,6 @@ type TournamentFormData = {
   date: string;
   time: string;
   location: string;
-  courts: number;
   level: string;
   levels: LevelContent[];
   backdrop?: string;
@@ -101,8 +100,6 @@ const FORMAT_OPTIONS: FormatOption[] = [
     requiresGroups: true,
   },
 ];
-
-const AVAILABLE_COURTS = [1, 2, 3, 4];
 
 export default function TournamentManager() {
   const { showToast } = useTournament();

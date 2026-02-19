@@ -25,7 +25,6 @@ export interface BracketMatch {
   status: "pending" | "playing" | "finished" | "bye";
   nextMatchId?: string;     // ID trận đấu tiếp theo (người thắng vào đây)
   nextMatchPosition?: "player1" | "player2"; // Vị trí trong trận tiếp theo
-  court?: number;
   scheduledTime?: string;
   group?: string;
 }

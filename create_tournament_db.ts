@@ -27,11 +27,10 @@ async function createDemoTournament() {
   const NUM_PAIRS = 40;
   const LEVEL = "4.4";
   const CATEGORY = "Đôi Nam-Nữ";
-  const NUM_COURTS = 4;
   const TOURNAMENT_NAME = `Giải Pickleball Demo 40 Cặp - ${LEVEL} - ${CATEGORY}`;
   
   console.log("=== TẠO GIẢI ĐẤU TRỰC TIẾP VÀO DATABASE ===\n");
-  console.log(`Cấu hình: ${NUM_PAIRS} cặp, Level ${LEVEL}, ${CATEGORY}, ${NUM_COURTS} sân\n`);
+  console.log(`Cấu hình: ${NUM_PAIRS} cặp, Level ${LEVEL}, ${CATEGORY}\n`);
 
   const client = await pool.connect();
   
@@ -41,10 +40,10 @@ async function createDemoTournament() {
     console.log(`1. Tạo giải đấu: ${TOURNAMENT_NAME}`);
     
     const tournamentResult = await client.query(`
-      INSERT INTO tournaments (name, description, teams_per_group, winning_score, status, level, content, date, time, location, court, courts, creator_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, '08:00:00', 'Sân Pickleball', $8, $9, 1)
+      INSERT INTO tournaments (name, description, teams_per_group, winning_score, status, level, content, date, time, location, creator_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, '08:00:00', 'Sân Pickleball', 1)
       RETURNING id
-    `, [TOURNAMENT_NAME, `Giải đấu Pickleball ${LEVEL} nội dung ${CATEGORY} với ${NUM_PAIRS} cặp đấu`, 4, 11, 'draft', LEVEL, JSON.stringify({ [LEVEL]: [CATEGORY] }), `Sân 1-${NUM_COURTS}`, NUM_COURTS]);
+    `, [TOURNAMENT_NAME, `Giải đấu Pickleball ${LEVEL} nội dung ${CATEGORY} với ${NUM_PAIRS} cặp đấu`, 4, 11, 'draft', LEVEL, JSON.stringify({ [LEVEL]: [CATEGORY] })]);
     
     const tournamentId = tournamentResult.rows[0].id;
     console.log(`   ✓ Tournament ID: ${tournamentId}`);
@@ -118,9 +117,9 @@ async function createDemoTournament() {
           if (team1 && team2 && team1.id !== team2.id) {
             await client.query(`
               INSERT INTO tournament_matches 
-              (tournament_id, team1_player1, team1_player2, team2_player1, team2_player2, group_name, round, match_order, status, referee_token, court_id)
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10)
-            `, [tournamentId, team1.player1, team1.player2, team2.player1, team2.player2, group, round, matchOrder++, nanoid(10), (i % NUM_COURTS) + 1]);
+              (tournament_id, team1_player1, team1_player2, team2_player1, team2_player2, group_name, round, match_order, status, referee_token)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)
+            `, [tournamentId, team1.player1, team1.player2, team2.player1, team2.player2, group, round, matchOrder++, nanoid(10)]);
           }
         }
         if (round < rounds) {
@@ -138,16 +137,16 @@ async function createDemoTournament() {
     await client.query("COMMIT");
 
     console.log("\n" + "=".repeat(55));
-    console.log("✅ TẠO GIẢI ĐẤU THÀNH CÔNG!");
+    console.log("TẠO GIẢI ĐẤU THÀNH CÔNG!");
     console.log("=".repeat(55));
-    console.log(`\n📋 ${TOURNAMENT_NAME}`);
+    console.log(`\n${TOURNAMENT_NAME}`);
     console.log(`   ID: ${tournamentId} | Level: ${LEVEL} | ${CATEGORY}`);
-    console.log(`   Cặp: ${NUM_PAIRS} | Bảng: ${numGroups} | Trận: ${matchOrder - 1} | Sân: ${NUM_COURTS}`);
-    console.log(`\n🔗 http://localhost:5173/tournament/${tournamentId}`);
+    console.log(`   Cặp: ${NUM_PAIRS} | Bảng: ${numGroups} | Trận: ${matchOrder - 1}`);
+    console.log(`\nhttp://localhost:5173/tournament/${tournamentId}`);
 
-    console.log(`\n📊 Lịch đấu mẫu (Bảng A):`);
+    console.log(`\nLịch đấu mẫu (Bảng A):`);
     const sample = await client.query(`
-      SELECT round, team1_player2, team2_player2, court_id 
+      SELECT round, team1_player2, team2_player2 
       FROM tournament_matches WHERE tournament_id = $1 AND group_name = 'A'
       ORDER BY round, match_order
     `, [tournamentId]);
@@ -158,12 +157,12 @@ async function createDemoTournament() {
         console.log(`\n   Vòng ${m.round}:`);
         currentRound = m.round;
       }
-      console.log(`      Sân ${m.court_id}: ${m.team1_player2} vs ${m.team2_player2}`);
+      console.log(`      ${m.team1_player2} vs ${m.team2_player2}`);
     });
 
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error("❌ Lỗi:", error);
+    console.error("Lỗi:", error);
     throw error;
   } finally {
     client.release();

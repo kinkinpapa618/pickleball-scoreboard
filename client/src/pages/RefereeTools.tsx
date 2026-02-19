@@ -36,7 +36,6 @@ import {
   useStartTournamentMatch,
   useDeleteTournament,
   useDeleteMatch,
-  useCourts,
 } from "@/hooks/use-api";
 import { ExcelUpload } from "@/components/ExcelUpload";
 import { CoinTossModal } from "@/components/CoinTossModal";
@@ -87,21 +86,16 @@ export default function RefereeTools() {
   const deleteTournament = useDeleteTournament();
   const deleteMatch = useDeleteMatch();
   const { data: referees } = useReferees();
-  const { data: courts = [] } = useCourts();
-
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTournamentName, setNewTournamentName] = useState("");
   const [newTournamentDesc, setNewTournamentDesc] = useState("");
   const [newTournamentDate, setNewTournamentDate] = useState("");
   const [newTournamentTime, setNewTournamentTime] = useState("");
   const [newTournamentLocation, setNewTournamentLocation] = useState("");
-  const [newTournamentCourt, setNewTournamentCourt] = useState("");
   const [newTournamentLevels, setNewTournamentLevels] = useState<string[]>([]);
   const [newLevelInput, setNewLevelInput] = useState("");
   const [teamsPerGroup, setTeamsPerGroup] = useState(4);
-  const [courtCount, setCourtCount] = useState(1);
   const [assigningMatchId, setAssigningMatchId] = useState<number | null>(null);
-  const [assigningCourtMatchId, setAssigningCourtMatchId] = useState<number | null>(null);
 
   const handleExcelData = (data: string[] | import("../components/ExcelUpload").PlayerData[]) => {
     const playerNames = Array.isArray(data) && typeof data[0] === "string"
@@ -156,7 +150,6 @@ export default function RefereeTools() {
         date: newTournamentDate,
         time: newTournamentTime || null,
         location: newTournamentLocation,
-        court: newTournamentCourt || null,
         level: JSON.stringify(newTournamentLevels),
         content: JSON.stringify(contentMap),
         teamsPerGroup,
@@ -169,7 +162,6 @@ export default function RefereeTools() {
       setNewTournamentDate("");
       setNewTournamentTime("");
       setNewTournamentLocation("");
-      setNewTournamentCourt("");
       setNewTournamentLevels([]);
       setSelectedTournamentId(result.id);
     } catch (error: any) {

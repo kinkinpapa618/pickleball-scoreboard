@@ -24,13 +24,11 @@ async function createDemoTournament() {
   const NUM_PAIRS = 40;
   const LEVEL = "4.4";
   const CATEGORY = "Đôi Nam-Nữ";
-  const NUM_COURTS = 4;
   
   console.log("=== TẠO GIẢI ĐẤU DEMO ===");
   console.log(`Số cặp: ${NUM_PAIRS}`);
   console.log(`Level: ${LEVEL}`);
   console.log(`Nội dung: ${CATEGORY}`);
-  console.log(`Số sân: ${NUM_COURTS}`);
   console.log("");
 
   const players = [];
@@ -119,7 +117,7 @@ async function createDemoTournament() {
           const match = {
             "Vòng": round,
             "Bảng": groupName,
-            "Sân": `Sân ${(i % NUM_COURTS) + 1}`,
+            "Trận": i + 1,
             "Cặp 1 STT": team1["STT"],
             "Cặp 1 VĐV 1": team1["Tên VĐV 1"],
             "Cặp 1 VĐV 2": team1["Tên VĐV 2"],
@@ -172,7 +170,7 @@ async function createDemoTournament() {
   wsSchedule.columns = [
     { header: "Vòng", key: "Vòng", width: 8 },
     { header: "Bảng", key: "Bảng", width: 10 },
-    { header: "Sân", key: "Sân", width: 8 },
+    { header: "Trận", key: "Trận", width: 8 },
     { header: "Cặp 1 STT", key: "Cặp 1 STT", width: 10 },
     { header: "Cặp 1 VĐV 1", key: "Cặp 1 VĐV 1", width: 18 },
     { header: "Cặp 1 VĐV 2", key: "Cặp 1 VĐV 2", width: 18 },
@@ -195,7 +193,6 @@ async function createDemoTournament() {
   console.log(`\n📋 Cấu hình giải đấu:`);
   console.log(`   - Level: ${LEVEL}`);
   console.log(`   - Nội dung: ${CATEGORY}`);
-  console.log(`   - Số sân: ${NUM_COURTS}`);
   console.log(`   - Format: Chia bảng + Vòng tròn trong bảng`);
 }
 

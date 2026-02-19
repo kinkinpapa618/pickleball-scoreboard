@@ -108,9 +108,6 @@ export const matches = pgTable("matches", {
   // Liên kết trọng tài (Referee) điều khiển trận đấu
   refereeId: integer("referee_id").references(() => users.id),
   
-   // Liên kết sân (Court) - trận đấu được tổ chức trên sân nào
-  courtId: integer("court_id"), // Removed reference to avoid circular dependency
-
   // Người tạo trận đấu (Manager)
   creatorId: integer("creator_id").references(() => users.id),
 
@@ -183,24 +180,11 @@ export const tournaments = pgTable("tournaments", {
   date: date("date"),
   time: time("time"),
   location: text("location"),
-  court: text("court"), // Tên sân mặc định
-  courts: integer("courts").default(0), // Số lượng sân đăng ký
   backdrop: text("backdrop"), // Base64 encoded backdrop image
   
   // Người tạo giải đấu
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// === 7. COURTS DEFINITIONS ===
-export const courts = pgTable("courts", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type"), // 'indoor', 'outdoor'
-  status: text("status").notNull().default("free"), // 'free', 'busy', 'waiting'
-  currentMatchId: integer("current_match_id"), // Removed reference to avoid circular dependency
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -239,9 +223,6 @@ export const tournamentMatches = pgTable("tournament_matches", {
   // Token để trọng tài truy cập trận đấu (link chia sẻ)
   refereeToken: text("referee_token"),
   
-  // Court được assign cho trận đấu
-  courtId: integer("court_id"),
-  
   scheduledAt: timestamp("scheduled_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -267,17 +248,6 @@ export const insertTournamentMatchSchema = createInsertSchema(tournamentMatches)
   createdAt: true,
 });
 
-// === 8. COURTS ZOD SCHEMAS ===
-export const insertCourtSchema = createInsertSchema(courts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  status: z.enum(["free", "busy", "waiting"]).default("free"),
-});
-
-export const updateCourtSchema = insertCourtSchema.partial();
-
 // TYPES
 export type Tournament = typeof tournaments.$inferSelect;
 export type InsertTournament = z.infer<typeof insertTournamentSchema>;
@@ -287,9 +257,6 @@ export type InsertTournamentPlayer = z.infer<typeof insertTournamentPlayerSchema
 
 export type TournamentMatch = typeof tournamentMatches.$inferSelect;
 export type InsertTournamentMatch = z.infer<typeof insertTournamentMatchSchema>;
-
-export type Court = typeof courts.$inferSelect;
-export type InsertCourt = z.infer<typeof insertCourtSchema>;
 
 // === SETTINGS ===
 export const settings = pgTable("settings", {

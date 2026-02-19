@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings, useUpdateSetting } from "@/hooks/use-api";
-import CourtManagement from "@/components/CourtManagement";
 import {
   ArrowLeft,
   Users,
@@ -64,7 +63,7 @@ interface Tournament {
   createdAt: string;
 }
 
-type TabType = "users" | "schedules" | "matches" | "tournaments" | "settings" | "courts";
+type TabType = "users" | "schedules" | "matches" | "tournaments" | "settings";
 
 function SettingsTab() {
   const { toast } = useToast();
@@ -449,7 +448,6 @@ export default function AdminPanel() {
           { id: "schedules", label: "Lịch công tác", icon: Calendar },
           { id: "matches", label: "Phân công TT", icon: Play },
           { id: "tournaments", label: "Giải đấu", icon: Trophy },
-          { id: "courts", label: "Quản lý sân", icon: Trophy },
           ...(user?.role === "admin" ? [{ id: "settings", label: "Cài đặt", icon: Settings }] : []),
         ].map((tab) => (
           <button
@@ -639,11 +637,6 @@ export default function AdminPanel() {
       {/* SETTINGS TAB */}
       {activeTab === "settings" && (
         <SettingsTab />
-      )}
-
-      {/* COURTS TAB */}
-      {activeTab === "courts" && (
-        <CourtManagement />
       )}
 
       {/* ADD USER MODAL */}
