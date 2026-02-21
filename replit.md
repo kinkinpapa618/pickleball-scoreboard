@@ -48,6 +48,7 @@ Preferred communication style: Simple, everyday language.
 2. **URL-based state passing**: Match configuration (player names, winning score, first server) is passed via URL query params from Home to Match page, keeping things simple and stateless
 3. **Game logic in a custom hook**: All badminton scoring rules (server rotation, hand tracking, position swaps, win conditions) are encapsulated in `useGameLogic` hook
 4. **On-conflict upsert for players**: Creating a player uses `onConflictDoUpdate` to handle duplicate names gracefully
+5. **Referee-Manager tournament access**: Referees connected to a Manager (via `manager_connections` table) automatically see that Manager's tournaments. Referees can click directly on pending matches to start them — no manual referee assignment required. The referee is auto-assigned when they start a match. Duplicate match start is prevented server-side.
 
 ## External Dependencies
 
