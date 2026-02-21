@@ -47,6 +47,7 @@ export default function RefereeTools() {
 
   const isManager = user?.role === "manager" || user?.role === "admin";
   const isAdmin = user?.role === "admin";
+  const isConnectedToManager = !!user?.managerId;
 
   const [activeTab, setActiveTab] = useState("create");
   const [historyPage, setHistoryPage] = useState(1);
@@ -58,7 +59,7 @@ export default function RefereeTools() {
       setLocation("/auth");
       return;
     }
-    if ((value === "tournament") && !isManager) {
+    if ((value === "tournament") && !isManager && !isConnectedToManager) {
       setLocation("/auth");
       return;
     }

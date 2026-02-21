@@ -127,11 +127,146 @@ export default function TournamentPage() {
 
   const [playersByLevel, setPlayersByLevel] = useState<Record<string, PlayerEntry[]>>({});
   const [teamsPerGroup, setTeamsPerGroup] = useState(2);
-  const [groupingMethod, setGroupingMethod] = useState("seed");
+  const [groupingMethod, setGroupingMethod] = useState<"round_robin" | "group_knockout" | "knockout">("group_knockout");
   const [assigningMatchId, setAssigningMatchId] = useState<number | null>(null);
   const [pendingContents, setPendingContents] = useState<{ level: string; content: string; name: string }[]>([]);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [pendingTournamentId, setPendingTournamentId] = useState<number | null>(null);
+
+  // Round Robin Algorithm
+  const generateRoundRobin = (teams: any[]) => {
+    let teamsList = [...teams];
+    if (teamsList.length % 2 !== 0) {
+      teamsList.push({ player1: "Bye", player2: "", id: null, level: "" });
+    }
+    
+    const numTeams = teamsList.length;
+    const rounds = numTeams - 1;
+    const half = numTeams / 2;
+    const matches: any[] = [];
+    let round = 1;
+
+    for (let r = 0; r < rounds; r++) {
+      for (let i = 0; i < half; i++) {
+        const team1 = teamsList[i];
+        const team2 = teamsList[numTeams - 1 - i];
+        
+        if (team1 && team2 && team1.id && team2.id) {
+          matches.push({
+            round,
+            team1Player1: team1.player1,
+            team1Player2: team1.player2,
+            team2Player1: team2.player1,
+            team2Player2: team2.player2,
+            level: team1.level || "",
+            groupName: "A",
+          });
+        }
+      }
+      // Rotate teams (keep first team fixed)
+      const last = teamsList.pop();
+      if (last) {
+        teamsList.splice(1, 0, last);
+      }
+      round++;
+    }
+    return matches;
+  };
+
+  // Knockout Algorithm
+  const generateKnockout = (teams: any[]) => {
+    let teamsList = [...teams];
+    const powersOfTwo = [2, 4, 8, 16, 32, 64];
+    let nextPower = powersOfTwo.find(p => p >= teamsList.length) || 16;
+    
+    // Add BYE slots
+    const byes = nextPower - teamsList.length;
+    for (let i = 0; i < byes; i++) {
+      teamsList.push({ player1: "Bye", player2: "", id: null, level: "" });
+    }
+    
+    // Shuffle for random seeding or use original order
+    const matches: any[] = [];
+    const numTeams = teamsList.length;
+    
+    for (let i = 0; i < numTeams / 2; i++) {
+      const team1 = teamsList[i];
+      const team2 = teamsList[numTeams - 1 - i];
+      
+      if (team1 && team2) {
+        matches.push({
+          round: 1,
+          team1Player1: team1.player1,
+          team1Player2: team1.player2,
+          team2Player1: team2.player1,
+          team2Player2: team2.player2,
+          level: team1.level || "",
+          groupName: "",
+        });
+      }
+    }
+    return matches;
+  };
+
+  // Group + Knockout Algorithm
+  const generateGroupKnockout = (teams: any[], teamsPerGroup: number) => {
+    const matches: any[] = [];
+    let round = 1;
+    let groupIndex = 0;
+    const groupNames = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    
+    // Shuffle teams
+    const shuffled = [...teams].sort(() => Math.random() - 0.5);
+    
+    // Split into groups
+    const groups: any[][] = [];
+    for (let i = 0; i < shuffled.length; i += teamsPerGroup) {
+      groups.push(shuffled.slice(i, i + teamsPerGroup));
+    }
+    
+    // Generate round robin for each group
+    groups.forEach((group, gIdx) => {
+      const groupName = groupNames[gIdx] || `G${gIdx + 1}`;
+      
+      if (group.length < 2) return;
+      
+      let groupTeams = [...group];
+      if (groupTeams.length % 2 !== 0) {
+        groupTeams.push({ player1: "Bye", player2: "", id: null, level: "" });
+      }
+      
+      const numTeams = groupTeams.length;
+      const rounds = numTeams - 1;
+      const half = numTeams / 2;
+      
+      for (let r = 0; r < rounds; r++) {
+        for (let i = 0; i < half; i++) {
+          const team1 = groupTeams[i];
+          const team2 = groupTeams[numTeams - 1 - i];
+          
+          if (team1 && team2 && team1.id && team2.id) {
+            matches.push({
+              round,
+              team1Player1: team1.player1,
+              team1Player2: team1.player2,
+              team2Player1: team2.player1,
+              team2Player2: team2.player2,
+              level: team1.level || "",
+              groupName,
+              isGroupStage: true,
+            });
+          }
+        }
+        const last = groupTeams.pop();
+        if (last) {
+          groupTeams.splice(1, 0, last);
+        }
+        round++;
+      }
+    });
+    
+    return matches;
+  };
   const [pendingData, setPendingData] = useState<any>(null);
 
   const groupPlayersByLevel = (players: PlayerEntry[]): Record<string, PlayerEntry[]> => {
@@ -147,13 +282,88 @@ export default function TournamentPage() {
   };
 
   const handleCreateTournament = async (data: any) => {
-    if (!data.name || !data.date || !data.location || !data.content) {
-      alert("Vui lòng nhập đầy đủ thông tin!");
+    if (!data.name || !data.date) {
+      alert("Vui lòng nhập tên và ngày giải!");
+      return;
+    }
+
+    if (!data.players || data.players.length < 2) {
+      alert("Cần ít nhất 2 cặp VĐV để tạo giải!");
       return;
     }
 
     setPendingData(data);
     setStep("grouping");
+  };
+
+  const handleSaveDraft = async (data: any) => {
+    try {
+      const tournamentData = {
+        name: data.name || "",
+        date: data.date || "",
+        time: data.time || "",
+        location: data.location || "",
+        level: data.level || "",
+        content: data.content || "",
+        status: "draft" as const,
+        backdrop: data.backdrop || null,
+      };
+      
+      let tournamentId = editingTournamentId;
+      
+      if (editingTournamentId) {
+        // Update existing tournament
+        await updateTournament.mutateAsync({
+          id: editingTournamentId,
+          data: tournamentData,
+        });
+      } else {
+        // Create new tournament
+        const result = await createTournament.mutateAsync(tournamentData);
+        tournamentId = result.id;
+      }
+      
+      // Group players by level and save
+      if (data.players && data.players.length > 0) {
+        const playersByLevelData: Record<string, typeof data.players> = {};
+        
+        data.players.forEach((player: any) => {
+          const level = player.level || "default";
+          if (!playersByLevelData[level]) {
+            playersByLevelData[level] = [];
+          }
+          playersByLevelData[level].push(player);
+        });
+        
+        const contents = Object.entries(playersByLevelData).map(([level, players]) => ({
+          level,
+          name: data.name || "Giải đấu",
+          content: data.content || "doi_nam_nu",
+          players: players,
+        }));
+        
+        await fetch(`/api/tournament/${tournamentId}/contents`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents }),
+        });
+        
+        // Set playersByLevel for step 3
+        setPlayersByLevel(playersByLevelData);
+      }
+      
+      setPendingTournamentId(tournamentId);
+      setPendingData(data);
+      
+      // Only go to grouping if there are players (coming from Step 2)
+      if (data.players && data.players.length > 0) {
+        setStep("grouping");
+      }
+      alert("Đã lưu bản nháp!");
+    } catch (err) {
+      console.error("Lỗi lưu bản nháp:", err);
+      alert("Không thể lưu bản nháp!");
+    }
   };
 
   const handlePlayerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,6 +535,18 @@ export default function TournamentPage() {
       content: content,
       backdrop: tournament.backdrop || undefined,
     });
+    
+    // Try to load players from tournament contents if available
+    if (tournament.contents && tournament.contents.length > 0) {
+      const loadedPlayers: Record<string, any[]> = {};
+      tournament.contents.forEach((cont: any) => {
+        const level = cont.level || "default";
+        loadedPlayers[level] = cont.players || [];
+      });
+      setPlayersByLevel(loadedPlayers);
+      setPendingTournamentId(tournament.id);
+    }
+    
     setStep("create");
   };
 
@@ -400,6 +622,7 @@ export default function TournamentPage() {
           </Button>
           <CreateTournament
             onSubmit={handleCreateTournament}
+            onSaveDraft={handleSaveDraft}
             initialData={editingTournamentId ? formData as any : undefined}
           />
         </motion.div>
@@ -428,68 +651,179 @@ export default function TournamentPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div
-                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                      groupingMethod === "seed"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-slate-200 hover:border-blue-300"
-                    }`}
-                    onClick={() => setGroupingMethod("seed")}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
-                        groupingMethod === "seed" ? "bg-blue-500 border-blue-500" : "border-slate-300"
-                      }`} />
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-slate-800 text-sm">Theo hạt giống</h4>
-                        <p className="text-xs text-slate-500 mt-1">Chia theo thứ tự hạt giống</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                      groupingMethod === "random"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-slate-200 hover:border-blue-300"
-                    }`}
-                    onClick={() => setGroupingMethod("random")}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
-                        groupingMethod === "random" ? "bg-blue-500 border-blue-500" : "border-slate-300"
-                      }`} />
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-slate-800 text-sm">Ngẫu nhiên</h4>
-                        <p className="text-xs text-slate-500 mt-1">Chia bảng ngẫu nhiên</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">
-                    Số đội mỗi bảng <span className="text-rose-500">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    min={2}
-                    max={8}
-                    value={teamsPerGroup || ""}
-                    onChange={(e) => setTeamsPerGroup(parseInt(e.target.value) || 2)}
-                    className="bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500"
-                    placeholder="VD: 2"
-                  />
-                  <p className="text-xs text-slate-500">
-                    Số đội trong mỗi bảng (2-8 đội)
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700 font-medium">
+                    Tổng số cặp: {Object.values(playersByLevel).flat().length}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {Object.values(playersByLevel).flat().length >= 4 && Object.values(playersByLevel).flat().length <= 6 && "→ Gợi ý: Round Robin (đánh vòng tròn)"}
+                    {Object.values(playersByLevel).flat().length >= 8 && Object.values(playersByLevel).flat().length <= 16 && "→ Gợi ý: Chia bảng → Loại trực tiếp"}
+                    {Object.values(playersByLevel).flat().length > 16 && "→ Gợi ý: Chia bảng → Loại trực tiếp (giảm thời gian)"}
                   </p>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {groupingMethod !== "knockout" && (
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 text-xs font-bold uppercase">
+                        Số đội mỗi bảng <span className="text-rose-500">*</span>
+                      </Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={8}
+                        value={teamsPerGroup || ""}
+                        onChange={(e) => setTeamsPerGroup(parseInt(e.target.value) || 2)}
+                        className="bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500"
+                        placeholder="VD: 2"
+                      />
+                      <p className="text-xs text-slate-500">
+                        Số đội trong mỗi bảng (2-8 đội)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {/* Option 1: Round Robin */}
+                  <div
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      groupingMethod === "round_robin"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-slate-200 hover:border-blue-300"
+                    }`}
+                    onClick={() => setGroupingMethod("round_robin")}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 ${
+                        groupingMethod === "round_robin" ? "bg-blue-500 border-blue-500" : "border-slate-300"
+                      }`}>
+                        {groupingMethod === "round_robin" && <div className="w-full h-full flex items-center justify-center text-white text-xs">✓</div>}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-800">1. Chia bảng vòng tròn (Round Robin)</h4>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Mỗi đội/VĐV trong bảng sẽ đấu với tất cả các đội còn lại. Xếp hạng dựa trên: số trận thắng → hiệu số → điểm.
+                        </p>
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-xs font-medium text-green-700">✓ Ưu điểm: Công bằng, ai cũng được thi đấu nhiều. Phù hợp giải phong trào, giao lưu.</p>
+                          <p className="text-xs font-medium text-red-600 mt-1">✗ Nhược điểm: Tốn thời gian nếu bảng đông.</p>
+                          <p className="text-xs font-medium text-slate-600 mt-1">📌 Thường dùng khi: 3–6 đội/bảng</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Group + Knockout */}
+                  <div
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      groupingMethod === "group_knockout"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-slate-200 hover:border-blue-300"
+                    }`}
+                    onClick={() => setGroupingMethod("group_knockout")}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 ${
+                        groupingMethod === "group_knockout" ? "bg-blue-500 border-blue-500" : "border-slate-300"
+                      }`}>
+                        {groupingMethod === "group_knockout" && <div className="w-full h-full flex items-center justify-center text-white text-xs">✓</div>}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-800">2. Chia bảng + vòng loại trực tiếp (Group → Knockout)</h4>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Mô hình chuẩn của nhiều giải lớn. Chia bảng đấu vòng tròn, lấy Top 1 / Top 2 mỗi bảng vào vòng loại trực tiếp.
+                        </p>
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-xs font-medium text-green-700">✓ Ưu điểm: Kết hợp được tính công bằng & kịch tính. Giảm số trận ở giai đoạn cuối.</p>
+                          <p className="text-xs font-medium text-slate-600 mt-1">📌 Thường dùng khi: 8–16–32 đội. Giải có cúp, trao giải rõ ràng.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 3: Knockout */}
+                  <div
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      groupingMethod === "knockout"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-slate-200 hover:border-blue-300"
+                    }`}
+                    onClick={() => setGroupingMethod("knockout")}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 ${
+                        groupingMethod === "knockout" ? "bg-blue-500 border-blue-500" : "border-slate-300"
+                      }`}>
+                        {groupingMethod === "knockout" && <div className="w-full h-full flex items-center justify-center text-white text-xs">✓</div>}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-800">3. Loại trực tiếp (Knockout / Single Elimination)</h4>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Nhanh – gọn – kịch tính. Thua 1 trận là bị loại. Không chia bảng hoặc chia để xếp cặp.
+                        </p>
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-xs font-medium text-green-700">✓ Ưu điểm: Tiết kiệm thời gian. Dễ tổ chức.</p>
+                          <p className="text-xs font-medium text-red-600 mt-1">✗ Nhược điểm: Ít trận, kém công bằng nếu bốc thăm lệch.</p>
+                          <p className="text-xs font-medium text-slate-600 mt-1">📌 Thường dùng khi: Giải biểu diễn, ít thời gian.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {groupingMethod === "round_robin" && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs font-medium text-amber-700">
+                      💡 Gợi ý: 3 - 6 đội (Đánh vòng tròn tốn khá nhiều thời gian)
+                    </p>
+                  </div>
+                )}
+
+                {groupingMethod === "group_knockout" && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs font-medium text-amber-700">
+                      💡 Gợi ý: 8, 12, 16... (Số chia hết cho 4 để chia đều vào các bảng)
+                    </p>
+                  </div>
+                )}
+
+                {groupingMethod === "knockout" && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs font-medium text-amber-700">
+                      💡 Gợi ý: 4, 8, 16, 32... (Lũy thừa của 2 để sơ đồ đẹp nhất)
+                    </p>
+                  </div>
+                )}
+
               </div>
 
               <Button
                 onClick={async () => {
                   try {
+                    // Generate matches based on grouping method and players
+                    const allPlayers = Object.values(playersByLevel).flat();
+                    
+                    if (allPlayers.length < 2) {
+                      alert("Cần ít nhất 2 cặp đấu!");
+                      return;
+                    }
+
+                    // Generate matches based on grouping method
+                    let matches: any[] = [];
+                    
+                    if (groupingMethod === "round_robin") {
+                      // Round Robin algorithm
+                      matches = generateRoundRobin(allPlayers);
+                    } else if (groupingMethod === "knockout") {
+                      // Knockout algorithm
+                      matches = generateKnockout(allPlayers);
+                    } else {
+                      // Group + Knockout
+                      matches = generateGroupKnockout(allPlayers, teamsPerGroup);
+                    }
+
+                    // Create tournament and save matches
                     const result = await createTournament.mutateAsync({
                       name: pendingData.name,
                       description: null,
@@ -503,15 +837,19 @@ export default function TournamentPage() {
                       backdrop: pendingData.backdrop,
                     });
 
+                    // Save players and matches
+                    if (matches.length > 0) {
+                      await fetch(`/api/tournament/${result.id}/matches`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ matches }),
+                      });
+                    }
+
                     setPendingTournamentId(result.id);
-                    setPendingContents([{ 
-                      level: pendingData.level, 
-                      content: pendingData.content, 
-                      name: pendingData.name 
-                    }]);
-                    setCurrentContentIndex(0);
-                    setPendingData(null);
-                    setStep("upload_players");
+                    setSelectedTournamentId(result.id);
+                    setStep("detail");
+                    alert("Tạo giải thành công!");
                   } catch (error) {
                     console.error("Error creating tournament:", error);
                     alert("Không thể tạo giải đấu!");
@@ -520,7 +858,7 @@ export default function TournamentPage() {
                 className="w-full py-6 rounded-2xl font-black italic text-sm uppercase tracking-wider bg-blue-500 text-white"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Tiếp tục
+                Tạo giải & Chia bảng
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
@@ -760,62 +1098,80 @@ export default function TournamentPage() {
 
               {tournament.status === "draft" && authUser?.role !== "referee" && (
                 <div className="space-y-4 mt-4 pt-4 border-t border-slate-100">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
                     <div
                       className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        groupingMethod === "seed"
+                        groupingMethod === "round_robin"
                           ? "border-blue-500 bg-blue-50"
                           : "border-slate-200 hover:border-blue-300"
                       }`}
-                      onClick={() => setGroupingMethod("seed")}
+                      onClick={() => setGroupingMethod("round_robin")}
                     >
                       <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full border-2 ${
-                          groupingMethod === "seed" ? "bg-blue-500 border-blue-500" : "border-slate-300"
+                          groupingMethod === "round_robin" ? "bg-blue-500 border-blue-500" : "border-slate-300"
                         }`} />
-                        <span className="text-sm font-medium text-slate-700">Theo hạt giống</span>
+                        <span className="text-sm font-medium text-slate-700">Round Robin (Vòng tròn)</span>
                       </div>
                     </div>
 
                     <div
                       className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        groupingMethod === "random"
+                        groupingMethod === "group_knockout"
                           ? "border-blue-500 bg-blue-50"
                           : "border-slate-200 hover:border-blue-300"
                       }`}
-                      onClick={() => setGroupingMethod("random")}
+                      onClick={() => setGroupingMethod("group_knockout")}
                     >
                       <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full border-2 ${
-                          groupingMethod === "random" ? "bg-blue-500 border-blue-500" : "border-slate-300"
+                          groupingMethod === "group_knockout" ? "bg-blue-500 border-blue-500" : "border-slate-300"
                         }`} />
-                        <span className="text-sm font-medium text-slate-700">Ngẫu nhiên</span>
+                        <span className="text-sm font-medium text-slate-700">Chia bảng + Loại trực tiếp</span>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        groupingMethod === "knockout"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 hover:border-blue-300"
+                      }`}
+                      onClick={() => setGroupingMethod("knockout")}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full border-2 ${
+                          groupingMethod === "knockout" ? "bg-blue-500 border-blue-500" : "border-slate-300"
+                        }`} />
+                        <span className="text-sm font-medium text-slate-700">Loại trực tiếp (Knockout)</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 items-center">
-                    <div className="flex-1">
-                      <Label className="text-xs text-slate-500">Số đội/bảng</Label>
-                      <Input
-                        type="number"
-                        min={2}
-                        max={8}
-                        value={teamsPerGroup || ""}
-                        onChange={(e) => setTeamsPerGroup(parseInt(e.target.value) || 2)}
-                        className="mt-1"
-                        placeholder="2"
-                      />
+                  {groupingMethod !== "knockout" && (
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1">
+                        <Label className="text-xs text-slate-500">Số đội/bảng</Label>
+                        <Input
+                          type="number"
+                          min={2}
+                          max={8}
+                          value={teamsPerGroup || ""}
+                          onChange={(e) => setTeamsPerGroup(parseInt(e.target.value) || 2)}
+                          className="mt-1"
+                          placeholder="2"
+                        />
+                      </div>
                     </div>
-                    <Button
-                      onClick={handleGenerateMatches}
-                      disabled={generateTournament.isPending}
-                      className="bg-blue-500 text-white font-bold rounded-2xl mt-5"
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      {generateTournament.isPending ? "Đang tạo..." : "Tạo lịch đấu"}
-                    </Button>
-                  </div>
+                  )}
+                  <Button
+                    onClick={handleGenerateMatches}
+                    disabled={generateTournament.isPending}
+                    className="bg-blue-500 text-white font-bold rounded-2xl mt-5"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    {generateTournament.isPending ? "Đang tạo..." : "Tạo lịch đấu"}
+                  </Button>
                 </div>
               )}
             </CardContent>

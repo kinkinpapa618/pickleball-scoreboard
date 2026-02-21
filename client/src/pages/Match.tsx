@@ -334,18 +334,30 @@ export default function Match() {
   const [matchStartTime, setMatchStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timerInitialized, setTimerInitialized] = useState(false);
 
   useEffect(() => {
-    if (!matchStartTime && serverMatch) {
-      if (serverMatch.startTime) {
-        setMatchStartTime(new Date(serverMatch.startTime).getTime());
-        setIsTimerRunning(true);
-      } else if (serverMatch.status === "live") {
-        setMatchStartTime(Date.now());
-        setIsTimerRunning(true);
+    if (timerInitialized || !serverMatch) return;
+    
+    if (serverMatch.startTime) {
+      setMatchStartTime(new Date(serverMatch.startTime).getTime());
+      setIsTimerRunning(true);
+      setTimerInitialized(true);
+    } else if (serverMatch.status === "live") {
+      const now = Date.now();
+      setMatchStartTime(now);
+      setIsTimerRunning(true);
+      setTimerInitialized(true);
+      if (matchId > 0) {
+        updateMatch.mutate({
+          id: matchId,
+          data: {
+            startTime: new Date(now).toISOString() as any,
+          },
+        });
       }
     }
-  }, [serverMatch, matchStartTime]);
+  }, [serverMatch, timerInitialized]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -506,6 +518,19 @@ export default function Match() {
       return newTimeline;
     });
   };
+
+  const [courtSwapped, setCourtSwapped] = useState(false);
+
+  const handleSwitchCourt = () => {
+    setCourtSwapped(!courtSwapped);
+    addTimelineEvent("switch-sides", null);
+  };
+
+  const displayNames = courtSwapped
+    ? { t1p1: names.t2p1, t1p2: names.t2p2, t2p1: names.t1p1, t2p2: names.t1p2 }
+    : names;
+
+  const displayServerTeam = courtSwapped ? (state.serverTeam === 1 ? 2 : 1) : state.serverTeam;
 
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
 
@@ -688,13 +713,32 @@ export default function Match() {
         </Button>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 px-2.5 py-1 bg-muted rounded-md border border-border">
-            {isTimerRunning ? (
-              <Play className="w-2.5 h-2.5 text-green-500" />
-            ) : state.winner ? (
-              <Trophy className="w-2.5 h-2.5 text-blue-500" />
-            ) : (
-              <Pause className="w-2.5 h-2.5 text-orange-500" />
-            )}
+            <button
+              onClick={() => {
+                if (!matchStartTime && matchId > 0) {
+                  const now = Date.now();
+                  setMatchStartTime(now);
+                  setIsTimerRunning(true);
+                  updateMatch.mutate({
+                    id: matchId,
+                    data: {
+                      startTime: new Date(now).toISOString() as any,
+                    },
+                  });
+                } else {
+                  setIsTimerRunning(!isTimerRunning);
+                }
+              }}
+              className="hover:opacity-80"
+            >
+              {isTimerRunning ? (
+                <Play className="w-2.5 h-2.5 text-green-500" />
+              ) : state.winner ? (
+                <Trophy className="w-2.5 h-2.5 text-blue-500" />
+              ) : (
+                <Pause className="w-2.5 h-2.5 text-orange-500" />
+              )}
+            </button>
             <span className="text-xs font-black italic text-foreground tabular-nums leading-none" data-testid="text-timer">
               {formatTimerDisplay(elapsedSeconds)}
             </span>
@@ -719,18 +763,20 @@ export default function Match() {
         <section className="flex-shrink-0" data-testid="section-court">
           <Court
             positions={state.positions}
-            serverTeam={state.serverTeam}
+            serverTeam={displayServerTeam}
             serverHand={state.serverHand}
-            names={names}
+            names={displayNames}
             score1={state.score1}
             score2={state.score2}
             firstServe={isFirstServeActive}
             compact
             stackingMap={stackingMap}
             penalties={penalties}
+            courtSwapped={courtSwapped}
             onPlayerClick={(id, team, name, currentSide) =>
               setSelectedPlayer({ id, team, name, currentSide })
             }
+            onSwitchCourt={handleSwitchCourt}
           />
         </section>
 

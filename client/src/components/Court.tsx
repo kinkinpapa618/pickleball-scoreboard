@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Shield, Lock, User } from "lucide-react";
+import { Zap, Shield, Lock, ArrowLeftRight } from "lucide-react";
 
 type Position = "left" | "right";
 
@@ -27,91 +27,8 @@ interface CourtProps {
     name: string,
     currentSide: Position,
   ) => void;
-}
-
-function HorizontalPlayerCard({
-  name,
-  isServing,
-  isReceiver,
-  slot,
-  side,
-  penalty,
-  onClick,
-  isStacking,
-  teamLabel,
-}: {
-  name: string;
-  isServing: boolean;
-  isReceiver: boolean;
-  slot: number;
-  side: "team1" | "team2";
-  penalty?: PlayerPenalty;
-  onClick: () => void;
-  isStacking: boolean;
-  teamLabel: string;
-}) {
-  const isTeam1 = side === "team1";
-  const teamColor = isTeam1 ? "bg-cyan-500" : "bg-rose-500";
-  const teamBorder = isTeam1 ? "border-cyan-400/40" : "border-rose-400/40";
-
-  return (
-    <motion.button
-      whileTap={{ scale: 0.97 }}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      data-testid={`player-card-${side}-p${slot}`}
-      className={`
-        flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all cursor-pointer min-w-0
-        ${isServing
-          ? `bg-yellow-400/20 border-yellow-400/60 dark:bg-yellow-400/10 dark:border-yellow-400/40`
-          : `bg-white/80 dark:bg-white/5 ${teamBorder}`
-        }
-        ${penalty?.red ? "opacity-50 grayscale" : ""}
-        ${isStacking ? "ring-1 ring-emerald-400 ring-offset-1 dark:ring-offset-black" : ""}
-      `}
-    >
-      <div className={`${teamColor} text-white text-[7px] font-black px-1 py-0.5 rounded leading-none flex-shrink-0`}>
-        {teamLabel}
-      </div>
-
-      <div className="flex items-center gap-1 min-w-0 flex-1">
-        <User className={`w-3 h-3 flex-shrink-0 ${isServing ? "text-yellow-600 dark:text-yellow-400" : "text-muted-foreground"}`} />
-        <span className={`text-[10px] font-bold truncate ${isServing ? "text-yellow-700 dark:text-yellow-300" : "text-foreground"}`}>
-          {name}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-0.5 flex-shrink-0">
-        {isServing && (
-          <span className="bg-yellow-400 text-black text-[7px] font-black px-1 py-0.5 rounded leading-none flex items-center gap-0.5">
-            <Zap className="w-2 h-2 fill-current" />
-            PHÁT
-          </span>
-        )}
-        {isReceiver && !isServing && (
-          <span className="bg-slate-700 dark:bg-slate-600 text-white text-[7px] font-black px-1 py-0.5 rounded leading-none flex items-center gap-0.5">
-            <Shield className="w-2 h-2" />
-            ĐỠ
-          </span>
-        )}
-        {isStacking && (
-          <Lock className="w-3 h-3 text-emerald-500" />
-        )}
-        {penalty && penalty.yellow > 0 && (
-          <div className="flex gap-px">
-            {[...Array(penalty.yellow)].map((_, i) => (
-              <div key={i} className="w-1.5 h-2.5 bg-yellow-400 rounded-sm" />
-            ))}
-          </div>
-        )}
-        {penalty?.red && (
-          <div className="w-2 h-3 bg-red-600 rounded-sm animate-pulse" />
-        )}
-      </div>
-    </motion.button>
-  );
+  onSwitchCourt?: () => void;
+  courtSwapped?: boolean;
 }
 
 function Ball({
@@ -152,45 +69,112 @@ function Ball({
 function CourtMarker({
   name,
   isServing,
+  isReceiver,
   slot,
   side,
   x,
   y,
+  onClick,
+  isStacking,
+  penalty,
 }: {
   name: string;
   isServing: boolean;
+  isReceiver: boolean;
   slot: number;
   side: "team1" | "team2";
   x: string;
   y: string;
+  onClick?: () => void;
+  isStacking: boolean;
+  penalty?: PlayerPenalty;
 }) {
   const isTeam1 = side === "team1";
+  const teamLabel = isTeam1 ? "T1" : "T2";
+  const teamLabelBg = isTeam1 
+    ? "bg-gradient-to-r from-cyan-500 to-cyan-600" 
+    : "bg-gradient-to-r from-rose-500 to-rose-600";
+  
+  let borderClass = "border-slate-200";
+  if (isServing) borderClass = "border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.4)]";
+  else if (isReceiver) borderClass = "border-slate-300";
+
   return (
-    <motion.div
+    <motion.button
       className="absolute z-20"
       animate={{ left: x, top: y }}
       transition={{ type: "spring", stiffness: 120, damping: 20 }}
       style={{ x: "-50%", y: "-50%" }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
     >
-      <div className={`
-        flex flex-col items-center gap-0.5
-      `}>
-        <div className={`
-          w-7 h-7 rounded-full border-2 flex items-center justify-center text-[9px] font-black
-          ${isServing
-            ? "bg-yellow-400 border-yellow-300 text-black shadow-lg shadow-yellow-400/40"
-            : isTeam1
-              ? "bg-cyan-500/80 border-cyan-300/60 text-white"
-              : "bg-rose-500/80 border-rose-300/60 text-white"
-          }
-        `}>
-          P{slot}
+      <div
+        className={`
+          relative flex items-center gap-1 px-2.5 py-1.5 rounded-xl border-2 cursor-pointer transition-all hover:scale-105 bg-white shadow-md w-[150px] h-[36px]
+          ${borderClass}
+          ${penalty?.red ? "opacity-50 grayscale" : ""}
+          ${isStacking ? "ring-2 ring-emerald-500 ring-offset-2" : ""}
+        `}
+      >
+        <span className={`${teamLabelBg} text-white text-[7px] font-black px-1.5 py-0.5 rounded flex-shrink-0 shadow-sm`}>
+          {teamLabel}
+        </span>
+        
+        <div className="flex-shrink-0">
+          {isTeam1 ? (
+            <svg className="w-4 h-4 text-cyan-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          )}
         </div>
-        <span className="text-[7px] font-bold text-white drop-shadow-md leading-none max-w-[50px] truncate text-center">
+
+        <span className="text-[10px] font-bold text-slate-800 truncate flex-1 pr-6">
           {name}
         </span>
+
+        {(isServing || isReceiver) && (
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            {isServing ? (
+              <div className="relative">
+                <Zap className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+                <span className="absolute -top-1 -right-1 bg-yellow-400 text-slate-900 text-[5px] font-bold px-1 rounded-full min-w-[12px] text-center">
+                  P
+                </span>
+              </div>
+            ) : (
+              <div className="relative">
+                <Shield className="w-4 h-4 text-slate-500" />
+                <span className="absolute -top-1 -right-1 bg-slate-500 text-white text-[5px] font-bold px-1 rounded-full min-w-[12px] text-center">
+                  Đ
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isServing && !isReceiver && (
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            {isStacking && <Lock className="w-3.5 h-3.5 text-emerald-500" />}
+            {penalty && penalty.yellow > 0 && (
+              <div className="flex gap-px">
+                {[...Array(penalty.yellow)].map((_, i) => (
+                  <div key={i} className="w-1.5 h-2.5 bg-yellow-400 rounded-sm" />
+                ))}
+              </div>
+            )}
+            {penalty?.red && (
+              <div className="w-2 h-3 bg-red-600 rounded-sm animate-pulse" />
+            )}
+          </div>
+        )}
       </div>
-    </motion.div>
+    </motion.button>
   );
 }
 
@@ -204,6 +188,8 @@ export function Court({
   stackingMap,
   penalties,
   onPlayerClick,
+  onSwitchCourt,
+  courtSwapped = false,
 }: CourtProps) {
   const serverPlayerId = `t${serverTeam}p${serverHand}`;
   const serverPosition = positions[serverPlayerId];
@@ -253,7 +239,12 @@ export function Court({
       slot: number,
       collisionIdx: number,
     ) => {
-      const coords = getCoordinates(team, visualSide, isCollision, collisionIdx);
+      const coords = getCoordinates(
+        team,
+        visualSide,
+        isCollision,
+        collisionIdx,
+      );
       return {
         id,
         name: names[id as keyof typeof names],
@@ -277,50 +268,15 @@ export function Court({
   };
 
   const players = [...processTeamPlayers(1), ...processTeamPlayers(2)];
-  const team1Players = players.filter((p) => p.side === "team1");
-  const team2Players = players.filter((p) => p.side === "team2");
 
   const activeSrv = players.find((p) => p.isServing);
   const activeRcv = players.find((p) => p.isReceiver);
 
   return (
     <div className="flex flex-col gap-1.5" data-testid="court-view">
-      <div className="flex gap-1.5">
-        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-          {team1Players.map((p) => (
-            <HorizontalPlayerCard
-              key={p.id}
-              name={p.name}
-              isServing={p.isServing}
-              isReceiver={!!p.isReceiver}
-              slot={p.slot}
-              side={p.side}
-              penalty={p.penalty}
-              onClick={() => onPlayerClick?.(p.id, 1, p.name, p.currentSide)}
-              isStacking={p.isStacking}
-              teamLabel={`T1`}
-            />
-          ))}
-        </div>
-        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-          {team2Players.map((p) => (
-            <HorizontalPlayerCard
-              key={p.id}
-              name={p.name}
-              isServing={p.isServing}
-              isReceiver={!!p.isReceiver}
-              slot={p.slot}
-              side={p.side}
-              penalty={p.penalty}
-              onClick={() => onPlayerClick?.(p.id, 2, p.name, p.currentSide)}
-              isStacking={p.isStacking}
-              teamLabel={`T2`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className={`relative w-full overflow-hidden rounded-xl border border-white/20 dark:border-white/10 shadow-inner ${compact ? "aspect-[2/1]" : "aspect-[16/9]"}`}>
+      <div
+        className={`relative w-full overflow-hidden rounded-xl border border-white/20 dark:border-white/10 shadow-inner ${compact ? "aspect-[2/1]" : "aspect-[16/9]"}`}
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-green-700">
           <div className="absolute inset-0 flex justify-center pointer-events-none">
             <div className="w-[30%] h-full bg-blue-700/30 border-x-2 border-white/30" />
@@ -328,6 +284,19 @@ export function Court({
           <div className="absolute inset-[4%] border-2 border-white/50 rounded-sm" />
           <div className="absolute top-1/2 left-[4%] right-[4%] h-[1px] bg-white/30 -translate-y-1/2" />
           <div className="absolute top-0 bottom-0 left-1/2 w-1 bg-white/80 shadow-[0_0_8px_rgba(255,255,255,0.4)] z-10 -translate-x-1/2" />
+        
+        {onSwitchCourt && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSwitchCourt();
+            }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black rounded-full p-1.5 shadow-lg border border-slate-200 dark:border-slate-700 transition-all hover:scale-110"
+            title="Đổi sân"
+          >
+            <ArrowLeftRight className="w-3 h-3 text-slate-600 dark:text-slate-300" />
+          </button>
+        )}
         </div>
 
         {activeSrv && activeRcv && (
@@ -345,18 +314,26 @@ export function Court({
             key={p.id}
             name={p.name}
             isServing={p.isServing}
+            isReceiver={!!p.isReceiver}
             slot={p.slot}
             side={p.side}
             x={p.x}
             y={p.y}
+            onClick={() => onPlayerClick?.(p.id, p.side === "team1" ? 1 : 2, p.name, p.currentSide)}
+            isStacking={p.isStacking}
+            penalty={p.penalty}
           />
         ))}
 
-        <div className="absolute bottom-1 left-2 text-[7px] font-bold text-white/40 uppercase tracking-wider">
-          T1
+        <div className="absolute bottom-1 left-2 text-[7px] font-bold uppercase tracking-wider">
+          <span className={courtSwapped ? "text-rose-400" : "text-cyan-400"}>
+            {courtSwapped ? "T2" : "T1"}
+          </span>
         </div>
-        <div className="absolute bottom-1 right-2 text-[7px] font-bold text-white/40 uppercase tracking-wider">
-          T2
+        <div className="absolute bottom-1 right-2 text-[7px] font-bold uppercase tracking-wider">
+          <span className={courtSwapped ? "text-cyan-400" : "text-rose-400"}>
+            {courtSwapped ? "T1" : "T2"}
+          </span>
         </div>
       </div>
 

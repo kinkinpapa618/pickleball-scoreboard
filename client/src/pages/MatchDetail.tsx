@@ -39,7 +39,7 @@ function formatTime(timestamp: number | string, matchStartTime: Date | null): st
     const eventTime = new Date(timestamp).getTime();
     seconds = Math.floor((eventTime - matchStartTime.getTime()) / 1000);
   } else {
-    seconds = timestamp;
+    seconds = Math.floor((timestamp - matchStartTime.getTime()) / 1000);
   }
   
   if (seconds < 0) seconds = 0;

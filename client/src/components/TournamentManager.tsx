@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTournament } from "@/context/TournamentContext";
-import CreateTournament from "./CreateTournament";
 import { ExcelUpload, PlayerData } from "./ExcelUpload";
 import {
   TournamentFormat,
@@ -270,7 +269,9 @@ export default function TournamentManager() {
 
       {/* BƯỚC 1: NHẬP THÔNG TIN GIẢI */}
       {!tournamentInfo ? (
-        <CreateTournament onSubmit={(data) => { setTournamentInfo(data); showToast("Đã lưu thông tin giải!", "success"); }} />
+        <div className="text-white/50 text-center py-8">
+          Vui lòng tạo giải từ trang Quản lý giải đấu
+        </div>
       ) : (
         <Card className="bg-slate-900/80 border-white/5 mb-6">
           <CardContent className="p-6">
