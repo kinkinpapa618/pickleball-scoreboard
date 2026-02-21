@@ -436,20 +436,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === TOURNAMENT APIs ===
 
-  // 15. Lấy danh sách giải đấu (chỉ user tạo mới thấy được)
+  // 15. Lấy danh sách giải đấu
   app.get("/api/tournaments", async (req, res) => {
     const user = req.user as any;
-    console.log("User from session:", user);
-    console.log("Is authenticated:", req.isAuthenticated());
     if (!user) {
       return res.status(401).json({ message: "Vui lòng đăng nhập" });
     }
-    // Admin thấy tất cả, manager chỉ thấy của mình
-    const tournaments = user.role === "admin" 
-      ? await storage.getTournaments() 
-      : await storage.getTournaments(user.id);
-    console.log("Tournaments found:", tournaments.length);
-    res.json(tournaments);
+    let tournamentsList;
+    if (user.role === "admin") {
+      tournamentsList = await storage.getTournaments();
+    } else if (user.role === "referee") {
+      tournamentsList = await storage.getTournamentsForReferee(user.id);
+    } else {
+      tournamentsList = await storage.getTournaments(user.id);
+    }
+    res.json(tournamentsList);
   });
 
   // 16. Tạo giải đấu mới (chỉ MANAGER mới được tạo)
@@ -500,10 +501,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Không tìm thấy giải đấu" });
       }
 
-      // Chỉ người tạo mới xem được (hoặc admin)
       if (user && user.role !== "admin" && tournament.creatorId !== user.id) {
-        console.log("Access denied - creatorId:", tournament.creatorId, "user.id:", user.id);
-        return res.status(403).json({ message: "Bạn không có quyền xem giải đấu này" });
+        const isConnectedRef = user.role === "referee" && tournament.creatorId
+          ? await storage.isConnected(user.id, tournament.creatorId)
+          : false;
+        if (!isConnectedRef) {
+          return res.status(403).json({ message: "Bạn không có quyền xem giải đấu này" });
+        }
       }
 
       let players: any[] = [];
@@ -857,12 +861,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const matchId = parseInt(req.params.matchId as string);
     const user = req.user as any;
 
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
     const tournament = await storage.getTournament(tournamentId);
     if (!tournament) {
       return res.status(404).json({ message: "Không tìm thấy giải đấu" });
     }
 
-    if (user.role !== "admin" && tournament.creatorId !== user.id) {
+    const isAdmin = user.role === "admin";
+    const isCreator = tournament.creatorId === user.id;
+    const isConnectedReferee = user.role === "referee" && tournament.creatorId
+      ? await storage.isConnected(user.id, tournament.creatorId)
+      : false;
+
+    if (!isAdmin && !isCreator && !isConnectedReferee) {
       return res.status(403).json({ message: "Bạn không có quyền" });
     }
 
@@ -871,7 +885,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Không tìm thấy trận đấu" });
     }
 
-    // Tạo match thực tế
+    if (tournamentMatch.matchId || tournamentMatch.status === "live" || tournamentMatch.status === "completed") {
+      if (tournamentMatch.matchId) {
+        const existingMatch = await storage.getMatch(tournamentMatch.matchId);
+        if (existingMatch) {
+          return res.json(existingMatch);
+        }
+      }
+      return res.status(409).json({ message: "Trận đấu đã được bắt đầu" });
+    }
+
     const matchResult = matchSchema.safeParse({
       team1Player1: tournamentMatch.team1Player1,
       team1Player2: tournamentMatch.team1Player2,
@@ -890,15 +913,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Dữ liệu trận đấu không hợp lệ" });
     }
 
+    const refereeId = isConnectedReferee ? user.id : (tournamentMatch.refereeId || user.id);
+
     const createdMatch = await storage.createMatch({
       ...matchResult.data,
-      refereeId: tournamentMatch.refereeId,
+      refereeId,
     });
 
-    // Cập nhật tournament match
     await storage.updateTournamentMatch(matchId, { 
       matchId: createdMatch.id, 
-      status: "live" 
+      status: "live",
+      refereeId: refereeId,
     });
 
     res.json(createdMatch);

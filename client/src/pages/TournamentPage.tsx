@@ -41,6 +41,7 @@ import {
   useUpdateTournament,
 } from "@/hooks/use-api";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 interface MatchFromDB {
   id: number;
@@ -99,6 +100,8 @@ const CONTENT_LABELS: Record<string, string> = {
 };
 
 export default function TournamentPage() {
+  const { user: authUser } = useAuth();
+  const [, setLocation] = useLocation();
   const [step, setStep] = useState("list");
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null);
   const [editingTournamentId, setEditingTournamentId] = useState<number | null>(null);
@@ -294,8 +297,11 @@ export default function TournamentPage() {
   const handleStartMatch = async (matchId: number) => {
     if (!selectedTournamentId) return;
     try {
-      await startMatch.mutateAsync({ tournamentId: selectedTournamentId, matchId });
+      const createdMatch = await startMatch.mutateAsync({ tournamentId: selectedTournamentId, matchId });
       refetchTournament();
+      if (createdMatch && createdMatch.id) {
+        setLocation(`/match/${createdMatch.id}`);
+      }
     } catch (error) {
       console.error("Error starting match:", error);
     }
@@ -578,10 +584,14 @@ export default function TournamentPage() {
       {step === "list" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="flex justify-between items-center gap-2">
-            <h2 className="text-lg font-black text-slate-800 min-w-0 truncate">Giải đấu của bạn</h2>
-            <Button onClick={() => setStep("create")} className="bg-blue-500 text-white font-bold rounded-2xl shrink-0">
-              <Trophy className="w-4 h-4 mr-2" /> Tạo giải
-            </Button>
+            <h2 className="text-lg font-black text-slate-800 min-w-0 truncate">
+              {authUser?.role === "referee" ? "Giải đấu" : "Giải đấu của bạn"}
+            </h2>
+            {authUser?.role !== "referee" && (
+              <Button onClick={() => setStep("create")} className="bg-blue-500 text-white font-bold rounded-2xl shrink-0">
+                <Trophy className="w-4 h-4 mr-2" /> Tạo giải
+              </Button>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -633,28 +643,30 @@ export default function TournamentPage() {
                         })()}
                       </div>
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-blue-400 hover:text-blue-600"
-                        onClick={() => handleEditTournament(t)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-400 hover:text-red-600"
-                        onClick={() => {
-                          if (confirm("Xóa giải đấu này?")) {
-                            deleteTournament.mutate(t.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {authUser?.role !== "referee" && (
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-blue-400 hover:text-blue-600"
+                          onClick={() => handleEditTournament(t)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-400 hover:text-red-600"
+                          onClick={() => {
+                            if (confirm("Xóa giải đấu này?")) {
+                              deleteTournament.mutate(t.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -663,10 +675,14 @@ export default function TournamentPage() {
             {(!tournaments || tournaments.length === 0) && (
               <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm text-center">
                 <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                <p className="text-slate-400">Chưa có giải đấu nào</p>
-                <Button onClick={() => setStep("create")} className="mt-4 bg-blue-500 text-white font-bold rounded-2xl">
-                  Tạo giải đấu đầu tiên
-                </Button>
+                <p className="text-slate-400">
+                  {authUser?.role === "referee" ? "Chưa có giải đấu nào từ Manager của bạn" : "Chưa có giải đấu nào"}
+                </p>
+                {authUser?.role !== "referee" && (
+                  <Button onClick={() => setStep("create")} className="mt-4 bg-blue-500 text-white font-bold rounded-2xl">
+                    Tạo giải đấu đầu tiên
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -742,7 +758,7 @@ export default function TournamentPage() {
                 )}
               </div>
 
-              {tournament.status === "draft" && (
+              {tournament.status === "draft" && authUser?.role !== "referee" && (
                 <div className="space-y-4 mt-4 pt-4 border-t border-slate-100">
                   <div className="grid grid-cols-2 gap-4">
                     <div
@@ -862,30 +878,56 @@ export default function TournamentPage() {
                       </div>
                       {match.status === "pending" && (
                         <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100 flex-wrap">
-                          <select
-                            className="text-xs border rounded px-2 py-1 min-w-0 flex-1"
-                            onChange={(e) =>
-                              e.target.value &&
-                              handleAssignReferee(match.id, parseInt(e.target.value))
-                            }
-                            defaultValue=""
-                          >
-                            <option value="">Chọn trọng tài</option>
-                            {referees.data?.map((r: any) => (
-                              <option key={r.id} value={r.id}>
-                                {r.name}
-                              </option>
-                            ))}
-                          </select>
-                          {match.refereeId && (
+                          {authUser?.role === "referee" ? (
                             <Button
                               size="sm"
                               onClick={() => handleStartMatch(match.id)}
-                              className="bg-green-500 text-white text-xs shrink-0"
+                              className="bg-green-500 text-white text-xs w-full"
+                              data-testid={`btn-start-match-${match.id}`}
                             >
-                              Bắt đầu
+                              <Play className="w-3 h-3 mr-1" />
+                              Vào trận
                             </Button>
+                          ) : (
+                            <>
+                              <select
+                                className="text-xs border rounded px-2 py-1 min-w-0 flex-1"
+                                onChange={(e) =>
+                                  e.target.value &&
+                                  handleAssignReferee(match.id, parseInt(e.target.value))
+                                }
+                                defaultValue=""
+                              >
+                                <option value="">Chọn trọng tài (tuỳ chọn)</option>
+                                {referees.data?.map((r: any) => (
+                                  <option key={r.id} value={r.id}>
+                                    {r.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <Button
+                                size="sm"
+                                onClick={() => handleStartMatch(match.id)}
+                                className="bg-green-500 text-white text-xs shrink-0"
+                                data-testid={`btn-start-match-${match.id}`}
+                              >
+                                Bắt đầu
+                              </Button>
+                            </>
                           )}
+                        </div>
+                      )}
+                      {match.status === "live" && match.matchId && (
+                        <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+                          <Button
+                            size="sm"
+                            onClick={() => setLocation(`/match/${match.matchId}`)}
+                            className="bg-blue-500 text-white text-xs w-full"
+                            data-testid={`btn-enter-match-${match.id}`}
+                          >
+                            <Play className="w-3 h-3 mr-1" />
+                            Vào xem trận
+                          </Button>
                         </div>
                       )}
                     </div>

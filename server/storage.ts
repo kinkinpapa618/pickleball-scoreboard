@@ -82,6 +82,7 @@ export interface IStorage {
 
   // Tournament methods
   getTournaments(creatorId?: number): Promise<Tournament[]>;
+  getTournamentsForReferee(refereeId: number): Promise<Tournament[]>;
   getTournament(id: number): Promise<Tournament | undefined>;
   createTournament(tournament: InsertTournament): Promise<Tournament>;
   updateTournament(id: number, data: Partial<Tournament>): Promise<Tournament>;
@@ -376,6 +377,26 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(tournaments);
     } catch (e) {
       console.error("Error getting tournaments:", e);
+      return [];
+    }
+  }
+
+  async getTournamentsForReferee(refereeId: number): Promise<Tournament[]> {
+    try {
+      const connections = await db
+        .select({ managerId: managerConnections.managerId })
+        .from(managerConnections)
+        .where(eq(managerConnections.refereeId, refereeId));
+
+      if (connections.length === 0) return [];
+
+      const managerIds = connections.map((c) => c.managerId);
+      return await db
+        .select()
+        .from(tournaments)
+        .where(inArray(tournaments.creatorId, managerIds));
+    } catch (e) {
+      console.error("Error getting tournaments for referee:", e);
       return [];
     }
   }
