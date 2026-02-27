@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useGameLogic } from "@/hooks/use-game-logic";
 import { useCreateMatch, useUpdateMatch, useMatch } from "@/hooks/use-api";
-import Scoreboard from "@/components/ScoreBoard";
 import { Court, StackingMap } from "@/components/Court";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +20,7 @@ import {
   Pause,
   Timer,
   StopCircle,
+  ArrowLeftRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -375,7 +375,7 @@ export default function Match() {
   useEffect(() => {
     if (state.winner && matchId > 0) {
       setIsTimerRunning(false);
-      const shouldSave = !serverMatch || serverMatch.winnerTeam !== state.winner;
+      const shouldSave = !serverMatch || serverMatch.winnerTeam !== state.winner || serverMatch.status !== "completed";
       if (shouldSave) {
         updateMatch.mutate({
           id: matchId,
@@ -385,9 +385,6 @@ export default function Match() {
             endTime: new Date().toISOString() as any,
           },
         }, {
-          onSuccess: (data) => {
-            console.log("Match status updated to completed:", data);
-          },
           onError: (error: any) => {
             console.error("Failed to update match status:", error);
           }
@@ -406,6 +403,7 @@ export default function Match() {
   const [isTimeoutActive, setIsTimeoutActive] = useState(false);
   const [timeoutTeam, setTimeoutTeam] = useState<1 | 2 | null>(null);
   const [timeoutSeconds, setTimeoutSeconds] = useState(180);
+  const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
 
   useEffect(() => {
     const handleTimeoutsUpdate = async () => {
@@ -658,6 +656,8 @@ export default function Match() {
         return "Hoàn tác";
       case "timeout":
         return `T${event.team} TO`;
+      case "switch-sides":
+        return "Đổi sân";
       default:
         return "";
     }
@@ -700,49 +700,47 @@ export default function Match() {
   const isFirstServeActive = state.isFirstServeOfMatch;
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col font-sans overflow-hidden" data-testid="match-page">
-      <header className="px-2 py-1.5 bg-card/90 backdrop-blur-xl border-b border-border flex items-center justify-between sticky top-0 z-50 flex-shrink-0">
+    <div className="h-[100dvh] bg-[#F8FAFC] flex flex-col font-sans overflow-hidden" data-testid="match-page">
+      <header className="bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setLocation("/")}
-          className="text-muted-foreground hover:text-foreground h-8 w-8 bg-muted hover:bg-muted/80 rounded-lg"
+          className="text-gray-700 hover:bg-gray-100 h-8 w-8 rounded-full"
           data-testid="button-home"
         >
-          <Home className="w-4 h-4" />
+          <Home className="w-6 h-6" />
         </Button>
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-1 px-2.5 py-1 bg-muted rounded-md border border-border">
-            <button
-              onClick={() => {
-                if (!matchStartTime && matchId > 0) {
-                  const now = Date.now();
-                  setMatchStartTime(now);
-                  setIsTimerRunning(true);
-                  updateMatch.mutate({
-                    id: matchId,
-                    data: {
-                      startTime: new Date(now).toISOString() as any,
-                    },
-                  });
-                } else {
-                  setIsTimerRunning(!isTimerRunning);
-                }
-              }}
-              className="hover:opacity-80"
-            >
-              {isTimerRunning ? (
-                <Play className="w-2.5 h-2.5 text-green-500" />
-              ) : state.winner ? (
-                <Trophy className="w-2.5 h-2.5 text-blue-500" />
-              ) : (
-                <Pause className="w-2.5 h-2.5 text-orange-500" />
-              )}
-            </button>
-            <span className="text-xs font-black italic text-foreground tabular-nums leading-none" data-testid="text-timer">
-              {formatTimerDisplay(elapsedSeconds)}
-            </span>
-          </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
+          <button
+            onClick={() => {
+              if (!matchStartTime && matchId > 0) {
+                const now = Date.now();
+                setMatchStartTime(now);
+                setIsTimerRunning(true);
+                updateMatch.mutate({
+                  id: matchId,
+                  data: {
+                    startTime: new Date(now).toISOString() as any,
+                  },
+                });
+              } else {
+                setIsTimerRunning(!isTimerRunning);
+              }
+            }}
+            className="hover:opacity-80"
+          >
+            {isTimerRunning ? (
+              <Play className="w-3 h-3 text-green-500" />
+            ) : state.winner ? (
+              <Trophy className="w-3 h-3 text-blue-500" />
+            ) : (
+              <Pause className="w-3 h-3 text-orange-500" />
+            )}
+          </button>
+          <span className="text-sm font-black italic text-gray-800 tabular-nums" data-testid="text-timer">
+            {formatTimerDisplay(elapsedSeconds)}
+          </span>
         </div>
         <Button
           variant="ghost"
@@ -752,14 +750,14 @@ export default function Match() {
             addTimelineEvent("undo", null);
           }}
           disabled={state.gameHistory.length === 0}
-          className="text-muted-foreground hover:text-blue-500 h-8 w-8 bg-muted hover:bg-blue-500/10 rounded-lg"
+          className="text-gray-700 hover:bg-gray-100 h-8 w-8 rounded-full"
           data-testid="button-undo"
         >
           <Undo2 className="w-4 h-4" />
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col p-2 gap-2 max-w-lg mx-auto w-full overflow-y-auto">
+      <main className="flex-1 p-4 space-y-4">
         <section className="flex-shrink-0" data-testid="section-court">
           <Court
             positions={state.positions}
@@ -780,19 +778,67 @@ export default function Match() {
           />
         </section>
 
-        <section className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0" data-testid="section-scoreboard">
-          <Scoreboard
-            score1={state.score1}
-            score2={state.score2}
-            serverHand={state.serverHand}
-            servingTeam={state.serverTeam}
-            isFirstServe={state.isFirstServeOfMatch}
-          />
+        <section className="grid grid-cols-7 gap-2 items-center" data-testid="section-scoreboard">
+          {state.serverTeam === 1 ? (
+            <>
+              <div className="col-span-3 bg-white rounded-2xl p-4 border-2 border-[#FF5722] shadow-sm flex flex-col items-center">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#2D5AFE]"></span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Đội 1</span>
+                </div>
+                <div className="text-6xl font-black text-slate-800 leading-none py-2">{state.score1}</div>
+                <div className="text-[10px] font-bold text-[#FF5722] mt-2 uppercase tracking-widest">GIAO BÓNG</div>
+              </div>
+              <div className="col-span-1 flex flex-col items-center gap-2">
+                <span className="italic font-bold text-gray-400 text-sm">VS</span>
+                <div className="bg-gray-100 rounded-lg px-2 py-1 text-xs font-bold text-gray-600 text-center">
+                  TAY <span className="text-2xl font-black">{state.serverHand}</span>
+                </div>
+              </div>
+              <div className="col-span-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col items-center">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#EF4444]"></span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Đội 2</span>
+                </div>
+                <div className="text-6xl font-black text-gray-300 leading-none py-2">{state.score2}</div>
+                <div className="text-[10px] font-bold text-transparent mt-2 uppercase tracking-widest">.</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="col-span-3 bg-white rounded-2xl p-4 border-2 border-[#FF5722] shadow-sm flex flex-col items-center">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#EF4444]"></span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Đội 2</span>
+                </div>
+                <div className="text-6xl font-black text-slate-800 leading-none py-2">{state.score2}</div>
+                <div className="text-[10px] font-bold text-[#FF5722] mt-2 uppercase tracking-widest">GIAO BÓNG</div>
+              </div>
+              <div className="col-span-1 flex flex-col items-center gap-2">
+                <span className="italic font-bold text-gray-400 text-sm">VS</span>
+                <div className="bg-gray-100 rounded-lg px-2 py-1 text-xs font-bold text-gray-600 text-center">
+                  TAY <span className="text-2xl font-black">{state.serverHand}</span>
+                </div>
+              </div>
+              <div className="col-span-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col items-center">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#2D5AFE]"></span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Đội 1</span>
+                </div>
+                <div className="text-6xl font-black text-gray-300 leading-none py-2">{state.score1}</div>
+                <div className="text-[10px] font-bold text-transparent mt-2 uppercase tracking-widest">.</div>
+              </div>
+            </>
+          )}
         </section>
 
         {timeline.length > 0 && (
-          <section className="bg-card border border-border rounded-xl p-2 flex-shrink-0" data-testid="section-timeline">
-            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+          <section className="bg-white border border-gray-100 rounded-xl p-2 flex-shrink-0" data-testid="section-timeline">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Lịch sử ghi điểm</h3>
+              <button className="text-xs font-semibold text-[#FF5722]">Xem tất cả</button>
+            </div>
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
               {[...timeline]
                 .reverse()
                 .slice(0, 10)
@@ -800,14 +846,23 @@ export default function Match() {
                   <button
                     key={event.id}
                     onClick={() => setSelectedEvent(event)}
-                    className={`flex-shrink-0 px-2 py-1 rounded-md border text-[10px] font-bold flex items-center gap-1 ${getEventColor(event.type, event.team)} hover:opacity-80 transition-opacity`}
+                    className="flex-shrink-0 bg-white border border-gray-100 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm hover:bg-gray-50 transition"
                     data-testid={`timeline-event-${event.id}`}
                   >
-                    {getEventIcon(event.type)}
-                    <span className="whitespace-nowrap">
-                      {event.type === "score"
-                        ? `${event.score1}-${event.score2}`
-                        : getEventLabel(event)}
+                    <span className="text-[10px] font-bold text-[#FF5722]">
+                      {formatTime(event.timestamp)}
+                    </span>
+                    <span className="text-xs font-medium text-gray-700">
+                      {event.type === "score" 
+                        ? (event.team === 1 ? "Đội 1 +1 điểm" : "Đội 2 +1 điểm")
+                        : event.type === "fault" 
+                        ? "Đổi giao bóng"
+                        : event.type === "switch-sides"
+                        ? "Đổi sân"
+                        : event.type === "timeout"
+                        ? `T${event.team} Timeout`
+                        : getEventLabel(event)
+                      }
                     </span>
                   </button>
                 ))}
@@ -815,51 +870,71 @@ export default function Match() {
           </section>
         )}
 
-        <section className="flex gap-2 flex-shrink-0" data-testid="section-timeouts">
+        <section className="grid grid-cols-3 gap-3" data-testid="section-quick-actions">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => startTimeout(1)}
-            disabled={!!state.winner || timeouts.team1 === 0 || isTimeoutActive}
-            className="flex-1 h-8 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/5 border border-cyan-500/30 flex items-center justify-center gap-1.5 text-cyan-600 dark:text-cyan-400 disabled:opacity-40"
-            data-testid="button-timeout-t1"
+            onClick={() => setShowTimeoutDialog(true)}
+            disabled={!!state.winner || (timeouts.team1 === 0 && timeouts.team2 === 0) || isTimeoutActive}
+            className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-gray-50 transition disabled:opacity-40"
+            data-testid="button-timeout"
           >
-            <Timer className="w-3 h-3" />
-            <span className="text-[9px] font-black italic">TO T1 ({timeouts.team1})</span>
+            <div className="w-8 h-8 flex items-center justify-center text-gray-600">
+              <Timer className="w-6 h-6" />
+            </div>
+            <span className="text-[11px] font-bold text-gray-600">Timeout ({timeouts.team1 + timeouts.team2})</span>
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => startTimeout(2)}
-            disabled={!!state.winner || timeouts.team2 === 0 || isTimeoutActive}
-            className="flex-1 h-8 rounded-lg bg-rose-500/10 dark:bg-rose-500/5 border border-rose-500/30 flex items-center justify-center gap-1.5 text-rose-600 dark:text-rose-400 disabled:opacity-40"
-            data-testid="button-timeout-t2"
+            onClick={() => {
+              undo();
+              addTimelineEvent("undo", null);
+            }}
+            disabled={state.gameHistory.length === 0}
+            className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-gray-50 transition disabled:opacity-40"
+            data-testid="button-undo"
           >
-            <Timer className="w-3 h-3" />
-            <span className="text-[9px] font-black italic">TO T2 ({timeouts.team2})</span>
+            <div className="w-8 h-8 flex items-center justify-center text-gray-600">
+              <Undo2 className="w-6 h-6" />
+            </div>
+            <span className="text-[11px] font-bold text-gray-600">Undo</span>
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSwitchCourt}
+            className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-gray-50 transition"
+            data-testid="button-switch-court"
+          >
+            <div className="w-8 h-8 flex items-center justify-center text-gray-600">
+              <ArrowLeftRight className="w-6 h-6" />
+            </div>
+            <span className="text-[11px] font-bold text-gray-600">Đổi sân</span>
           </motion.button>
         </section>
 
-        <section className="grid grid-cols-2 gap-2 pb-2 mt-auto flex-shrink-0" data-testid="section-actions">
+        <footer className="bg-white p-4 border-t sticky bottom-0 safe-area-bottom grid grid-cols-2 gap-4">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleScorePoint}
             disabled={!!state.winner}
-            className="h-16 rounded-xl bg-blue-600 hover:bg-blue-700 flex flex-col items-center justify-center text-white shadow-lg shadow-blue-600/20 disabled:opacity-40 transition-colors"
+            style={{ color: 'white' }}
+            className="h-20 rounded-2xl bg-[#FF5722] font-black py-4 px-6 flex items-center justify-center gap-2 shadow-lg shadow-orange-200 active:scale-95 transition text-lg"
             data-testid="button-score"
           >
-            <CheckCircle2 className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px] font-black italic uppercase">GHI ĐIỂM</span>
+            <CheckCircle2 className="w-7 h-7" style={{ color: 'white' }} />
+            GHI ĐIỂM
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleFault}
             disabled={!!state.winner}
-            className="h-16 rounded-xl bg-orange-500 hover:bg-orange-600 flex flex-col items-center justify-center text-white shadow-lg shadow-orange-500/20 disabled:opacity-40 transition-colors"
+            style={{ color: 'white' }}
+            className="h-20 rounded-2xl bg-[#1A1C1E] font-black py-4 px-6 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition text-lg"
             data-testid="button-fault"
           >
-            <AlertOctagon className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px] font-black italic uppercase">ĐỔI GIAO</span>
+            <AlertOctagon className="w-7 h-7" style={{ color: 'white' }} />
+            ĐỔI GIAO
           </motion.button>
-        </section>
+        </footer>
       </main>
 
       <Dialog
@@ -1045,19 +1120,59 @@ export default function Match() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showTimeoutDialog} onOpenChange={(open) => !open && setShowTimeoutDialog(false)}>
+        <DialogContent className="max-w-sm bg-white border border-gray-100 rounded-2xl p-6 text-center">
+          <Timer className="w-12 h-12 mx-auto mb-3 text-[#FF5722]" />
+          <DialogTitle className="text-xl font-bold text-gray-800 uppercase mb-4">
+            Chọn đội Timeout
+          </DialogTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => {
+                startTimeout(1);
+                setShowTimeoutDialog(false);
+              }}
+              disabled={timeouts.team1 === 0}
+              className="h-14 rounded-xl bg-[#3B82F6] text-white font-bold flex flex-col items-center justify-center disabled:opacity-40"
+            >
+              <span>Đội 1</span>
+              <span className="text-xs opacity-80">Còn {timeouts.team1} lượt</span>
+            </button>
+            <button
+              onClick={() => {
+                startTimeout(2);
+                setShowTimeoutDialog(false);
+              }}
+              disabled={timeouts.team2 === 0}
+              className="h-14 rounded-xl bg-[#EF4444] text-white font-bold flex flex-col items-center justify-center disabled:opacity-40"
+            >
+              <span>Đội 2</span>
+              <span className="text-xs opacity-80">Còn {timeouts.team2} lượt</span>
+            </button>
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => setShowTimeoutDialog(false)}
+            className="w-full text-gray-500 mt-3"
+          >
+            Hủy
+          </Button>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isTimeoutActive}>
-        <DialogContent className="max-w-sm bg-card border-border rounded-2xl p-6 text-center">
+        <DialogContent className="max-w-sm bg-white border border-gray-100 rounded-2xl p-6 text-center">
           <Timer
-            className={`w-16 h-16 mx-auto mb-3 ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-orange-500"}`}
+            className={`w-16 h-16 mx-auto mb-3 ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-[#FF5722]"}`}
           />
-          <DialogTitle className="text-2xl font-black italic text-foreground uppercase mb-1">
+          <DialogTitle className="text-2xl font-black italic text-gray-800 uppercase mb-1">
             TIMEOUT
           </DialogTitle>
-          <p className={`text-lg font-black italic mb-4 ${timeoutTeam === 1 ? "text-cyan-500" : "text-rose-500"}`}>
+          <p className={`text-lg font-black italic mb-4 ${timeoutTeam === 1 ? "text-[#3B82F6]" : "text-[#EF4444]"}`}>
             TEAM {timeoutTeam}
           </p>
 
-          <div className={`text-6xl font-black mb-4 tabular-nums ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-foreground"}`}>
+          <div className={`text-6xl font-black mb-4 tabular-nums ${timeoutSeconds <= 15 ? "text-red-500 animate-pulse" : "text-gray-800"}`}>
             {formatTimerDisplay(timeoutSeconds)}
           </div>
 

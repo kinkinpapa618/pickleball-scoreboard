@@ -90,19 +90,13 @@ function CourtMarker({
   penalty?: PlayerPenalty;
 }) {
   const isTeam1 = side === "team1";
-  const teamLabel = isTeam1 ? "T1" : "T2";
-  const teamLabelBg = isTeam1 
-    ? "bg-gradient-to-r from-cyan-500 to-cyan-600" 
-    : "bg-gradient-to-r from-rose-500 to-rose-600";
   
-  let borderClass = "border-slate-200";
-  if (isServing) borderClass = "border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.4)]";
-  else if (isReceiver) borderClass = "border-slate-300";
+  const teamBg = isTeam1 ? "bg-cyan-600" : "bg-rose-600";
 
   return (
     <motion.button
       className="absolute z-20"
-      animate={{ left: x, top: y }}
+      animate={{ left: x, top: y, scale: isServing ? 1.02 : 1 }}
       transition={{ type: "spring", stiffness: 120, damping: 20 }}
       style={{ x: "-50%", y: "-50%" }}
       onClick={(e) => {
@@ -112,64 +106,54 @@ function CourtMarker({
     >
       <div
         className={`
-          relative flex items-center gap-1 px-2.5 py-1.5 rounded-xl border-2 cursor-pointer transition-all hover:scale-105 bg-white shadow-md w-[150px] h-[36px]
-          ${borderClass}
+          relative flex items-center gap-1 px-2 py-1 rounded-md cursor-pointer transition-all hover:scale-105
+          w-[140px] min-h-[32px]
+          ${teamBg}
+          shadow-md
           ${penalty?.red ? "opacity-50 grayscale" : ""}
-          ${isStacking ? "ring-2 ring-emerald-500 ring-offset-2" : ""}
+          ${isStacking ? "ring-2 ring-emerald-400 ring-offset-1" : ""}
         `}
       >
-        <span className={`${teamLabelBg} text-white text-[7px] font-black px-1.5 py-0.5 rounded flex-shrink-0 shadow-sm`}>
-          {teamLabel}
-        </span>
+        {/* Icon đầu người màu trắng */}
+        <svg className="w-4 h-4 text-white fill-white flex-shrink-0" viewBox="0 0 24 24">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
         
-        <div className="flex-shrink-0">
-          {isTeam1 ? (
-            <svg className="w-4 h-4 text-cyan-500" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-          ) : (
-            <svg className="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-          )}
-        </div>
-
-        <span className="text-[10px] font-bold text-slate-800 truncate flex-1 pr-6">
+        {/* Player Name - màu trắng, align left */}
+        <span className="text-[9px] font-bold truncate flex-1 text-left" style={{ color: 'white' }}>
           {name}
         </span>
-
-        {(isServing || isReceiver) && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-            {isServing ? (
-              <div className="relative">
-                <Zap className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                <span className="absolute -top-1 -right-1 bg-yellow-400 text-slate-900 text-[5px] font-bold px-1 rounded-full min-w-[12px] text-center">
-                  P
-                </span>
-              </div>
-            ) : (
-              <div className="relative">
-                <Shield className="w-4 h-4 text-slate-500" />
-                <span className="absolute -top-1 -right-1 bg-slate-500 text-white text-[5px] font-bold px-1 rounded-full min-w-[12px] text-center">
-                  Đ
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
+        
+        {/* Stacking & Penalty */}
         {!isServing && !isReceiver && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-            {isStacking && <Lock className="w-3.5 h-3.5 text-emerald-500" />}
+          <div className="flex items-center gap-0.5">
+            {isStacking && <Lock className="w-2.5 h-2.5 text-white" />}
             {penalty && penalty.yellow > 0 && (
               <div className="flex gap-px">
                 {[...Array(penalty.yellow)].map((_, i) => (
-                  <div key={i} className="w-1.5 h-2.5 bg-yellow-400 rounded-sm" />
+                  <div key={i} className="w-1 h-2 bg-yellow-400 rounded-sm" />
                 ))}
               </div>
             )}
             {penalty?.red && (
-              <div className="w-2 h-3 bg-red-600 rounded-sm animate-pulse" />
+              <div className="w-1.5 h-2 bg-red-600 rounded-sm animate-pulse" />
+            )}
+          </div>
+        )}
+
+        {/* Status Badge - Top Right Corner */}
+        {(isServing || isReceiver) && (
+          <div className="absolute -top-1 -right-1 z-10">
+            {isServing ? (
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-400 rounded-full shadow-md">
+                <Zap className="w-2.5 h-2.5 text-yellow-800 fill-yellow-600" />
+                <span className="text-[7px] font-bold text-yellow-800">PHÁT</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-400 rounded-full shadow-md">
+                <Shield className="w-2.5 h-2.5 text-white" />
+                <span className="text-[7px] font-bold text-white">ĐỠ</span>
+              </div>
             )}
           </div>
         )}
@@ -305,7 +289,7 @@ export function Court({
             fromY={activeSrv.y}
             toX={activeRcv.x}
             toY={activeRcv.y}
-            serverId={activeSrv.id}
+            serverId={`${activeSrv.id}-${activeSrv.x}-${activeSrv.y}-${activeRcv.x}-${activeRcv.y}`}
           />
         )}
 

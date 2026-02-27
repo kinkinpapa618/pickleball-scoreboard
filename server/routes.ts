@@ -507,10 +507,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (user && user.role !== "admin" && tournament.creatorId !== user.id) {
-        const isConnectedRef = user.role === "referee" && tournament.creatorId
-          ? await storage.isConnected(user.id, tournament.creatorId)
-          : false;
-        if (!isConnectedRef) {
+        const userGroups = await storage.getUserGroups(user.id);
+        const groupIds = userGroups.map(g => g.id);
+        const members = groupIds.length > 0 ? await Promise.all(groupIds.map(gid => storage.getGroupMembers(gid))) : [];
+        const allMembers = members.flat();
+        const isGroupMember = allMembers.some(m => m.userId === user.id);
+        if (!isGroupMember) {
           return res.status(403).json({ message: "Bạn không có quyền xem giải đấu này" });
         }
       }
@@ -877,11 +879,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const isAdmin = user.role === "admin";
     const isCreator = tournament.creatorId === user.id;
-    const isConnectedReferee = user.role === "referee" && tournament.creatorId
-      ? await storage.isConnected(user.id, tournament.creatorId)
-      : false;
+    const userGroups = await storage.getUserGroups(user.id);
+    const groupIds = userGroups.map(g => g.id);
+    const members = groupIds.length > 0 ? await Promise.all(groupIds.map(gid => storage.getGroupMembers(gid))) : [];
+    const allMembers = members.flat();
+    const isGroupMember = allMembers.some(m => m.userId === user.id);
 
-    if (!isAdmin && !isCreator && !isConnectedReferee) {
+    if (!isAdmin && !isCreator && !isGroupMember) {
       return res.status(403).json({ message: "Bạn không có quyền" });
     }
 
@@ -918,7 +922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Dữ liệu trận đấu không hợp lệ" });
     }
 
-    const refereeId = isConnectedReferee ? user.id : (tournamentMatch.refereeId || user.id);
+    const refereeId = isGroupMember ? user.id : (tournamentMatch.refereeId || user.id);
 
     const createdMatch = await storage.createMatch({
       ...matchResult.data,
@@ -978,54 +982,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(managers);
   });
 
-  // Lấy danh sách Managers đã kết nối (của referee hiện tại)
+  // Lấy danh sách Managers đã kết nối (của referee hiện tại) - DEPRECATED: dùng /api/groups/my
   app.get("/api/connected-managers", async (req, res) => {
     const user = req.user as any;
     if (!user || user.role !== "referee") {
       return res.status(403).json({ message: "Chỉ referee mới có thể xem danh sách này" });
     }
-    const connectedManagers = await storage.getConnectedManagers(user.id);
-    res.json(connectedManagers);
+    // Redirect to groups
+    const groups = await storage.getUserGroups(user.id);
+    res.json(groups);
   });
 
-  // Kết nối với Manager
+  // Kết nối với Manager - DEPRECATED: dùng /api/groups/:id/members
   app.post("/api/connect-manager/:managerId", async (req, res) => {
-    const user = req.user as any;
-    if (!user || user.role !== "referee") {
-      return res.status(403).json({ message: "Chỉ referee mới có thể kết nối" });
-    }
-    const managerId = parseInt(req.params.managerId);
-    const manager = await storage.getUser(managerId);
-    if (!manager || manager.role !== "manager") {
-      return res.status(404).json({ message: "Không tìm thấy Manager" });
-    }
-    const alreadyConnected = await storage.isConnected(user.id, managerId);
-    if (alreadyConnected) {
-      return res.status(400).json({ message: "Đã kết nối với Manager này" });
-    }
-    await storage.connectRefereeToManager(user.id, managerId);
-    res.json({ message: "Kết nối thành công", manager });
+    return res.status(410).json({ message: "API này đã bị thay thế bởi Groups. Vui lòng sử dụng Groups để quản lý." });
   });
 
-  // Hủy kết nối với Manager
+  // Hủy kết nối với Manager - DEPRECATED
   app.delete("/api/disconnect-manager/:managerId", async (req, res) => {
-    const user = req.user as any;
-    if (!user || user.role !== "referee") {
-      return res.status(403).json({ message: "Chỉ referee mới có thể hủy kết nối" });
-    }
-    const managerId = parseInt(req.params.managerId);
-    await storage.disconnectRefereeFromManager(user.id, managerId);
-    res.json({ message: "Hủy kết nối thành công" });
+    return res.status(410).json({ message: "API này đã bị thay thế bởi Groups." });
   });
 
-  // Lấy trận đấu từ Managers đã kết nối
+  // Lấy trận đấu từ Managers đã kết nối - DEPRECATED
   app.get("/api/matches/connected-managers", async (req, res) => {
     const user = req.user as any;
     if (!user || user.role !== "referee") {
       return res.status(403).json({ message: "Chỉ referee mới có thể xem" });
     }
-    const matches = await storage.getMatchesFromConnectedManagers(user.id);
-    res.json(matches);
+    // Redirect to get matches from user's groups
+    const groups = await storage.getUserGroups(user.id);
+    const groupIds = groups.map(g => g.id);
+    // For now return empty - need to implement getting matches from groups
+    res.json([]);
   });
 
   // === CHAT API ===
@@ -1042,13 +1030,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Tin nhắn không được để trống" });
     }
 
-    // Kiểm tra quyền: Admin, Manager hoặc Referee đã kết nối mới gửi được
+    // Kiểm tra quyền: Admin, Manager hoặc thành viên nhóm mới gửi được
     if (user.role === "admin" || user.role === "manager") {
       // Admin và Manager luôn có thể gửi tin nhắn
     } else if (user.role === "referee") {
-      const connectedManagers = await storage.getConnectedManagers(user.id);
-      if (connectedManagers.length === 0) {
-        return res.status(403).json({ message: "Bạn chưa kết nối với Manager nào" });
+      const userGroups = await storage.getUserGroups(user.id);
+      if (userGroups.length === 0) {
+        return res.status(403).json({ message: "Bạn chưa tham gia nhóm nào" });
       }
     } else {
       return res.status(403).json({ message: "Không có quyền gửi tin nhắn" });
@@ -1056,42 +1044,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const chat = await storage.sendChat(user.id, message.trim());
 
-    // Tạo thôngbáo cho người nhận
+    // Tạo thông báo cho người nhận
     const senderName = user.fullName || user.username;
     const notificationMessage = message.trim().slice(0, 100) + (message.trim().length > 100 ? "..." : "");
 
     if (user.role === "admin" || user.role === "manager") {
-      // Gửi thông báo cho tất cả referee đã kết nối
-      const connectedReferees = await storage.getConnectedReferees(user.id);
-      for (const referee of connectedReferees) {
-        await storage.createNotification({
-          userId: referee.id,
-          type: "chat",
-          title: `Tin nhắn mới từ ${senderName}`,
-          message: notificationMessage,
-          link: "/chat",
-          data: { chatId: chat.id, senderId: user.id },
-        });
+      // Gửi thông báo cho tất cả referee trong nhóm của mình
+      const userGroups = await storage.getGroups(user.id);
+      for (const group of userGroups) {
+        const members = await storage.getGroupMembers(group.id);
+        for (const member of members) {
+          if (member.userId !== user.id) {
+            await storage.createNotification({
+              userId: member.userId,
+              type: "chat",
+              title: `Tin nhắn mới từ ${senderName}`,
+              message: notificationMessage,
+              link: "/chat",
+              data: { chatId: chat.id, senderId: user.id },
+            });
+          }
+        }
       }
     } else {
-      // Gửi thông báo cho tất cả manager đã kết nối
-      const connectedManagers = await storage.getConnectedManagers(user.id);
-      for (const manager of connectedManagers) {
-        await storage.createNotification({
-          userId: manager.id,
-          type: "chat",
-          title: `Tin nhắn mới từ ${senderName}`,
-          message: notificationMessage,
-          link: "/chat",
-          data: { chatId: chat.id, senderId: user.id },
-        });
+      // Referee gửi - thông báo cho manager của nhóm mình
+      const userGroups = await storage.getUserGroups(user.id);
+      for (const group of userGroups) {
+        const manager = await storage.getUser(group.managerId);
+        if (manager) {
+          await storage.createNotification({
+            userId: manager.id,
+            type: "chat",
+            title: `Tin nhắn mới từ ${senderName}`,
+            message: notificationMessage,
+            link: "/chat",
+            data: { chatId: chat.id, senderId: user.id },
+          });
+        }
       }
     }
 
     res.json(chat);
   });
 
-  // Lấy danh sách tin nhắn (Manager và Referee đã kết nối mới xem được)
+  // Lấy danh sách tin nhắn (Manager và thành viên nhóm mới xem được)
   app.get("/api/chat", async (req, res) => {
     const user = req.user as any;
     if (!user) {
@@ -1100,22 +1096,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Kiểm tra quyền
     if (user.role === "referee") {
-      const connectedManagers = await storage.getConnectedManagers(user.id);
-      if (connectedManagers.length === 0) {
-        return res.status(403).json({ message: "Bạn chưa kết nối với Manager nào" });
+      const userGroups = await storage.getUserGroups(user.id);
+      if (userGroups.length === 0) {
+        return res.status(403).json({ message: "Bạn chưa tham gia nhóm nào" });
       }
+      // For now return empty for referees - they should use group chat
+      return res.json([]);
     }
 
-    const chats = await storage.getChatsWithSender();
-    const chatsWithSenderInfo = chats.map((chat) => ({
-      id: chat.id,
-      senderId: chat.senderId,
-      senderName: chat.sender.fullName || chat.sender.username,
-      senderRole: chat.sender.role,
-      message: chat.message,
-      createdAt: chat.createdAt,
-    }));
-    res.json(chatsWithSenderInfo);
+    // Manager gets chats from their groups
+    if (user.role === "manager" || user.role === "admin") {
+      const groups = await storage.getGroups(user.id);
+      const allChats: any[] = [];
+      for (const group of groups) {
+        const chats = await storage.getChatsByGroup(group.id, 20);
+        allChats.push(...chats.map(c => ({ ...c, groupName: group.name })));
+      }
+      return res.json(allChats.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
+    }
+
+    return res.json([]);
   });
 
   // Kiểm tra user có kết nối với manager nào không (dùng cho BottomNav)
@@ -1125,12 +1125,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ hasConnection: false });
     }
 
-    if (user.role === "manager") {
+    if (user.role === "manager" || user.role === "admin") {
       return res.json({ hasConnection: true });
     }
 
-    const connectedManagers = await storage.getConnectedManagers(user.id);
-    res.json({ hasConnection: connectedManagers.length > 0 });
+    const userGroups = await storage.getUserGroups(user.id);
+    res.json({ hasConnection: userGroups.length > 0 });
   });
 
   // === NOTIFICATION APIs ===
@@ -1191,6 +1191,257 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const id = parseInt(req.params.id as string);
     await storage.deleteNotification(id);
     res.json({ message: "Đã xóa thông báo" });
+  });
+
+  // === GROUP APIs ===
+
+  // Lấy danh sách groups của manager
+  app.get("/api/groups", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    if (user.role !== "manager" && user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    const groups = await storage.getGroups(user.id);
+    res.json(groups);
+  });
+
+  // Lấy groups mà user tham gia
+  app.get("/api/groups/my", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const groups = await storage.getUserGroups(user.id);
+    res.json(groups);
+  });
+
+  // Tạo group mới (manager chỉ được tạo 1 group)
+  app.post("/api/groups", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    if (user.role !== "manager" && user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    // Check if manager already has a group
+    const existingGroups = await storage.getGroups(user.id);
+    if (existingGroups.length > 0) {
+      return res.status(400).json({ message: "Mỗi manager chỉ được tạo 1 nhóm" });
+    }
+
+    const { name, description } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: "Tên nhóm là bắt buộc" });
+    }
+
+    const group = await storage.createGroup({
+      name,
+      description,
+      managerId: user.id,
+    });
+    res.json(group);
+  });
+
+  // Cập nhật group
+  app.patch("/api/groups/:id", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    const group = await storage.getGroup(id);
+
+    if (!group || group.managerId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    const { name, description } = req.body;
+    const updated = await storage.updateGroup(id, { name, description });
+    res.json(updated);
+  });
+
+  // Xóa group
+  app.delete("/api/groups/:id", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    const group = await storage.getGroup(id);
+
+    if (!group || group.managerId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    await storage.deleteGroup(id);
+    res.json({ message: "Đã xóa nhóm" });
+  });
+
+  // Lấy danh sách thành viên của group
+  app.get("/api/groups/:id/members", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    const group = await storage.getGroup(id);
+
+    if (!group) {
+      return res.status(404).json({ message: "Không tìm thấy nhóm" });
+    }
+
+    // Chỉ manager tạo group hoặc thành viên mới xem được
+    const isMember = await storage.isGroupMember(id, user.id);
+    if (!isMember && group.managerId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    const members = await storage.getGroupMembers(id);
+    res.json(members);
+  });
+
+  // Tìm kiếm user để add vào group
+  app.get("/api/users/search", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const query = req.query.q as string;
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+
+    // Chỉ manager mới được tìm
+    if (user.role !== "manager" && user.role !== "admin") {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    const users = await storage.searchUsers(query);
+    // Lọc bỏ manager và admin, chỉ lấy referee
+    const referees = users.filter(u => u.role === "referee");
+    res.json(referees);
+  });
+
+  // Thêm thành viên vào group
+  app.post("/api/groups/:id/members", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    const group = await storage.getGroup(id);
+
+    if (!group || group.managerId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: "Thiếu userId" });
+    }
+
+    const targetUser = await storage.getUser(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Không tìm thấy user" });
+    }
+
+    const alreadyMember = await storage.isGroupMember(id, userId);
+    if (alreadyMember) {
+      return res.status(400).json({ message: "User đã là thành viên" });
+    }
+
+    await storage.addGroupMember({ groupId: id, userId, role: "member" });
+    res.json({ message: "Đã thêm thành viên" });
+  });
+
+  // Xóa thành viên khỏi group
+  app.delete("/api/groups/:id/members/:userId", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    const userId = parseInt(req.params.userId as string);
+    const group = await storage.getGroup(id);
+
+    if (!group || group.managerId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    // Không cho xóa chính mình
+    if (userId === user.id) {
+      return res.status(400).json({ message: "Không thể tự xóa mình" });
+    }
+
+    await storage.removeGroupMember(id, userId);
+    res.json({ message: "Đã xóa thành viên" });
+  });
+
+  // Lấy chat của group
+  app.get("/api/groups/:id/chat", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    const group = await storage.getGroup(id);
+
+    if (!group) {
+      return res.status(404).json({ message: "Không tìm thấy nhóm" });
+    }
+
+    const isMember = await storage.isGroupMember(id, user.id);
+    if (!isMember && group.managerId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    const chats = await storage.getChatsByGroup(id, limit);
+    res.json(chats);
+  });
+
+  // Gửi chat trong group
+  app.post("/api/groups/:id/chat", async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+
+    const id = parseInt(req.params.id as string);
+    const group = await storage.getGroup(id);
+
+    if (!group) {
+      return res.status(404).json({ message: "Không tìm thấy nhóm" });
+    }
+
+    const isMember = await storage.isGroupMember(id, user.id);
+    if (!isMember && group.managerId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền" });
+    }
+
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ message: "Tin nhắn trống" });
+    }
+
+    const chat = await storage.sendGroupChat(id, user.id, message);
+    res.json(chat);
   });
 
   const httpServer = createServer(app);

@@ -1,17 +1,25 @@
 import { Link, useLocation } from "wouter";
-import { Home, Target, Layers, Trophy, Settings } from "lucide-react";
+import { Home, Target, Layers, Users, Settings, MessageCircle } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserGroups, useGroups } from "@/hooks/use-api";
 
 export function BottomNav() {
   const [location] = useLocation();
+  const { user } = useAuth();
   const { unreadCount } = useNotifications();
+  
+  const { data: myGroups } = useUserGroups();
+  const { data: managerGroups } = useGroups();
+  
+  const isManagerOrAdmin = user?.role === "manager" || user?.role === "admin";
+  const hasGroups = (myGroups?.length || 0) > 0 || (isManagerOrAdmin && (managerGroups?.length || 0) > 0);
 
   const navItems = [
     { href: "/", icon: Home, label: "TRANG CHỦ" },
     { href: "/tools", icon: Target, label: "PICKLEBALL" },
     { href: "/tournament", icon: Layers, label: "GIẢI ĐẤU" },
-    { href: "/users", icon: Trophy, label: "THÀNH VIÊN" },
+    { href: "/chat", icon: hasGroups ? MessageCircle : Users, label: "GROUP" },
     { href: "/profile", icon: Settings, label: "TÀI KHOẢN" },
   ];
 
@@ -37,9 +45,6 @@ export function BottomNav() {
                 <span className="text-[9px] font-bold uppercase tracking-wide">
                   {item.label}
                 </span>
-                {isProfile && unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                )}
               </div>
             </Link>
           );

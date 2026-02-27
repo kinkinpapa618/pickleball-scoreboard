@@ -6,25 +6,33 @@ import { BottomNav } from "@/components/BottomNav";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
-import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { Loader2, Lock } from "lucide-react";
-import { FloatingChat } from "@/components/FloatingChat";
+import { lazy, Suspense } from "react";
 
-import Home from "@/pages/Home";
-import RefereeTools from "@/pages/RefereeTools";
-import TournamentPage from "@/pages/TournamentPage";
-import Match from "@/pages/Match";
-import MatchView from "@/pages/MatchView";
-import MatchDetail from "@/pages/MatchDetail";
-import Profile from "@/pages/Profile";
-import Users from "@/pages/Users";
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminPanel from "@/pages/AdminPanel";
-import NotFound from "@/pages/not-found";
-import AuthPage from "@/pages/AuthPage";
-import RefereeMatchAccess from "@/pages/RefereeMatchAccess";
-import ConnectedManagers from "@/pages/ConnectedManagers";
-import ChatPage from "@/pages/ChatPage";
+const Home = lazy(() => import("@/pages/Home"));
+const RefereeTools = lazy(() => import("@/pages/RefereeTools"));
+const TournamentPage = lazy(() => import("@/pages/TournamentPage"));
+const Match = lazy(() => import("@/pages/Match"));
+const MatchView = lazy(() => import("@/pages/MatchView"));
+const MatchDetail = lazy(() => import("@/pages/MatchDetail"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const Users = lazy(() => import("@/pages/Users"));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const AuthPage = lazy(() => import("@/pages/AuthPage"));
+const RefereeMatchAccess = lazy(() => import("@/pages/RefereeMatchAccess"));
+const ConnectedManagers = lazy(() => import("@/pages/ConnectedManagers"));
+const ChatPage = lazy(() => import("@/pages/ChatPage"));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+    </div>
+  );
+}
 
 // --- 1. COMPONENT HIỂN THỊ KHÔNG CÓ QUYỀN ---
 function RestrictedPage({ feature }: { feature: string }) {
@@ -55,18 +63,18 @@ function ProtectedRoute({
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!user) {
     return <Redirect to="/auth" />;
   }
 
-  return <Component />;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Component />
+    </Suspense>
+  );
 }
 
 // --- 3. COMPONENT BẢO VỆ ROUTE CHO ADMIN/MANAGER ---
@@ -78,18 +86,18 @@ function AdminRoute({
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!user || (user.role !== "admin" && user.role !== "manager")) {
     return <RestrictedPage feature="Giải đấu" />;
   }
 
-  return <Component />;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Component />
+    </Suspense>
+  );
 }
 
 // --- 4. QUẢN LÝ ĐIỀU HƯỚNG ---
@@ -97,13 +105,17 @@ function Router() {
   return (
     <Switch>
       {/* Trang Auth không được bảo vệ */}
-      <Route path="/auth" component={AuthPage} />
+      <Route path="/auth">
+        {() => <Suspense fallback={<PageLoader />}><AuthPage /></Suspense>}
+      </Route>
 
       {/* Các trang yêu cầu Đăng nhập mới được vào */}
-      <Route path="/" component={Home} />
+      <Route path="/">
+        {() => <Suspense fallback={<PageLoader />}><Home /></Suspense>}
+      </Route>
 
       <Route path="/tools">
-        {() => <RefereeTools />}
+        {() => <Suspense fallback={<PageLoader />}><RefereeTools /></Suspense>}
       </Route>
 
       <Route path="/tournament">
@@ -119,7 +131,9 @@ function Router() {
       </Route>
 
       {/* Route xem công khai (không cần bảo vệ) */}
-      <Route path="/match-view/:id" component={MatchView} />
+      <Route path="/match-view/:id">
+        {() => <Suspense fallback={<PageLoader />}><MatchView /></Suspense>}
+      </Route>
 
       {/* Route chi tiết trận đấu (cho trận đã hoàn thành) */}
       <Route path="/match-detail/:id">
@@ -141,34 +155,28 @@ function Router() {
       <Route path="/admin/manage">{() => <ProtectedRoute component={AdminPanel} />}</Route>
 
       {/* Route truy cập trận đấu bằng token (cho trọng tài) */}
-      <Route path="/trong-tai/:token" component={RefereeMatchAccess} />
+      <Route path="/trong-tai/:token">
+        {() => <Suspense fallback={<PageLoader />}><RefereeMatchAccess /></Suspense>}
+      </Route>
 
       {/* Trang lỗi */}
-      <Route component={NotFound} />
+      <Route>
+        {() => <Suspense fallback={<PageLoader />}><NotFound /></Suspense>}
+      </Route>
     </Switch>
   );
 }
 
 // --- 3. COMPONENT TỔNG ---
 function AppContent() {
-  const { theme } = useTheme();
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-      </div>
-    );
-  }
+  const [location] = useLocation();
+  const isMatchPage = location.startsWith("/match");
 
   return (
     <div className="min-h-screen pb-20 bg-background text-foreground">
       <Router />
       {/* BottomNav thường chỉ hiện khi đã đăng nhập */}
       <ConditionalBottomNav />
-      {/* Floating Chat */}
-      <FloatingChat />
     </div>
   );
 }

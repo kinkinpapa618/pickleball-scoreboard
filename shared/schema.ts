@@ -1,13 +1,13 @@
 import {
   pgTable,
   text,
-  serial,
   integer,
   boolean,
   timestamp,
-  jsonb,
+  json,
   date,
   time,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -16,11 +16,13 @@ import { z } from "zod";
 export const roles = ["admin", "manager", "referee"] as const;
 export type Role = (typeof roles)[number];
 
+export const roleEnum = pgEnum("role", ["admin", "manager", "referee"]);
+
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").$type<Role>().notNull().default("referee"),
+  role: roleEnum("role").notNull().default("referee"),
   fullName: text("full_name"),
   phone: text("phone").notNull(),
   idCard: text("id_card").notNull(),
@@ -41,7 +43,7 @@ export const ROLE_PERMISSIONS = {
 
 // === 2. WORK SCHEDULES (Lịch công tác) ===
 export const workSchedules = pgTable("work_schedules", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   refereeId: integer("referee_id").references(() => users.id),
   title: text("title").notNull(),
   description: text("description"),
@@ -62,7 +64,7 @@ export type InsertWorkSchedule = z.infer<typeof insertWorkScheduleSchema>;
 
 // === 3. PLAYERS DEFINITIONS ===
 export const players = pgTable("players", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull().unique(),
   totalMatches: integer("total_matches").default(0),
   wins: integer("wins").default(0),
@@ -71,7 +73,7 @@ export const players = pgTable("players", {
 
 // === 3. MATCHES DEFINITIONS ===
 export const matches = pgTable("matches", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   // Team 1
   team1Player1: text("team1_player1").notNull(),
   team1Player2: text("team1_player2").notNull(),
@@ -99,8 +101,8 @@ export const matches = pgTable("matches", {
   penalties: text("penalties"), // JSON: { t1p1: { yellow: 0, red: false }, ... }
 
   // Thời gian bắt đầu trận đấu (khi status = 'live')
-  startTime: timestamp("start_time"),
-  endTime: timestamp("end_time"),
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time").defaultNow(),
 
   // Lượt phát đầu tiên của trận (để hiển thị số 2)
   isFirstServeOfMatch: boolean("is_first_serve_of_match"),
@@ -167,7 +169,7 @@ export type CreateMatchRequest = InsertMatch;
 
 // === 6. TOURNAMENT DEFINITIONS ===
 export const tournaments = pgTable("tournaments", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
   description: text("description"),
   teamsPerGroup: integer("teams_per_group").default(4),
@@ -176,7 +178,7 @@ export const tournaments = pgTable("tournaments", {
   
   // Thông tin giải đấu mới
   level: text("level"), // JSON array: ["4.0", "4.5"]
-  content: jsonb("content"), // Map level -> nội dung: {"4.0": ["don_nam", "doi_nam"]}
+  content: json("content"), // Map level -> nội dung: {"4.0": ["don_nam", "doi_nam"]}
   date: date("date"),
   time: time("time"),
   location: text("location"),
@@ -190,7 +192,7 @@ export const tournaments = pgTable("tournaments", {
 });
 
 export const tournamentPlayers = pgTable("tournament_players", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   tournamentId: integer("tournament_id").references(() => tournaments.id).notNull(),
   name: text("name").notNull(),
   groupName: text("group_name"), // A, B, C, D...
@@ -199,7 +201,7 @@ export const tournamentPlayers = pgTable("tournament_players", {
 });
 
 export const tournamentMatches = pgTable("tournament_matches", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   tournamentId: integer("tournament_id").references(() => tournaments.id).notNull(),
   
   // Liên kết với match thực tế (nếu đã tạo trận)
@@ -260,7 +262,7 @@ export type InsertTournamentMatch = z.infer<typeof insertTournamentMatchSchema>;
 
 // === SETTINGS ===
 export const settings = pgTable("settings", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   key: text("key").notNull().unique(),
   value: text("value").notNull(),
   description: text("description"),
@@ -275,25 +277,44 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 
-// === 9. MANAGER CONNECTIONS (Referee theo dõi Manager) ===
-export const managerConnections = pgTable("manager_connections", {
-  id: serial("id").primaryKey(),
-  refereeId: integer("referee_id").references(() => users.id).notNull(),
+// === 9. GROUPS (Nhóm của Manager) ===
+export const groups = pgTable("groups", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  description: text("description"),
   managerId: integer("manager_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertManagerConnectionSchema = createInsertSchema(managerConnections).omit({
+export const insertGroupSchema = createInsertSchema(groups).omit({
   id: true,
   createdAt: true,
 });
 
-export type ManagerConnection = typeof managerConnections.$inferSelect;
-export type InsertManagerConnection = z.infer<typeof insertManagerConnectionSchema>;
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = z.infer<typeof insertGroupSchema>;
 
-// === 10. CHAT MESSAGES (Group chat giữa Manager và Referees) ===
+// === 10. GROUP MEMBERS (Thành viên nhóm) ===
+export const groupMembers = pgTable("group_members", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  groupId: integer("group_id").references(() => groups.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  role: text("role").notNull().default("member"), // 'member', 'admin'
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export type GroupMember = typeof groupMembers.$inferSelect;
+export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
+
+// === 11. CHAT MESSAGES (Chat trong Group) ===
 export const chats = pgTable("chats", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  groupId: integer("group_id").references(() => groups.id),
   senderId: integer("sender_id").references(() => users.id).notNull(),
   message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -307,19 +328,21 @@ export const insertChatSchema = createInsertSchema(chats).omit({
 export type Chat = typeof chats.$inferSelect;
 export type InsertChat = z.infer<typeof insertChatSchema>;
 
-// === 11. NOTIFICATIONS ===
+// === 12. NOTIFICATIONS ===
 export const notificationTypes = ["chat", "match", "tournament", "schedule", "system"] as const;
 export type NotificationType = (typeof notificationTypes)[number];
 
+export const notificationTypeEnum = pgEnum("notification_type", ["chat", "match", "tournament", "schedule", "system"]);
+
 export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  type: text("type").$type<NotificationType>().notNull(),
+  type: notificationTypeEnum("type").notNull(),
   title: text("title").notNull(),
   message: text("message").notNull(),
   read: boolean("read").default(false).notNull(),
   link: text("link"),
-  data: jsonb("data"),
+  data: json("data"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

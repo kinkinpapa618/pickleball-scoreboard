@@ -34,6 +34,9 @@ export const queryClient = new QueryClient({
         return res.json();
       },
       refetchOnWindowFocus: false, // Không tự fetch lại khi chuyển tab
+      staleTime: 1000 * 60, // Cache data trong 1 phút
+      gcTime: 1000 * 60 * 5, // Giữ cache trong 5 phút
+      retry: 1, // Thử lại 1 lần nếu fail
     },
     mutations: {
       // Hàm xử lý lỗi mặc định cho mutation

@@ -290,3 +290,135 @@ export function useUpdateSetting() {
   });
 }
 
+// === GROUP HOOKS ===
+
+export interface Group {
+  id: number;
+  name: string;
+  description: string | null;
+  managerId: number;
+  createdAt: Date;
+}
+
+export interface GroupMember {
+  id: number;
+  groupId: number;
+  userId: number;
+  role: "member" | "admin";
+  joinedAt: Date;
+  user: {
+    id: number;
+    username: string;
+    fullName: string | null;
+    phone: string;
+    role: string;
+  };
+}
+
+export function useGroups() {
+  return useQuery<Group[]>({
+    queryKey: ["/api/groups"],
+    queryFn: async () => {
+      const res = await fetch("/api/groups", { credentials: "same-origin" });
+      return res.json();
+    },
+  });
+}
+
+export function useUserGroups() {
+  return useQuery<Group[]>({
+    queryKey: ["/api/groups/my"],
+    queryFn: async () => {
+      const res = await fetch("/api/groups/my", { credentials: "same-origin" });
+      return res.json();
+    },
+  });
+}
+
+export function useCreateGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { name: string; description?: string }) => {
+      const res = await apiRequest("POST", "/api/groups", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups/my"] });
+    },
+  });
+}
+
+export function useUpdateGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { name?: string; description?: string } }) => {
+      const res = await apiRequest("PATCH", `/api/groups/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+    },
+  });
+}
+
+export function useDeleteGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/groups/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups/my"] });
+    },
+  });
+}
+
+export function useGroupMembers(groupId: number) {
+  return useQuery<GroupMember[]>({
+    queryKey: [`/api/groups/${groupId}/members`],
+    queryFn: async () => {
+      const res = await fetch(`/api/groups/${groupId}/members`, { credentials: "same-origin" });
+      return res.json();
+    },
+    enabled: !!groupId,
+  });
+}
+
+export function useAddGroupMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: number; userId: number }) => {
+      const res = await apiRequest("POST", `/api/groups/${groupId}/members`, { userId });
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${variables.groupId}/members`] });
+    },
+  });
+}
+
+export function useRemoveGroupMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: number; userId: number }) => {
+      const res = await apiRequest("DELETE", `/api/groups/${groupId}/members/${userId}`);
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${variables.groupId}/members`] });
+    },
+  });
+}
+
+export function useSearchUsers() {
+  return useMutation({
+    mutationFn: async (query: string) => {
+      const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`, { credentials: "same-origin" });
+      return res.json();
+    },
+  });
+}
+

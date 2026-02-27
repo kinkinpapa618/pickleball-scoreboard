@@ -12,7 +12,7 @@ interface ScoreboardProps {
 
 function ScoreDigit({ value, color }: { value: number; color: string }) {
   return (
-    <div className={`relative h-16 w-12 sm:h-20 sm:w-14 rounded-lg overflow-hidden ${color} shadow-md`}>
+    <div className={`relative h-20 w-14 sm:h-24 sm:w-16 rounded-lg overflow-hidden ${color} shadow-lg`}>
       <AnimatePresence mode="popLayout">
         <motion.div
           key={value}
@@ -23,7 +23,7 @@ function ScoreDigit({ value, color }: { value: number; color: string }) {
           className="absolute inset-0 flex items-center justify-center"
           style={{ transformStyle: "preserve-3d" }}
         >
-          <span className="text-3xl sm:text-4xl font-black text-white tabular-nums drop-shadow-sm">
+          <span className="text-5xl sm:text-6xl font-black text-white tabular-nums drop-shadow-md" style={{ textShadow: '2px 2px 0 rgba(0,0,0,0.3), 4px 4px 0 rgba(0,0,0,0.2)' }}>
             {value}
           </span>
         </motion.div>

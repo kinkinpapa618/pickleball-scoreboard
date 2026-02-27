@@ -7,7 +7,8 @@ import {
   tournamentPlayers,
   tournamentMatches,
   settings,
-  managerConnections,
+  groups,
+  groupMembers,
   chats,
   notifications,
   type User,
@@ -25,6 +26,10 @@ import {
   type InsertTournamentMatch,
   type Setting,
   type InsertSetting,
+  type Group,
+  type InsertGroup,
+  type GroupMember,
+  type InsertGroupMember,
   type Chat,
   type InsertChat,
   type Notification,
@@ -32,7 +37,7 @@ import {
   type NotificationType,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, inArray, sql, desc } from "drizzle-orm";
+import { eq, and, inArray, sql, desc, or, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { nanoid } from "nanoid";
@@ -50,13 +55,18 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   deleteUser(id: number): Promise<void>;
 
-  // Manager Connection methods (Referee theo dõi Manager)
-  getConnectedManagers(refereeId: number): Promise<User[]>;
-  getConnectedReferees(managerId: number): Promise<User[]>;
-  connectRefereeToManager(refereeId: number, managerId: number): Promise<void>;
-  disconnectRefereeFromManager(refereeId: number, managerId: number): Promise<void>;
-  isConnected(refereeId: number, managerId: number): Promise<boolean>;
-  getMatchesFromConnectedManagers(refereeId: number): Promise<Match[]>;
+  // Group methods
+  getGroups(managerId: number): Promise<Group[]>;
+  getGroup(id: number): Promise<Group | undefined>;
+  createGroup(group: InsertGroup): Promise<Group>;
+  updateGroup(id: number, data: Partial<Group>): Promise<Group>;
+  deleteGroup(id: number): Promise<void>;
+  getGroupMembers(groupId: number): Promise<(GroupMember & { user: User })[]>;
+  getUserGroups(userId: number): Promise<Group[]>;
+  addGroupMember(member: InsertGroupMember): Promise<GroupMember>;
+  removeGroupMember(groupId: number, userId: number): Promise<void>;
+  isGroupMember(groupId: number, userId: number): Promise<boolean>;
+  searchUsers(query: string): Promise<User[]>;
 
   // Player methods
   getPlayers(): Promise<any[]>;
@@ -187,61 +197,91 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users).where(eq(users.role, "manager"));
   }
 
-  // --- MANAGER CONNECTION METHODS ---
-  async getConnectedManagers(refereeId: number): Promise<User[]> {
-    const connections = await db
+  // --- GROUP METHODS ---
+  async getGroups(managerId: number): Promise<Group[]> {
+    return db.select().from(groups).where(eq(groups.managerId, managerId));
+  }
+
+  async getGroup(id: number): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group;
+  }
+
+  async createGroup(group: InsertGroup): Promise<Group> {
+    const [newGroup] = await db.insert(groups).values(group).returning();
+    // Add manager as admin member
+    await db.insert(groupMembers).values({
+      groupId: newGroup.id,
+      userId: group.managerId,
+      role: "admin",
+    });
+    return newGroup;
+  }
+
+  async updateGroup(id: number, data: Partial<Group>): Promise<Group> {
+    const [updated] = await db.update(groups).set(data).where(eq(groups.id, id)).returning();
+    return updated;
+  }
+
+  async deleteGroup(id: number): Promise<void> {
+    await db.delete(groupMembers).where(eq(groupMembers.groupId, id));
+    await db.delete(groups).where(eq(groups.id, id));
+  }
+
+  async getGroupMembers(groupId: number): Promise<(GroupMember & { user: User })[]> {
+    const results = await db
       .select({
-        manager: users,
+        member: groupMembers,
+        user: users,
       })
-      .from(managerConnections)
-      .innerJoin(users, eq(managerConnections.managerId, users.id))
-      .where(eq(managerConnections.refereeId, refereeId));
-    return connections.map((c) => c.manager);
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(eq(groupMembers.groupId, groupId));
+    return results.map((r) => ({ ...r.member, user: r.user }));
   }
 
-  async getConnectedReferees(managerId: number): Promise<User[]> {
-    const connections = await db
-      .select({
-        referee: users,
-      })
-      .from(managerConnections)
-      .innerJoin(users, eq(managerConnections.refereeId, users.id))
-      .where(eq(managerConnections.managerId, managerId));
-    return connections.map((c) => c.referee);
+  async getUserGroups(userId: number): Promise<Group[]> {
+    const memberRecords = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId));
+    
+    if (memberRecords.length === 0) return [];
+    
+    const groupIds = memberRecords.map((m) => m.groupId);
+    return db.select().from(groups).where(inArray(groups.id, groupIds));
   }
 
-  async connectRefereeToManager(refereeId: number, managerId: number): Promise<void> {
-    await db.insert(managerConnections).values({ refereeId, managerId });
+  async addGroupMember(member: InsertGroupMember): Promise<GroupMember> {
+    const [newMember] = await db.insert(groupMembers).values(member).returning();
+    return newMember;
   }
 
-  async disconnectRefereeFromManager(refereeId: number, managerId: number): Promise<void> {
+  async removeGroupMember(groupId: number, userId: number): Promise<void> {
     await db
-      .delete(managerConnections)
-      .where(and(eq(managerConnections.refereeId, refereeId), eq(managerConnections.managerId, managerId)));
+      .delete(groupMembers)
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)));
   }
 
-  async isConnected(refereeId: number, managerId: number): Promise<boolean> {
-    const [connection] = await db
+  async isGroupMember(groupId: number, userId: number): Promise<boolean> {
+    const [member] = await db
       .select()
-      .from(managerConnections)
-      .where(and(eq(managerConnections.refereeId, refereeId), eq(managerConnections.managerId, managerId)));
-    return !!connection;
+      .from(groupMembers)
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)));
+    return !!member;
   }
 
-  async getMatchesFromConnectedManagers(refereeId: number): Promise<Match[]> {
-    const connections = await db
-      .select({ managerId: managerConnections.managerId })
-      .from(managerConnections)
-      .where(eq(managerConnections.refereeId, refereeId));
-
-    if (connections.length === 0) return [];
-
-    const managerIds = connections.map((c) => c.managerId);
+  async searchUsers(query: string): Promise<User[]> {
     return db
       .select()
-      .from(matches)
-      .where(inArray(matches.creatorId, managerIds))
-      .orderBy(matches.date);
+      .from(users)
+      .where(
+        or(
+          sql`${users.phone} ILIKE ${`%${query}%`}`,
+          sql`${users.username} ILIKE ${`%${query}%`}`,
+          sql`${users.fullName} ILIKE ${`%${query}%`}`
+        )
+      );
   }
 
   // --- PLAYER METHODS ---
@@ -383,14 +423,22 @@ export class DatabaseStorage implements IStorage {
 
   async getTournamentsForReferee(refereeId: number): Promise<Tournament[]> {
     try {
-      const connections = await db
-        .select({ managerId: managerConnections.managerId })
-        .from(managerConnections)
-        .where(eq(managerConnections.refereeId, refereeId));
+      const memberRecords = await db
+        .select({ groupId: groupMembers.groupId })
+        .from(groupMembers)
+        .where(eq(groupMembers.userId, refereeId));
 
-      if (connections.length === 0) return [];
+      if (memberRecords.length === 0) return [];
 
-      const managerIds = connections.map((c) => c.managerId);
+      const groupIds = memberRecords.map((m) => m.groupId);
+      const memberGroups = await db
+        .select({ managerId: groups.managerId })
+        .from(groups)
+        .where(inArray(groups.id, groupIds));
+
+      if (memberGroups.length === 0) return [];
+
+      const managerIds = memberGroups.map((g) => g.managerId);
       return await db
         .select()
         .from(tournaments)
@@ -641,8 +689,33 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(chats)
+      .where(isNull(chats.groupId))
       .orderBy(chats.createdAt)
       .limit(limit);
+  }
+
+  async getChatsByGroup(groupId: number, limit: number = 50): Promise<(Chat & { senderName: string; senderRole: string })[]> {
+    const results = await db
+      .select({
+        chat: chats,
+        user: users,
+      })
+      .from(chats)
+      .innerJoin(users, eq(chats.senderId, users.id))
+      .where(eq(chats.groupId, groupId))
+      .orderBy(chats.createdAt)
+      .limit(limit);
+    
+    return results.map((r) => ({
+      ...r.chat,
+      senderName: r.user.fullName || r.user.username,
+      senderRole: r.user.role,
+    }));
+  }
+
+  async sendGroupChat(groupId: number, senderId: number, message: string): Promise<Chat> {
+    const [chat] = await db.insert(chats).values({ groupId, senderId, message }).returning();
+    return chat;
   }
 
   async getChatsWithSender(): Promise<(Chat & { sender: User })[]> {

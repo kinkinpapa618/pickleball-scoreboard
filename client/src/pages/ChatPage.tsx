@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useGroups, useUserGroups, useGroupMembers } from "@/hooks/use-api";
 import {
   ArrowLeft,
   Send,
   MessageCircle,
   Users,
   Crown,
+  X,
+  User,
 } from "lucide-react";
 
 interface ChatMessage {
@@ -17,6 +20,16 @@ interface ChatMessage {
   senderRole: string;
   message: string;
   createdAt: string;
+  groupId?: number;
+  groupName?: string;
+}
+
+interface Group {
+  id: number;
+  name: string;
+  description: string | null;
+  managerId: number;
+  createdAt: Date;
 }
 
 export default function ChatPage() {
@@ -26,6 +39,20 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  
+  const { data: managerGroups } = user?.role === "manager" || user?.role === "admin" 
+    ? useGroups() 
+    : { data: undefined };
+  const { data: refereeGroups } = user?.role === "referee" 
+    ? useUserGroups() 
+    : { data: undefined };
+  const { data: members } = useGroupMembers(selectedGroup?.id || 0);
+    
+  const allGroups = (managerGroups || refereeGroups || []) as Group[];
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<NodeJS.Timeout>();
 
@@ -33,6 +60,11 @@ export default function ChatPage() {
     if (!user) {
       setLocation("/auth");
       return;
+    }
+
+    // Auto-select first group if available
+    if (allGroups.length > 0 && !selectedGroup) {
+      setSelectedGroup(allGroups[0]);
     }
 
     fetchMessages();
@@ -43,7 +75,7 @@ export default function ChatPage() {
         clearInterval(pollingRef.current);
       }
     };
-  }, [user]);
+  }, [user, selectedGroup]);
 
   useEffect(() => {
     scrollToBottom();
@@ -54,8 +86,13 @@ export default function ChatPage() {
   };
 
   const fetchMessages = async () => {
+    if (!selectedGroup) {
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const res = await fetch("/api/chat", { credentials: "same-origin" });
+      const res = await fetch(`/api/groups/${selectedGroup.id}/chat`, { credentials: "same-origin" });
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
@@ -69,10 +106,10 @@ export default function ChatPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !selectedGroup) return;
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch(`/api/groups/${selectedGroup.id}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
@@ -103,36 +140,82 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F8FAFC]">
+      <div className="flex items-center justify-center max-h-[90vh] bg-[#F8FAFC] pb-3">
         <div className="animate-spin h-8 w-8 border-2 border-blue-500 rounded-full border-t-transparent" />
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shadow-sm flex-shrink-0">
-        <button onClick={() => setLocation("/profile")} className="p-2 hover:bg-slate-100 rounded-lg">
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
-        </button>
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-blue-500" />
-          <h1 className="text-lg font-bold text-slate-900">Nhóm Chat</h1>
+  if (allGroups.length === 0) {
+    return (
+      <div className="flex flex-col max-h-[90vh] bg-[#F8FAFC] pb-3">
+        <div className="bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-2 flex-shrink-0">
+          <button onClick={() => setLocation("/profile")} className="p-1.5 hover:bg-slate-100 rounded-lg">
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
+          </button>
+          <div className="font-medium text-slate-900 text-sm">Chat Nhóm</div>
         </div>
-        <div className="ml-auto flex items-center gap-1 text-xs text-slate-500">
-          <Users className="w-4 h-4" />
-          <span>Manager & Referees</span>
+        <div className="flex-1 flex items-center justify-center text-slate-400 p-4">
+          <div className="text-center">
+            <Users className="w-16 h-16 mx-auto mb-3 opacity-30" />
+            <p>Bạn chưa tham gia nhóm nào</p>
+            <p className="text-sm mt-1">Liên hệ Manager để được thêm vào nhóm</p>
+          </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col max-h-[90vh] bg-[#F8FAFC] pb-3">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-2 flex-shrink-0">
+        <button onClick={() => setLocation("/profile")} className="p-1.5 hover:bg-slate-100 rounded-lg">
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        </button>
+        
+        {/* Group Name - no dropdown */}
+        <div className="flex-1 font-medium text-slate-900 text-sm truncate">
+          {selectedGroup?.name || "Chat Nhóm"}
+        </div>
+        
+        {/* Members button */}
+        <button 
+          onClick={() => setShowMembers(!showMembers)} 
+          className="p-1.5 hover:bg-slate-100 rounded-lg"
+        >
+          <Users className="w-5 h-5 text-slate-600" />
+        </button>
+      </div>
+
+      {/* Members list */}
+      {showMembers && selectedGroup && (
+        <div className="bg-white border-b border-slate-200 px-3 py-2 flex-shrink-0 overflow-y-auto max-h-32">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-slate-500">Thành viên ({members?.length || 0})</span>
+            <button onClick={() => setShowMembers(false)} className="p-1">
+              <X className="w-3 h-3 text-slate-400" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {members?.map((m) => (
+              <div key={m.id} className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-full text-xs">
+                <User className="w-3 h-3 text-slate-500" />
+                <span className="text-slate-700">{m.user.fullName || m.user.username}</span>
+                {m.role === "admin" && <Crown className="w-3 h-3 text-orange-500" />}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400">
-            <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 mb-3 opacity-30" />
-            <p className="text-sm sm:text-base">Chưa có tin nhắn nào</p>
-            <p className="text-xs sm:text-sm">Hãy gửi tin nhắn đầu tiên!</p>
+          <div className="flex flex-col items-center justify-center h-full text-slate-400">
+            <MessageCircle className="w-12 h-12 mb-3 opacity-30" />
+            <p className="text-sm">Chưa có tin nhắn nào</p>
+            <p className="text-xs">Hãy gửi tin nhắn đầu tiên!</p>
           </div>
         ) : (
           messages.map((msg) => (
@@ -181,22 +264,24 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSend} className="bg-white border-t border-slate-200 p-3 sm:p-4 flex-shrink-0">
-        <div className="flex gap-2 max-w-4xl mx-auto">
+      {/* Input - cố định ở dưới, trên BottomNav */}
+      <form onSubmit={handleSend} className="bg-white border-t border-slate-200 p-3 flex-shrink-0 pb-0">
+        <div className="flex gap-2">
           <input
+            id="message-input"
+            name="message"
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Nhập tin nhắn..."
-            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 sm:py-3 text-sm sm:text-base text-black focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 text-sm text-black focus:outline-none focus:border-blue-500"
           />
           <button
             type="submit"
-            disabled={!newMessage.trim()}
-            className="bg-blue-500 text-white p-2 sm:p-3 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            disabled={!newMessage.trim() || !selectedGroup}
+            className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
-            <Send className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Send className="w-5 h-5" />
           </button>
         </div>
       </form>

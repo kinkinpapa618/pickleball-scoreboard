@@ -19,8 +19,13 @@ import {
   Sun,
   Link2,
   MessageCircle,
+  Plus,
+  Search,
+  Trash2,
+  UserPlus,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useGroups, useUserGroups, useCreateGroup, useDeleteGroup, useGroupMembers, useSearchUsers, useAddGroupMember, useRemoveGroupMember, type Group, type GroupMember } from "@/hooks/use-api";
 
 interface UserProfile {
   id: number;
@@ -48,7 +53,7 @@ export default function Profile() {
   const [editedUser, setEditedUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "stats" | "admin" | "manager" | "info"
+    "stats" | "admin" | "manager" | "info" | "groups"
   >(() => {
     if (user?.role === "admin") return "admin";
     if (user?.role === "manager") return "manager";
@@ -192,30 +197,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {editedUser.role === "referee" && (
-          <Link href="/connected-managers">
-            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-3 rounded-xl shadow-sm flex items-center justify-between hover:opacity-90 transition">
-              <div className="flex items-center gap-2">
-                <Link2 className="w-4 h-4 text-white" />
-                <span className="font-bold text-white text-sm">Kết nối Manager</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-white/70" />
-            </div>
-          </Link>
-        )}
-
-        {(editedUser.role === "referee" || editedUser.role === "manager") && (
-          <Link href="/chat">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-3 rounded-xl shadow-sm flex items-center justify-between hover:opacity-90 transition">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-white" />
-                <span className="font-bold text-white text-sm">Chat nhóm</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-white/70" />
-            </div>
-          </Link>
-        )}
-
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-muted rounded-xl p-3 text-center">
             <div className="text-xl font-black text-blue-600">
@@ -324,6 +305,19 @@ export default function Profile() {
         >
           Thông tin
         </button>
+        {editedUser.role === "referee" && (
+          <button
+            onClick={() => setActiveTab("groups")}
+            className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
+              activeTab === "groups"
+                ? "bg-blue-500 text-white"
+                : "bg-card text-muted-foreground border border-border"
+            }`}
+            data-testid="button-tab-groups"
+          >
+            Nhóm
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
@@ -447,6 +441,10 @@ export default function Profile() {
         </div>
       )}
 
+      {activeTab === "groups" && editedUser.role === "referee" && (
+        <RefereeGroups />
+      )}
+
       {activeTab === "admin" && editedUser.role === "admin" && (
         <div className="space-y-3">
           <Link href="/admin">
@@ -516,6 +514,9 @@ export default function Profile() {
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </div>
           </Link>
+          
+          {/* Groups Section */}
+          <ManagerGroups />
         </div>
       )}
 
@@ -530,6 +531,283 @@ export default function Profile() {
           <span className="font-medium">Đăng xuất</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+function ManagerGroups() {
+  const { data: groups, isLoading } = useGroups();
+  const createGroup = useCreateGroup();
+  const deleteGroup = useDeleteGroup();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) return;
+    await createGroup.mutateAsync({ name: newGroupName, description: newGroupDesc });
+    setNewGroupName("");
+    setNewGroupDesc("");
+    setShowCreateModal(false);
+  };
+
+  const handleDeleteGroup = async (id: number) => {
+    if (confirm("Bạn có chắc muốn xóa nhóm này?")) {
+      await deleteGroup.mutateAsync(id);
+    }
+  };
+
+  const hasGroup = groups && groups.length > 0;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-foreground">Nhóm của tôi</h3>
+        {!hasGroup && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-1 text-sm text-blue-500 font-medium"
+          >
+            <Plus className="w-4 h-4" /> Tạo nhóm
+          </button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-4 text-muted-foreground">Đang tải...</div>
+      ) : groups?.length === 0 ? (
+        <div className="text-center py-4 text-muted-foreground text-sm">
+          Chưa có nhóm nào. Tạo nhóm để quản lý trọng tài.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {groups?.map((group) => (
+            <div
+              key={group.id}
+              className="bg-card p-3 rounded-xl border border-border shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setSelectedGroup(group)}
+                  className="flex-1 text-left"
+                >
+                  <div className="font-medium text-foreground">{group.name}</div>
+                  {group.description && (
+                    <div className="text-xs text-muted-foreground">{group.description}</div>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleDeleteGroup(group.id)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card p-4 rounded-xl w-full max-w-sm space-y-4">
+            <h3 className="font-bold text-lg">Tạo nhóm mới</h3>
+            <input
+              type="text"
+              placeholder="Tên nhóm"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              className="w-full p-2 rounded-lg border border-border bg-background"
+            />
+            <input
+              type="text"
+              placeholder="Mô tả (tùy chọn)"
+              value={newGroupDesc}
+              onChange={(e) => setNewGroupDesc(e.target.value)}
+              className="w-full p-2 rounded-lg border border-border bg-background"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 p-2 rounded-lg border border-border"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleCreateGroup}
+                disabled={!newGroupName.trim() || createGroup.isPending}
+                className="flex-1 p-2 rounded-lg bg-blue-500 text-white font-medium disabled:opacity-50"
+              >
+                {createGroup.isPending ? "Đang tạo..." : "Tạo"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedGroup && (
+        <GroupMembersModal
+          group={selectedGroup}
+          onClose={() => setSelectedGroup(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function GroupMembersModal({ group, onClose }: { group: Group; onClose: () => void }) {
+  const { data: members, isLoading } = useGroupMembers(group.id);
+  const searchUsers = useSearchUsers();
+  const addMember = useAddGroupMember();
+  const removeMember = useRemoveGroupMember();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.length >= 2) {
+      const results = await searchUsers.mutateAsync(query);
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const handleAddMember = async (userId: number) => {
+    await addMember.mutateAsync({ groupId: group.id, userId });
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  const handleRemoveMember = async (userId: number) => {
+    if (confirm("Xóa thành viên khỏi nhóm?")) {
+      await removeMember.mutateAsync({ groupId: group.id, userId });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-card p-4 rounded-xl w-full max-w-sm space-y-4 max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-lg">{group.name}</h3>
+          <button onClick={onClose} className="p-1">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Search to add members */}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Tìm trọng tài (SĐT, tên)..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-10 p-2 rounded-lg border border-border bg-background text-sm"
+            />
+          </div>
+          
+          {searchResults.length > 0 && (
+            <div className="border border-border rounded-lg divide-y">
+              {searchResults.map((user) => (
+                <div
+                  key={user.id}
+                  className="p-2 flex items-center justify-between hover:bg-muted/50"
+                >
+                  <div>
+                    <div className="font-medium text-sm">{user.fullName || user.username}</div>
+                    <div className="text-xs text-muted-foreground">{user.phone}</div>
+                  </div>
+                  <button
+                    onClick={() => handleAddMember(user.id)}
+                    className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Members list */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-sm text-muted-foreground">Thành viên ({members?.length || 0})</h4>
+          {isLoading ? (
+            <div className="text-center py-2 text-muted-foreground text-sm">Đang tải...</div>
+          ) : members?.length === 0 ? (
+            <div className="text-center py-2 text-muted-foreground text-sm">Chưa có thành viên</div>
+          ) : (
+            <div className="space-y-1">
+              {members?.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                        {(member.user.fullName || member.user.username).slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{member.user.fullName || member.user.username}</div>
+                      <div className="text-xs text-muted-foreground">{member.user.phone}</div>
+                    </div>
+                  </div>
+                  {member.role === "admin" ? (
+                    <span className="text-xs text-orange-500 font-medium">Admin</span>
+                  ) : (
+                    <button
+                      onClick={() => handleRemoveMember(member.userId)}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RefereeGroups() {
+  const { data: groups, isLoading } = useUserGroups();
+
+  return (
+    <div className="space-y-3">
+      <h3 className="font-bold text-foreground">Nhóm của tôi</h3>
+      
+      {isLoading ? (
+        <div className="text-center py-4 text-muted-foreground">Đang tải...</div>
+      ) : groups?.length === 0 ? (
+        <div className="text-center py-4 text-muted-foreground text-sm">
+          Bạn chưa tham gia nhóm nào. Liên hệ Manager để được thêm vào nhóm.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {groups?.map((group) => (
+            <div
+              key={group.id}
+              className="bg-card p-4 rounded-xl border border-border shadow-sm"
+            >
+              <div className="font-medium text-foreground">{group.name}</div>
+              {group.description && (
+                <div className="text-xs text-muted-foreground mt-1">{group.description}</div>
+              )}
+              <div className="text-xs text-muted-foreground mt-2">
+                Tham gia: {new Date(group.createdAt).toLocaleDateString("vi-VN")}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

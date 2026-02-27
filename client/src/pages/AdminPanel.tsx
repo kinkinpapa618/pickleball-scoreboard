@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { useSettings, useUpdateSetting } from "@/hooks/use-api";
+import { useSettings, useUpdateSetting, useGroups, useGroupMembers } from "@/hooks/use-api";
 import {
   ArrowLeft,
   Users,
@@ -180,6 +180,11 @@ export default function AdminPanel() {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [assignForm, setAssignForm] = useState({ refereeId: "" });
 
+  // Groups for manager
+  const { data: groups } = useGroups();
+  const [selectedGroupForAssign, setSelectedGroupForAssign] = useState<number | null>(null);
+  const { data: groupMembers } = useGroupMembers(selectedGroupForAssign || 0);
+
   // Tournaments state
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
 
@@ -191,6 +196,13 @@ export default function AdminPanel() {
       fetchTournaments();
     }
   }, [user]);
+
+  useEffect(() => {
+    // Auto-select first group when groups load
+    if (groups && groups.length > 0 && !selectedGroupForAssign) {
+      setSelectedGroupForAssign(groups[0].id);
+    }
+  }, [groups]);
 
   const isAdmin = user?.role === "admin";
   const isManager = user?.role === "manager";
@@ -745,11 +757,29 @@ export default function AdminPanel() {
               <div className="text-slate-400">vs</div>
               <div className="font-bold">{selectedMatch.team2Player1}/{selectedMatch.team2Player2}</div>
             </div>
+            {/* Group selector */}
+            {groups && groups.length > 0 && (
+              <select 
+                value={selectedGroupForAssign || ""} 
+                onChange={e => setSelectedGroupForAssign(Number(e.target.value))}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm mb-2"
+              >
+                <option value="">Chọn nhóm...</option>
+                {groups.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            )}
             <select id="assignRefereeId" name="refereeId" value={assignForm.refereeId} onChange={e => setAssignForm({...assignForm, refereeId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
-              <option value="">Chọn Trọng tài...</option>
-              {users.filter(u => u.role === "referee").map(u => (
-                <option key={u.id} value={u.id}>{u.fullName || u.username}</option>
+              <option value="">Chọn Trọng tài từ nhóm...</option>
+              {(groupMembers || []).map(m => (
+                <option key={m.userId} value={m.userId}>
+                  {m.user.fullName || m.user.username} ({m.user.phone})
+                </option>
               ))}
+              {(!groupMembers || groupMembers.length === 0) && (
+                <option disabled>Chưa có thành viên trong nhóm</option>
+              )}
             </select>
             <div className="flex gap-2 pt-2">
               <button onClick={() => { setShowMatchAssignModal(false); setSelectedMatch(null); }} className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-sm">Hủy</button>
