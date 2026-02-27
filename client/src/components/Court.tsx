@@ -91,6 +91,7 @@ function CourtMarker({
 }) {
   const isTeam1 = side === "team1";
   
+  // Giữ nguyên màu team (blue T1, red T2) - không hoán đổi khi đổi sân
   const teamBg = isTeam1 ? "bg-cyan-600" : "bg-rose-600";
 
   return (
@@ -107,7 +108,7 @@ function CourtMarker({
       <div
         className={`
           relative flex items-center gap-1 px-2 py-1 rounded-md cursor-pointer transition-all hover:scale-105
-          w-[140px] min-h-[32px]
+          w-[140px] min-h-[20px]
           ${teamBg}
           shadow-md
           ${penalty?.red ? "opacity-50 grayscale" : ""}
@@ -259,7 +260,7 @@ export function Court({
   return (
     <div className="flex flex-col gap-1.5" data-testid="court-view">
       <div
-        className={`relative w-full overflow-hidden rounded-xl border border-white/20 dark:border-white/10 shadow-inner ${compact ? "aspect-[2/1]" : "aspect-[16/9]"}`}
+        className={`relative w-full overflow-hidden border border-white/20 dark:border-white/10 shadow-inner ${compact ? "aspect-[2/1]" : "aspect-[16/9]"}`}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-green-700">
           <div className="absolute inset-0 flex justify-center pointer-events-none">
@@ -309,21 +310,15 @@ export function Court({
           />
         ))}
 
-        <div className="absolute bottom-1 left-2 text-[7px] font-bold uppercase tracking-wider">
-          <span className={courtSwapped ? "text-rose-400" : "text-cyan-400"}>
-            {courtSwapped ? "T2" : "T1"}
-          </span>
+        <div className="absolute top-1/2 left-[25%] -translate-y-1/2 -translate-x-1/2 text-4xl font-black italic text-white/50 pointer-events-none select-none">
+          {courtSwapped ? "T2" : "T1"}
         </div>
-        <div className="absolute bottom-1 right-2 text-[7px] font-bold uppercase tracking-wider">
-          <span className={courtSwapped ? "text-cyan-400" : "text-rose-400"}>
-            {courtSwapped ? "T1" : "T2"}
-          </span>
+        <div className="absolute top-1/2 left-[75%] -translate-y-1/2 -translate-x-1/2 text-4xl font-black italic text-white/50 pointer-events-none select-none">
+          {courtSwapped ? "T1" : "T2"}
         </div>
       </div>
 
-      <p className="text-center text-[9px] text-muted-foreground italic">
-        Chạm VĐV để Stacking / Thẻ phạt
-      </p>
+      
     </div>
   );
 }
