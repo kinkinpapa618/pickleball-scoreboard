@@ -12,6 +12,7 @@ import {
   insertMatchSchema as matchSchema,
   insertNotificationSchema,
 } from "@shared/schema";
+import { pool } from "./db";
 
 const startingMatches = new Set<number>();
 
