@@ -460,21 +460,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { initialSchema } = await import("./schema.sql");
       const statements = initialSchema.split("--> statement-breakpoint\n").map(s => s.trim()).filter(s => s.length > 0);
-      for (const statement of statements) {
-        if (!statement.trim()) continue;
-        try {
-          await pool.query(statement);
-        } catch (err: any) {
-          if (err.message.includes("already exists")) {
-            console.log("Skipped existing schema element");
-          } else {
-            throw err;
+      const executed: string[] = [];
+      const skipped: string[] = [];
+      
+      const client = await pool.connect();
+      try {
+        for (const statement of statements) {
+          try {
+            await client.query(statement);
+            executed.push(statement.substring(0, 50));
+          } catch (err: any) {
+            if (err.message && err.message.includes("already exists")) {
+              skipped.push(statement.substring(0, 50));
+            } else {
+              return res.status(500).json({ 
+                message: "Error initializing DB", 
+                error: err.message || "Unknown error", 
+                statement: statement.substring(0, 100) 
+              });
+            }
           }
         }
+      } finally {
+        client.release();
       }
-      res.send("DB Initialized Successfully!");
+      res.json({ message: "DB Initialized Successfully!", executed, skipped });
     } catch (e: any) {
-      res.status(500).send("Error initializing DB: " + e.message);
+      res.status(500).json({ message: "Error initializing DB wrapper", error: e.message || "Unknown error" });
     }
   });
 
