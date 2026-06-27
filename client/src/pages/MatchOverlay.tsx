@@ -3,7 +3,7 @@ import { useMatch } from "@/hooks/use-api";
 
 export default function MatchOverlay() {
   const { id } = useParams();
-  const { data: match } = useMatch(parseInt(id || "0"));
+  const { data: match } = useMatch(parseInt(id || "0"), 1000);
 
   if (!match) return null;
 

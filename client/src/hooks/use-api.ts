@@ -15,7 +15,7 @@ export function useMatches(page: number = 1) {
 }
 
 // Lấy chi tiết 1 trận đấu (Dùng cho cả Trọng tài và Người xem)
-export function useMatch(id: number) {
+export function useMatch(id: number, refetchInterval: number | false = false) {
   return useQuery<schema.Match>({
     queryKey: [`/api/matches/${id}`],
     queryFn: async () => {
@@ -23,7 +23,7 @@ export function useMatch(id: number) {
       if (!res.ok) throw new Error("Match not found");
       return res.json();
     },
-    refetchInterval: 1000, // Cập nhật realtime mỗi 1s
+    refetchInterval,
     enabled: !!id,
   });
 }

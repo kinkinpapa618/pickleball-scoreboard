@@ -61,7 +61,7 @@ export default function BadmintonMatch() {
     queryKey: ["/api/badminton/matches", id],
     queryFn: () =>
       apiRequest("GET", `/api/badminton/matches/${id}`).then((r) => r.json()),
-    refetchInterval: 1000, // Faster refresh for ref
+    refetchInterval: false,
   });
 
   // ─── Mutations ─────────────────────────────────────────
