@@ -410,48 +410,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 15. Lấy thống kê trận đấu của referee
   app.get("/api/stats/referee/:id", async (req, res) => {
-    const refereeId = parseInt(req.params.id as string);
-    const matches = await storage.getMatchesByReferee(refereeId);
-    const schedules = await storage.getWorkSchedules(refereeId);
-    
-    const stats = {
-      totalMatches: matches.length,
-      completedMatches: matches.filter(m => m.status === "finished" || m.status === "completed").length,
-      pendingMatches: matches.filter(m => m.status === "pending").length,
-      totalSchedules: schedules.length,
-      completedSchedules: schedules.filter(s => s.status === "completed").length,
-    };
-    res.json(stats);
+    try {
+      const refereeId = parseInt(req.params.id as string);
+      const matches = await storage.getMatchesByReferee(refereeId);
+      const schedules = await storage.getWorkSchedules(refereeId);
+      
+      const stats = {
+        totalMatches: matches.length,
+        completedMatches: matches.filter(m => m.status === "finished" || m.status === "completed").length,
+        pendingMatches: matches.filter(m => m.status === "pending").length,
+        totalSchedules: schedules.length,
+        completedSchedules: schedules.filter(s => s.status === "completed").length,
+      };
+      res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ message: "Failed to get referee stats", error: e.message });
+    }
   });
 
   // 15. Thống kê tổng quan cho Admin
   app.get("/api/stats/admin", async (req, res) => {
-    const user = req.user as any;
-    if (!user || user.role !== "admin") {
-      return res.status(403).json({ message: "Không có quyền" });
+    try {
+      const user = req.user as any;
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Không có quyền" });
+      }
+      
+      const allMatches = await storage.getMatches();
+      const allUsers = await storage.getUsers();
+      const allSchedules = await storage.getWorkSchedules();
+      const allTournaments = await storage.getTournaments();
+      
+      const stats = {
+        totalMatches: allMatches.length,
+        liveMatches: allMatches.filter(m => m.status === "live").length,
+        finishedMatches: allMatches.filter(m => m.status === "finished").length,
+        pendingMatches: allMatches.filter(m => m.status === "pending").length,
+        totalUsers: allUsers.length,
+        adminUsers: allUsers.filter(u => u.role === "admin").length,
+        managerUsers: allUsers.filter(u => u.role === "manager").length,
+        refereeUsers: allUsers.filter(u => u.role === "referee").length,
+        totalSchedules: allSchedules.length,
+        completedSchedules: allSchedules.filter(s => s.status === "completed").length,
+        totalTournaments: allTournaments.length,
+        activeTournaments: allTournaments.filter(t => t.status === "active").length,
+        completedTournaments: allTournaments.filter(t => t.status === "completed").length,
+      };
+      res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ message: "Failed to get admin stats", error: e.message });
     }
-    
-    const allMatches = await storage.getMatches();
-    const allUsers = await storage.getUsers();
-    const allSchedules = await storage.getWorkSchedules();
-    const allTournaments = await storage.getTournaments();
-    
-    const stats = {
-      totalMatches: allMatches.length,
-      liveMatches: allMatches.filter(m => m.status === "live").length,
-      finishedMatches: allMatches.filter(m => m.status === "finished").length,
-      pendingMatches: allMatches.filter(m => m.status === "pending").length,
-      totalUsers: allUsers.length,
-      adminUsers: allUsers.filter(u => u.role === "admin").length,
-      managerUsers: allUsers.filter(u => u.role === "manager").length,
-      refereeUsers: allUsers.filter(u => u.role === "referee").length,
-      totalSchedules: allSchedules.length,
-      completedSchedules: allSchedules.filter(s => s.status === "completed").length,
-      totalTournaments: allTournaments.length,
-      activeTournaments: allTournaments.filter(t => t.status === "active").length,
-      completedTournaments: allTournaments.filter(t => t.status === "completed").length,
-    };
-    res.json(stats);
   });
 
   // === TOURNAMENT APIs ===
