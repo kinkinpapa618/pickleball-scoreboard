@@ -23,6 +23,7 @@ import {
   Settings2,
   Feather,
   Coins,
+  ArrowRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CoinTossModal } from "@/components/CoinTossModal";
@@ -69,7 +70,7 @@ export default function BadmintonTools() {
   const [t2p2, setT2p2] = useState("");
   const [bestOf, setBestOf] = useState<1 | 3 | 5>(3);
   const [isBestOf, setIsBestOf] = useState(true);
-  const [winningPoints, setWinningPoints] = useState<21 | 15>(21);
+  const [winningPoints, setWinningPoints] = useState<11 | 15 | 21>(21);
   const [firstServer, setFirstServer] = useState<1 | 2>(1);
   const [showCoinToss, setShowCoinToss] = useState(false);
 
@@ -241,7 +242,7 @@ export default function BadmintonTools() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-4">
                 {/* Match Type */}
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
@@ -257,26 +258,6 @@ export default function BadmintonTools() {
                         }`}
                       >
                         {MATCH_TYPE_LABELS[t]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Điểm thắng */}
-                <div>
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
-                    Điểm/Ván
-                  </label>
-                  <div className="flex gap-1 bg-muted p-1 rounded-xl">
-                    {([21, 15] as const).map((pts) => (
-                      <button
-                        key={pts}
-                        onClick={() => setWinningPoints(pts)}
-                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
-                          winningPoints === pts ? "bg-blue-500 text-white" : "text-muted-foreground"
-                        }`}
-                      >
-                        {pts}
                       </button>
                     ))}
                   </div>
@@ -325,35 +306,60 @@ export default function BadmintonTools() {
                   </div>
                 </div>
 
-                {/* First Serve */}
-                <div>
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
-                    Giao Đầu
-                  </label>
-                  <div className="flex gap-1 bg-muted p-1 rounded-xl">
-                    {([1, 2] as const).map((team) => (
-                      <button
-                        key={team}
-                        onClick={() => setFirstServer(team)}
-                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
-                          firstServer === team
-                            ? team === 1
-                              ? "bg-blue-500 text-white"
-                              : "bg-orange-500 text-white"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        T{team}
-                      </button>
-                    ))}
+                {/* Grid 2 cột: Điểm/Ván và Giao Đầu */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Điểm thắng */}
+                  <div>
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
+                      Điểm/Ván
+                    </label>
+                    <div className="flex gap-1 bg-muted p-1 rounded-xl">
+                      {([11, 15, 21] as const).map((pts) => (
+                        <button
+                          key={pts}
+                          onClick={() => setWinningPoints(pts)}
+                          className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
+                            winningPoints === pts ? "bg-blue-500 text-white" : "text-muted-foreground"
+                          }`}
+                        >
+                          {pts}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <Button
-                    onClick={() => setShowCoinToss(true)}
-                    className="w-full bg-muted border border-border text-blue-500 font-black text-[10px] py-3 rounded-xl gap-4 hover:bg-accent transition-all mt-3"
-                  >
-                    <Coins className="w-3.5 h-3.5" /> TUNG XU PHÂN ĐỊNH
-                  </Button>
+
+                  {/* First Serve */}
+                  <div>
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
+                      Giao Đầu
+                    </label>
+                    <div className="flex gap-1 bg-muted p-1 rounded-xl">
+                      {([1, 2] as const).map((team) => (
+                        <button
+                          key={team}
+                          onClick={() => setFirstServer(team)}
+                          className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
+                            firstServer === team
+                              ? team === 1
+                                ? "bg-cyan-500 text-white"
+                                : "bg-rose-500 text-white"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          Team {team}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+
+                {/* Coin Toss Button */}
+                <Button
+                  onClick={() => setShowCoinToss(true)}
+                  className="w-full bg-muted border border-border text-blue-500 font-black text-[10px] py-3 rounded-xl gap-4 hover:bg-accent transition-all"
+                >
+                  <Coins className="w-3.5 h-3.5" /> TUNG XU PHÂN ĐỊNH
+                </Button>
               </div>
 
               {/* Summary badge */}
@@ -378,14 +384,18 @@ export default function BadmintonTools() {
               const isFormValid = matchType === "singles"
                 ? (t1p1.trim().length > 0 && t2p1.trim().length > 0)
                 : (t1p1.trim().length > 0 && t1p2.trim().length > 0 && t2p1.trim().length > 0 && t2p2.trim().length > 0);
-              return isFormValid && (
+              return (
                 <Button
                   onClick={handleCreate}
-                  disabled={createMatch.isPending}
-                  className="w-full h-14 bg-blue-500 hover:bg-blue-600 text-white font-black text-sm uppercase rounded-2xl gap-3 shadow-[0_4px_20px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_28px_rgba(59,130,246,0.5)] transition-all"
+                  disabled={!isFormValid || createMatch.isPending}
+                  className={`w-full py-8 rounded-2xl font-black italic text-lg shadow-[0_10px_30px_rgba(0,0,0,0.1)] gap-2 transition-all ${
+                    !isFormValid
+                      ? "bg-muted text-muted-foreground cursor-not-allowed"
+                      : "bg-blue-500 text-white hover:scale-[1.02] active:scale-95"
+                  }`}
                 >
-                  <Play className="w-4 h-4 fill-current" />
-                  {createMatch.isPending ? "Đang tạo..." : "Bắt Đầu Trận Đấu"}
+                  {createMatch.isPending ? "ĐANG VÀO TRẬN ĐẤU..." : "BẮT ĐẦU TRẬN ĐẤU"}
+                  <ArrowRight className="w-6 h-6" />
                 </Button>
               );
             })()}
