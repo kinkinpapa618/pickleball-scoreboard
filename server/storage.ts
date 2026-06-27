@@ -144,9 +144,22 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
+    let sslConfig: any = undefined;
+    if (process.env.NODE_ENV === "production") {
+      try {
+        const url = new URL(process.env.DATABASE_URL as string);
+        if (url.hostname.includes('.')) {
+          sslConfig = { rejectUnauthorized: false };
+        }
+      } catch (e) {
+        sslConfig = { rejectUnauthorized: false };
+      }
+    }
+
     this.sessionStore = new PostgresSessionStore({
       conObject: {
         connectionString: process.env.DATABASE_URL,
+        ssl: sslConfig,
       },
       createTableIfMissing: true,
     });

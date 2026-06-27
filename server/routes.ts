@@ -463,26 +463,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const executed: string[] = [];
       const skipped: string[] = [];
       
-      const client = await pool.connect();
-      try {
-        for (const statement of statements) {
-          try {
-            await client.query(statement);
-            executed.push(statement.substring(0, 50));
-          } catch (err: any) {
-            if (err.message && err.message.includes("already exists")) {
-              skipped.push(statement.substring(0, 50));
-            } else {
-              return res.status(500).json({ 
-                message: "Error initializing DB", 
-                error: err.message || "Unknown error", 
-                statement: statement.substring(0, 100) 
-              });
-            }
+      const { sql } = await import("drizzle-orm");
+      for (const statement of statements) {
+        try {
+          await db.execute(sql.raw(statement));
+          executed.push(statement.substring(0, 50));
+        } catch (err: any) {
+          if (err.message && err.message.includes("already exists")) {
+            skipped.push(statement.substring(0, 50));
+          } else {
+            return res.status(500).json({ 
+              message: "Error initializing DB", 
+              error: err.message || "Unknown error", 
+              statement: statement.substring(0, 100) 
+            });
           }
         }
-      } finally {
-        client.release();
       }
       res.json({ message: "DB Initialized Successfully!", executed, skipped });
     } catch (e: any) {

@@ -10,8 +10,20 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+let sslConfig: any = undefined;
+if (process.env.NODE_ENV === "production") {
+  try {
+    const url = new URL(process.env.DATABASE_URL);
+    if (url.hostname.includes('.')) {
+      sslConfig = { rejectUnauthorized: false };
+    }
+  } catch (e) {
+    sslConfig = { rejectUnauthorized: false };
+  }
+}
+
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+  ssl: sslConfig,
 });
 export const db = drizzle(pool, { schema });
