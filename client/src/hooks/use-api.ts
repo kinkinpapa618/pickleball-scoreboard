@@ -10,7 +10,7 @@ export function useMatches(page: number = 1) {
       const res = await fetch(`/api/matches?page=${page}`, { credentials: "same-origin" });
       return res.json();
     },
-    refetchInterval: 3000, // Cập nhật danh sách mỗi 3s
+    refetchInterval: false,
   });
 }
 
@@ -165,7 +165,7 @@ export function useMyMatches(page: number = 1) {
       if (!res.ok) throw new Error("Failed to fetch matches");
       return res.json();
     },
-    refetchInterval: 1000,
+    refetchInterval: false,
     staleTime: 0,
   });
 }
