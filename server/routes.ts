@@ -459,7 +459,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/init-db", async (req, res) => {
     try {
       const { initialSchema } = await import("./schema.sql");
-      await pool.query(initialSchema);
+      const statements = initialSchema.split("--> statement-breakpoint\n").map(s => s.trim()).filter(s => s.length > 0);
+      for (const statement of statements) {
+        if (!statement.trim()) continue;
+        try {
+          await pool.query(statement);
+        } catch (err: any) {
+          if (err.message.includes("already exists")) {
+            console.log("Skipped existing schema element");
+          } else {
+            throw err;
+          }
+        }
+      }
       res.send("DB Initialized Successfully!");
     } catch (e: any) {
       res.status(500).send("Error initializing DB: " + e.message);
