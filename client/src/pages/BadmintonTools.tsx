@@ -544,7 +544,7 @@ export default function BadmintonTools() {
                         {/* Game scores breakdown */}
                         <div className="flex items-center gap-4 z-10">
                           <div className="flex items-center gap-2">
-                            {match.gameScores.map(([s1], gi) => (
+                            {match.bestOf > 1 && match.gameScores.map(([s1], gi) => (
                               <span key={gi} className="text-[12px] font-bold text-muted-foreground w-6 text-center">{s1}</span>
                             ))}
                             {/* Serve Icon */}
@@ -554,7 +554,7 @@ export default function BadmintonTools() {
                               }`} />
                             </div>
                           </div>
-                          {/* Main Score is now currentScoreTeam1 */}
+                          {/* Main Score */}
                           <span className={`font-black tabular-nums text-right transition-all duration-300 min-w-[2.5rem] ${
                             winner === 1
                               ? "text-blue-500 dark:text-blue-400 text-4xl"
@@ -562,7 +562,10 @@ export default function BadmintonTools() {
                               ? "text-blue-500 dark:text-blue-400 drop-shadow-[0_0_12px_rgba(96,165,250,0.5)] dark:drop-shadow-[0_0_15px_rgba(96,165,250,0.9)] text-4xl"
                               : "text-blue-500/70 dark:text-blue-400/80 text-3xl"
                           }`}>
-                            {isCompleted ? match.gamesWonTeam1 : match.currentScoreTeam1}
+                            {match.bestOf === 1
+                              ? (isCompleted ? (match.gameScores[0]?.[0] ?? match.currentScoreTeam1) : match.currentScoreTeam1)
+                              : (isCompleted ? match.gamesWonTeam1 : match.currentScoreTeam1)
+                            }
                           </span>
                         </div>
                       </div>
@@ -603,7 +606,7 @@ export default function BadmintonTools() {
                         </div>
                         <div className="flex items-center gap-4 z-10">
                           <div className="flex items-center gap-2">
-                            {match.gameScores.map(([, s2], gi) => (
+                            {match.bestOf > 1 && match.gameScores.map(([, s2], gi) => (
                               <span key={gi} className="text-[12px] font-bold text-muted-foreground w-6 text-center">{s2}</span>
                             ))}
                             {/* Serve Icon */}
@@ -613,7 +616,7 @@ export default function BadmintonTools() {
                               }`} />
                             </div>
                           </div>
-                          {/* Main Score is now currentScoreTeam2 */}
+                          {/* Main Score */}
                           <span className={`font-black tabular-nums text-right transition-all duration-300 min-w-[2.5rem] ${
                             winner === 2
                               ? "text-orange-500 dark:text-orange-400 text-4xl"
@@ -621,7 +624,10 @@ export default function BadmintonTools() {
                               ? "text-orange-500 dark:text-orange-400 drop-shadow-[0_0_12px_rgba(251,146,60,0.5)] dark:drop-shadow-[0_0_15px_rgba(251,146,60,0.9)] text-4xl"
                               : "text-orange-500/70 dark:text-orange-400/80 text-3xl"
                           }`}>
-                            {isCompleted ? match.gamesWonTeam2 : match.currentScoreTeam2}
+                            {match.bestOf === 1
+                              ? (isCompleted ? (match.gameScores[0]?.[1] ?? match.currentScoreTeam2) : match.currentScoreTeam2)
+                              : (isCompleted ? match.gamesWonTeam2 : match.currentScoreTeam2)
+                            }
                           </span>
                         </div>
                       </div>
