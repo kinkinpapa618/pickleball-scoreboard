@@ -180,13 +180,15 @@ export default function BadmintonTools() {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Team 1 */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-blue-500 uppercase italic">
-                    Team 1
-                  </span>
-                  <div className={`grid gap-2 ${matchType !== "singles" ? "grid-cols-2" : "grid-cols-1"}`}>
+                <div className="flex items-center gap-3 w-full">
+                  {/* T1 Badge */}
+                  <div className="flex-shrink-0 w-12 h-10 bg-blue-600 dark:bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                    <span className="text-white font-black text-sm uppercase tracking-wider">T1</span>
+                  </div>
+                  {/* Inputs */}
+                  <div className={`grid gap-2 flex-1 ${matchType !== "singles" ? "grid-cols-2" : "grid-cols-1"}`}>
                     <input
                       type="text"
                       value={t1p1}
@@ -207,11 +209,13 @@ export default function BadmintonTools() {
                 </div>
 
                 {/* Team 2 */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-orange-500 uppercase italic">
-                    Team 2
-                  </span>
-                  <div className={`grid gap-2 ${matchType !== "singles" ? "grid-cols-2" : "grid-cols-1"}`}>
+                <div className="flex items-center gap-3 w-full">
+                  {/* T2 Badge */}
+                  <div className="flex-shrink-0 w-12 h-10 bg-orange-600 dark:bg-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                    <span className="text-white font-black text-sm uppercase tracking-wider">T2</span>
+                  </div>
+                  {/* Inputs */}
+                  <div className={`grid gap-2 flex-1 ${matchType !== "singles" ? "grid-cols-2" : "grid-cols-1"}`}>
                     <input
                       type="text"
                       value={t2p1}
