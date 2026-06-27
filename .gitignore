@@ -10,3 +10,6 @@ attached_assets
 Backup
 cookies.txt
 .opencode
+.env
+android/keystore.properties
+android/app/*.keystore

@@ -1,0 +1,32 @@
+.dark-tabs {
+  display: flex;
+  justify-content: space-around;
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 0.75rem 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark-tabs .tab-item {
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.dark-tabs .tab-item.active {
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+}
+
+/* Accent (vàng) cho active ở dark mode để giữ tinh thần thiết kế cũ */
+.dark .dark-tabs .tab-item.active {
+  color: #fbbf24; /* amber-400 */
+  background: hsl(var(--secondary));
+}
+
+.dark-tabs .tab-item:hover {
+  color: hsl(var(--foreground));
+}

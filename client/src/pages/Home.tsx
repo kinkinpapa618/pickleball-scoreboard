@@ -154,7 +154,8 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-500/10 dark:to-blue-500/5 p-4 rounded-2xl border border-blue-200 dark:border-blue-500/20"
+            onClick={() => setLocation("/tournament")}
+            className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-500/10 dark:to-blue-500/5 p-4 rounded-2xl border border-blue-200 dark:border-blue-500/20 cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all"
           >
             <Trophy className="w-8 h-8 text-blue-500 mb-2" />
             <h4 className="font-black text-sm text-blue-700 dark:text-blue-400">Giải đấu</h4>
@@ -190,27 +191,12 @@ export default function Home() {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-500/10 dark:to-orange-500/5 p-4 rounded-2xl border border-yellow-200 dark:border-yellow-500/20 mt-2"
-        >
-          <div className="flex items-start gap-3">
-            <Zap className="w-8 h-8 text-yellow-500 flex-shrink-0 mt-1" />
-            <div>
-              <h4 className="font-black text-sm text-yellow-700 dark:text-yellow-400">Thẻ phạt</h4>
-              <p className="text-[10px] text-yellow-600 dark:text-yellow-300 mt-1">
-                Nhắc nhở, cảnh cáo hoặc truất quyền thi đấu với VĐV có thái độ hoặc hành động không đúng mực. Thẻ vàng cảnh báo, thẻ đỏ truất quyền.
-              </p>
-            </div>
-          </div>
-        </motion.div>
+        
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
+          transition={{ delay: 0.7 }}
           className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-500/10 dark:to-gray-500/5 p-4 rounded-2xl border border-slate-200 dark:border-slate-500/20 mt-2"
         >
           <div className="flex items-start gap-3">
@@ -218,7 +204,7 @@ export default function Home() {
             <div>
               <h4 className="font-black text-sm text-slate-700 dark:text-slate-400">Timeline sự kiện</h4>
               <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1">
-                Thống kê chi tiết mọi sự kiện xảy ra trong trận: ghi điểm, đổi giao, đổi sân, timeout, thẻ phạt. Chính xác tuyệt đối với thời gian và tỷ số.
+                Thống kê chi tiết mọi sự kiện xảy ra trong trận: ghi điểm, đổi giao, đổi sân, timeout. Chính xác tuyệt đối với thời gian và tỷ số.
               </p>
             </div>
           </div>

@@ -110,9 +110,9 @@ export default function ConnectedManagers() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setLocation("/profile")}
-          className="p-2 bg-white rounded-xl hover:bg-slate-100 transition shadow-sm"
+          className="p-2 bg-card rounded-xl hover:bg-accent transition-colors shadow-sm"
         >
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <h1 className="text-xl font-black italic uppercase text-slate-900">
           Kết nối <span className="text-blue-600">Manager</span>
@@ -126,9 +126,9 @@ export default function ConnectedManagers() {
       ) : (
         <>
           {/* Connected Managers */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="p-4 bg-blue-50 border-b border-blue-100">
-              <h2 className="font-bold text-blue-900 flex items-center gap-2">
+          <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden transition-colors">
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-100 dark:border-blue-900/40">
+              <h2 className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2">
                 <Link2 className="w-5 h-5" />
                 Đã kết nối ({connectedManagers.length})
               </h2>
@@ -190,9 +190,9 @@ export default function ConnectedManagers() {
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto shadow-xl">
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto shadow-xl transition-colors">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-slate-900">Thêm kết nối</h2>
+              <h2 className="text-xl font-black text-foreground">Thêm kết nối</h2>
               <button onClick={() => setShowAddModal(false)}>
                 <X className="w-6 h-6 text-slate-400" />
               </button>

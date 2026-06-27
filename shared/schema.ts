@@ -89,20 +89,23 @@ export const matches = pgTable("matches", {
   isServer2: boolean("is_server2").default(false).notNull(),
   serverNumber: integer("server_number").default(1).notNull(), // 1 hoặc 2
 
+  // Loại trận đấu: Đơn (singles) hoặc Đôi (doubles)
+  type: text("type").notNull().default("doubles"),
+
   // Quản lý trạng thái
   status: text("status").notNull().default("live"), // 'pending', 'live', 'finished'
   winningScore: integer("winning_score").notNull().default(11),
   winnerTeam: integer("winner_team"), // 1 hoặc 2
 
   // Timeline events (JSON)
-  timeline: text("timeline"), // JSON string of timeline events
-  timeouts: text("timeouts"), // JSON: { team1: 2, team2: 2 }
-  stacking: text("stacking"), // JSON: { "t1p1": "left", "t1p2": "right" }
-  penalties: text("penalties"), // JSON: { t1p1: { yellow: 0, red: false }, ... }
+  timeline: json("timeline"), // JSON of timeline events
+  timeouts: json("timeouts"), // JSON: { team1: 2, team2: 2 }
+  stacking: json("stacking"), // JSON: { "t1p1": "left", "t1p2": "right" }
+  penalties: json("penalties"), // JSON: { t1p1: { yellow: 0, red: false }, ... }
 
   // Thời gian bắt đầu trận đấu (khi status = 'live')
   startTime: timestamp("start_time").defaultNow(),
-  endTime: timestamp("end_time").defaultNow(),
+  endTime: timestamp("end_time"),
 
   // Lượt phát đầu tiên của trận (để hiển thị số 2)
   isFirstServeOfMatch: boolean("is_first_serve_of_match"),
@@ -354,3 +357,77 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// === 13. SESSION ===
+export const session = pgTable("session", {
+  sid: text("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
+
+// === 14. BADMINTON MATCHES ===
+export const badmintonMatches = pgTable("badminton_matches", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+
+  // Players
+  team1Player1: text("team1_player1").notNull(),
+  team1Player2: text("team1_player2").notNull().default(""), // empty for singles
+  team2Player1: text("team2_player1").notNull(),
+  team2Player2: text("team2_player2").notNull().default(""), // empty for singles
+
+  // Match settings
+  type: text("type").notNull().default("doubles"), // 'singles' | 'doubles' | 'mixed'
+  bestOf: integer("best_of").notNull().default(3),            // 3 or 5
+  winningPoints: integer("winning_points").notNull().default(21), // 21 or 15
+
+  // Match state
+  status: text("status").notNull().default("pending"), // 'pending' | 'live' | 'completed'
+  currentGame: integer("current_game").notNull().default(1), // 1, 2, 3 (or 5)
+  gamesWonTeam1: integer("games_won_team1").notNull().default(0),
+  gamesWonTeam2: integer("games_won_team2").notNull().default(0),
+  winnerTeam: integer("winner_team"), // 1 or 2
+
+  // Per-game scores (stored as JSON for flexibility: [t1, t2])
+  gameScores: json("game_scores").notNull().default([]), // Array of [t1Score, t2Score] per game
+
+  // Current game live scores
+  currentScoreTeam1: integer("current_score_team1").notNull().default(0),
+  currentScoreTeam2: integer("current_score_team2").notNull().default(0),
+
+  // Service state
+  servingTeam: integer("serving_team").notNull().default(1),    // 1 or 2
+  servingPlayer: integer("serving_player").notNull().default(1), // 1 (right/first) or 2 (left/second) within the serving team
+
+  // Doubles court position tracking
+  // true = players have been swapped from their original positions
+  team1Swapped: boolean("team1_swapped").notNull().default(false),
+  team2Swapped: boolean("team2_swapped").notNull().default(false),
+
+  // Court side for game 3 end-switching
+  team1Side: text("team1_side").notNull().default("left"), // 'left' | 'right'
+  endsChanged: boolean("ends_changed").notNull().default(false), // switched at 15pts in game 3
+
+  // Full match state history for undo (JSON array of snapshots)
+  stateHistory: json("state_history").notNull().default([]),
+
+  // Timeline for match events
+  timeline: json("timeline").notNull().default([]),
+
+  // Relations
+  refereeId: integer("referee_id").references(() => users.id),
+  creatorId: integer("creator_id").references(() => users.id),
+
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  date: timestamp("date").defaultNow(),
+});
+
+export const insertBadmintonMatchSchema = createInsertSchema(badmintonMatches).omit({
+  id: true,
+  date: true,
+});
+
+export const updateBadmintonMatchSchema = insertBadmintonMatchSchema.partial();
+
+export type BadmintonMatch = typeof badmintonMatches.$inferSelect;
+export type InsertBadmintonMatch = z.infer<typeof insertBadmintonMatchSchema>;

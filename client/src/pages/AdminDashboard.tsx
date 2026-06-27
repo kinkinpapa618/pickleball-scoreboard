@@ -55,9 +55,9 @@ export default function AdminDashboard() {
 
   if (!user || user.role !== "admin") {
     return (
-      <div className="p-4 flex items-center justify-center min-h-screen bg-[#F8FAFC]">
+      <div className="p-4 flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
-          <p className="text-slate-500">Bạn không có quyền truy cập</p>
+          <p className="text-muted-foreground">Bạn không có quyền truy cập</p>
           <button
             onClick={() => setLocation("/profile")}
             className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-xl font-bold"
@@ -70,16 +70,16 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="p-4 space-y-4 min-h-screen pb-20 bg-[#F8FAFC]">
+    <div className="p-4 space-y-4 min-h-screen pb-20 bg-background">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => setLocation("/profile")}
-          className="p-2 bg-white rounded-xl hover:bg-slate-100 transition shadow-sm"
+          className="p-2 bg-card rounded-xl hover:bg-accent transition-colors shadow-sm"
         >
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="text-xl font-black italic uppercase text-slate-900">
+        <h1 className="text-xl font-black italic uppercase text-foreground">
           Admin <span className="text-purple-600">Dashboard</span>
         </h1>
       </div>
@@ -105,89 +105,89 @@ export default function AdminDashboard() {
           </div>
 
           {/* Matches Section */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-5 h-5 text-blue-500" />
-              <h2 className="font-bold text-slate-900">Trận đấu</h2>
+              <h2 className="font-bold text-foreground">Trận đấu</h2>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-2xl font-black text-blue-600">{stats?.totalMatches || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Tổng</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Tổng</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-2xl font-black text-orange-500">{stats?.pendingMatches || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Chờ</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Chờ</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-2xl font-black text-emerald-500">{stats?.finishedMatches || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Xong</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Xong</div>
               </div>
             </div>
           </div>
 
           {/* Users Section */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-purple-500" />
-              <h2 className="font-bold text-slate-900">Người dùng</h2>
+              <h2 className="font-bold text-foreground">Người dùng</h2>
             </div>
             <div className="grid grid-cols-4 gap-2">
-              <div className="bg-purple-50 p-3 rounded-xl text-center">
-                <div className="text-xl font-black text-purple-600">{stats?.totalUsers || 0}</div>
-                <div className="text-[9px] text-slate-400 uppercase">Tổng</div>
+              <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-xl text-center">
+                <div className="text-xl font-black text-purple-600 dark:text-purple-400">{stats?.totalUsers || 0}</div>
+                <div className="text-[9px] text-muted-foreground uppercase">Tổng</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
-                <div className="text-xl font-black text-slate-600">{stats?.adminUsers || 0}</div>
-                <div className="text-[9px] text-slate-400 uppercase">Admin</div>
+              <div className="bg-muted p-3 rounded-xl text-center">
+                <div className="text-xl font-black text-foreground">{stats?.adminUsers || 0}</div>
+                <div className="text-[9px] text-muted-foreground uppercase">Admin</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-xl font-black text-orange-500">{stats?.managerUsers || 0}</div>
-                <div className="text-[9px] text-slate-400 uppercase">QLý</div>
+                <div className="text-[9px] text-muted-foreground uppercase">QLý</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-xl font-black text-emerald-500">{stats?.refereeUsers || 0}</div>
-                <div className="text-[9px] text-slate-400 uppercase">TT</div>
+                <div className="text-[9px] text-muted-foreground uppercase">TT</div>
               </div>
             </div>
           </div>
 
           {/* Tournaments Section */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
             <div className="flex items-center gap-2 mb-4">
               <Trophy className="w-5 h-5 text-amber-500" />
-              <h2 className="font-bold text-slate-900">Giải đấu</h2>
+              <h2 className="font-bold text-foreground">Giải đấu</h2>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
-                <div className="text-2xl font-black text-slate-600">{stats?.totalTournaments || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Tổng</div>
+              <div className="bg-muted p-3 rounded-xl text-center">
+                <div className="text-2xl font-black text-foreground">{stats?.totalTournaments || 0}</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Tổng</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-2xl font-black text-amber-500">{stats?.activeTournaments || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Đang đấu</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Đang đấu</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-2xl font-black text-emerald-500">{stats?.completedTournaments || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Hoàn thành</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Hoàn thành</div>
               </div>
             </div>
           </div>
 
           {/* Schedules Section */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
             <div className="flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5 text-cyan-500" />
-              <h2 className="font-bold text-slate-900">Lịch công tác</h2>
+              <h2 className="font-bold text-foreground">Lịch công tác</h2>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
-                <div className="text-2xl font-black text-slate-600">{stats?.totalSchedules || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Tổng lịch</div>
+              <div className="bg-muted p-3 rounded-xl text-center">
+                <div className="text-2xl font-black text-foreground">{stats?.totalSchedules || 0}</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Tổng lịch</div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl text-center">
+              <div className="bg-muted p-3 rounded-xl text-center">
                 <div className="text-2xl font-black text-emerald-500">{stats?.completedSchedules || 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase">Hoàn thành</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Hoàn thành</div>
               </div>
             </div>
           </div>

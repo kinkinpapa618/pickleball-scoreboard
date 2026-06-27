@@ -141,26 +141,26 @@ export default function Users() {
   };
 
   return (
-    <div className="p-4 space-y-4 min-h-screen pb-20 bg-[#F8FAFC]">
+    <div className="p-4 space-y-4 min-h-screen pb-20 bg-background">
       <div className="flex items-center gap-3">
         <button
           onClick={() => setLocation("/profile")}
-          className="p-2 bg-white rounded-xl hover:bg-slate-100 transition shadow-sm"
+          className="p-2 bg-card rounded-xl hover:bg-accent transition-colors shadow-sm"
         >
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="text-xl font-black italic uppercase text-slate-900">
+        <h1 className="text-xl font-black italic uppercase text-foreground">
           Quản lý <span className="text-blue-600">Users</span>
         </h1>
       </div>
 
       {!hasPermission ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 rounded-full flex items-center justify-center mb-4">
             <Lock className="w-8 h-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Không có quyền truy cập</h2>
-          <p className="text-slate-500 mb-6">
+          <h2 className="text-xl font-bold text-foreground mb-2">Không có quyền truy cập</h2>
+          <p className="text-muted-foreground mb-6">
             Chỉ Admin và Manager mới có thể quản lý Users
           </p>
           <button
@@ -189,11 +189,11 @@ export default function Users() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"
+                className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center font-black text-blue-600">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center font-black text-blue-600 dark:text-blue-400">
                       {user.fullName
                         ? user.fullName
                             .split(" ")
@@ -204,10 +204,10 @@ export default function Users() {
                         : user.username.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900">
+                      <h3 className="font-bold text-foreground">
                         {user.fullName || user.username}
                       </h3>
-                      <p className="text-xs text-slate-400">@{user.username}</p>
+                      <p className="text-xs text-muted-foreground">@{user.username}</p>
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadge(
                           user.role
@@ -219,17 +219,17 @@ export default function Users() {
                   </div>
                   <button
                     onClick={() => setEditingUser(user)}
-                    className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition"
+                    className="p-2 bg-muted rounded-lg hover:bg-accent transition-colors"
                   >
-                    <Edit2 className="w-4 h-4 text-slate-500" />
+                    <Edit2 className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
-                <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2 text-slate-400">
+                <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Phone className="w-4 h-4" />
                     {user.phone}
                   </div>
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <CreditCard className="w-4 h-4" />
                     {user.idCard}
                   </div>
@@ -243,48 +243,48 @@ export default function Users() {
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
-            <h2 className="text-xl font-black text-slate-900">Thêm người dùng mới</h2>
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl transition-colors">
+            <h2 className="text-xl font-black text-foreground">Thêm người dùng mới</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <input
                 type="text"
                 placeholder="Tên đăng nhập"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <input
                 type="password"
                 placeholder="Mật khẩu"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <input
                 type="text"
                 placeholder="Họ tên"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <input
                 type="text"
                 placeholder="Số điện thoại"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <input
                 type="text"
                 placeholder="Căn cước/CMND"
                 value={formData.idCard}
                 onChange={(e) => setFormData({ ...formData, idCard: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               >
                 <option value="referee">Trọng tài</option>
                 <option value="manager">Quản lý</option>
@@ -294,7 +294,7 @@ export default function Users() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-slate-700"
+                  className="flex-1 bg-muted py-3 rounded-xl font-bold text-foreground hover:bg-accent transition-colors"
                 >
                   Hủy
                 </button>
@@ -313,8 +313,8 @@ export default function Users() {
       {/* Edit Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
-            <h2 className="text-xl font-black text-slate-900">Sửa người dùng</h2>
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl transition-colors">
+            <h2 className="text-xl font-black text-foreground">Sửa người dùng</h2>
             <form onSubmit={handleUpdate} className="space-y-3">
               <input
                 type="text"
@@ -323,7 +323,7 @@ export default function Users() {
                 onChange={(e) =>
                   setEditingUser({ ...editingUser, fullName: e.target.value })
                 }
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <input
                 type="text"
@@ -332,7 +332,7 @@ export default function Users() {
                 onChange={(e) =>
                   setEditingUser({ ...editingUser, phone: e.target.value })
                 }
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <input
                 type="text"
@@ -341,14 +341,14 @@ export default function Users() {
                 onChange={(e) =>
                   setEditingUser({ ...editingUser, idCard: e.target.value })
                 }
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               />
               <select
                 value={editingUser.role}
                 onChange={(e) =>
                   setEditingUser({ ...editingUser, role: e.target.value })
                 }
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-foreground"
               >
                 <option value="referee">Trọng tài</option>
                 <option value="manager">Quản lý</option>
@@ -358,7 +358,7 @@ export default function Users() {
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-slate-700"
+                  className="flex-1 bg-muted py-3 rounded-xl font-bold text-foreground hover:bg-accent transition-colors"
                 >
                   Hủy
                 </button>

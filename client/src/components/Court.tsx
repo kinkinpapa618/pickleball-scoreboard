@@ -3,11 +3,6 @@ import { Zap, Shield, Lock, ArrowLeftRight } from "lucide-react";
 
 type Position = "left" | "right";
 
-interface PlayerPenalty {
-  yellow: number;
-  red: boolean;
-}
-
 export type StackingMap = Record<string, Position | null>;
 
 interface CourtProps {
@@ -20,7 +15,6 @@ interface CourtProps {
   firstServe: boolean;
   compact?: boolean;
   stackingMap?: StackingMap;
-  penalties?: Record<string, PlayerPenalty>;
   onPlayerClick?: (
     playerId: string,
     team: 1 | 2,
@@ -76,7 +70,6 @@ function CourtMarker({
   y,
   onClick,
   isStacking,
-  penalty,
 }: {
   name: string;
   isServing: boolean;
@@ -87,7 +80,7 @@ function CourtMarker({
   y: string;
   onClick?: () => void;
   isStacking: boolean;
-  penalty?: PlayerPenalty;
+  
 }) {
   const isTeam1 = side === "team1";
   
@@ -111,7 +104,6 @@ function CourtMarker({
           w-[140px] min-h-[20px]
           ${teamBg}
           shadow-md
-          ${penalty?.red ? "opacity-50 grayscale" : ""}
           ${isStacking ? "ring-2 ring-emerald-400 ring-offset-1" : ""}
         `}
       >
@@ -125,20 +117,10 @@ function CourtMarker({
           {name}
         </span>
         
-        {/* Stacking & Penalty */}
+        {/* Stacking */}
         {!isServing && !isReceiver && (
           <div className="flex items-center gap-0.5">
             {isStacking && <Lock className="w-2.5 h-2.5 text-white" />}
-            {penalty && penalty.yellow > 0 && (
-              <div className="flex gap-px">
-                {[...Array(penalty.yellow)].map((_, i) => (
-                  <div key={i} className="w-1 h-2 bg-yellow-400 rounded-sm" />
-                ))}
-              </div>
-            )}
-            {penalty?.red && (
-              <div className="w-1.5 h-2 bg-red-600 rounded-sm animate-pulse" />
-            )}
           </div>
         )}
 
@@ -171,11 +153,10 @@ export function Court({
   firstServe,
   compact = false,
   stackingMap,
-  penalties,
   onPlayerClick,
   onSwitchCourt,
   courtSwapped = false,
-}: CourtProps) {
+}: Omit<CourtProps, "penalties">) {
   const serverPlayerId = `t${serverTeam}p${serverHand}`;
   const serverPosition = positions[serverPlayerId];
   const receiverTeam = serverTeam === 1 ? 2 : 1;
@@ -223,6 +204,7 @@ export function Court({
       visualSide: Position,
       slot: number,
       collisionIdx: number,
+      team: 1 | 2,
     ) => {
       const coords = getCoordinates(
         team,
@@ -230,6 +212,10 @@ export function Court({
         isCollision,
         collisionIdx,
       );
+      const originalSide = (team === 1 ? "team1" : "team2") as "team1" | "team2";
+      const displaySide = courtSwapped
+        ? (originalSide === "team1" ? "team2" : "team1")
+        : originalSide;
       return {
         id,
         name: names[id as keyof typeof names],
@@ -238,8 +224,7 @@ export function Court({
         isServing: id === serverPlayerId,
         isReceiver: id === receiverPlayerId,
         slot,
-        side: (team === 1 ? "team1" : "team2") as "team1" | "team2",
-        penalty: penalties?.[id],
+        side: displaySide,
         isStacking: !!stackingMap?.[id],
         currentSide: visualSide,
         collisionMode: isCollision,
@@ -247,12 +232,14 @@ export function Court({
     };
 
     return [
-      createPlayerObj(p1Id, p1VisualSide, 1, 0),
-      createPlayerObj(p2Id, p2VisualSide, 2, 1),
+      createPlayerObj(p1Id, p1VisualSide, 1, 0, team),
+      createPlayerObj(p2Id, p2VisualSide, 2, 1, team),
     ];
   };
 
-  const players = [...processTeamPlayers(1), ...processTeamPlayers(2)];
+  const players = [...processTeamPlayers(1), ...processTeamPlayers(2)].filter(
+    (p) => p.name && p.name.trim() !== ""
+  );
 
   const activeSrv = players.find((p) => p.isServing);
   const activeRcv = players.find((p) => p.isReceiver);
@@ -306,7 +293,6 @@ export function Court({
             y={p.y}
             onClick={() => onPlayerClick?.(p.id, p.side === "team1" ? 1 : 2, p.name, p.currentSide)}
             isStacking={p.isStacking}
-            penalty={p.penalty}
           />
         ))}
 

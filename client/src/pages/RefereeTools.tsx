@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import {
   Play,
   Search,
-  Shuffle,
   Users,
   Settings2,
   ArrowRight,
@@ -21,6 +20,7 @@ import {
   Coins,
   ChevronLeft,
   ChevronRight,
+  MonitorPlay,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -37,7 +37,7 @@ import {
   useDeleteTournament,
   useDeleteMatch,
 } from "@/hooks/use-api";
-import { ExcelUpload } from "@/components/ExcelUpload";
+
 import { CoinTossModal } from "@/components/CoinTossModal";
 
 export default function RefereeTools() {
@@ -55,7 +55,7 @@ export default function RefereeTools() {
   const { data: matchesData } = useMatches(1);
 
   const handleTabChange = (value: string) => {
-    if (!user && (value === "history" || value === "draw" || value === "tournament")) {
+    if (!user && (value === "history" || value === "tournament")) {
       setLocation("/auth");
       return;
     }
@@ -72,10 +72,10 @@ export default function RefereeTools() {
   const [t2p2, setT2p2] = useState("");
   const [winningScore, setWinningScore] = useState("11");
   const [firstServer, setFirstServer] = useState<1 | 2>(1);
+  const [matchType, setMatchType] = useState<"singles" | "doubles">("doubles");
   const [showCoinToss, setShowCoinToss] = useState(false);
 
   const [playerInput, setPlayerInput] = useState<string>("");
-  const [tournamentGroups, setTournamentGroups] = useState<any>(null);
 
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null);
   const { data: tournaments } = useTournaments();
@@ -97,30 +97,6 @@ export default function RefereeTools() {
   const [newLevelInput, setNewLevelInput] = useState("");
   const [teamsPerGroup, setTeamsPerGroup] = useState(4);
   const [assigningMatchId, setAssigningMatchId] = useState<number | null>(null);
-
-  const handleExcelData = (data: string[] | import("../components/ExcelUpload").PlayerData[]) => {
-    const playerNames = Array.isArray(data) && typeof data[0] === "string"
-      ? data as string[]
-      : (data as import("../components/ExcelUpload").PlayerData[]).reduce<string[]>((acc, p) => {
-          if (p.player1) acc.push(p.player1);
-          if (p.player2) acc.push(p.player2);
-          if (p.player3) acc.push(p.player3);
-          if (p.player4) acc.push(p.player4);
-          return acc;
-        }, []);
-    setPlayerInput(playerNames.join("\n"));
-  };
-
-  const handleDraw = () => {
-    const players = playerInput.split("\n").filter((p) => p.trim() !== "");
-    if (players.length < 4) {
-      alert("Cần tối thiểu 4 đội/người để chia bảng!");
-      return;
-    }
-    const { generateGroups } = require("@/lib/tournament");
-    const groups = generateGroups(players, 4);
-    setTournamentGroups(groups);
-  };
 
   const handleCreateTournament = async () => {
     if (!newTournamentName.trim()) {
@@ -144,7 +120,7 @@ export default function RefereeTools() {
       newTournamentLevels.forEach(level => {
         contentMap[level] = [];
       });
-      
+
       const result = await createTournament.mutateAsync({
         name: newTournamentName,
         description: newTournamentDesc,
@@ -227,7 +203,7 @@ export default function RefereeTools() {
         tournamentId: selectedTournamentId,
         matchId,
       });
-      setLocation(`/match?matchId=${match.id}`);
+      setLocation(`/match/${match.id}`);
     } catch (error) {
       console.error("Error starting match:", error);
       alert("Không thể bắt đầu trận đấu");
@@ -235,14 +211,18 @@ export default function RefereeTools() {
   };
 
   const handleStart = async () => {
-    if (!t1p1 || !t1p2 || !t2p1 || !t2p2) return;
+    if (matchType === "doubles" && (!t1p1 || !t1p2 || !t2p1 || !t2p2)) return;
+    if (matchType === "singles" && (!t1p1 || !t2p1)) return;
+
+    const p1t2 = matchType === "singles" ? "" : t1p2;
+    const p2t2 = matchType === "singles" ? "" : t2p2;
 
     try {
       const newMatch = await createMatch.mutateAsync({
         team1Player1: t1p1,
-        team1Player2: t1p2,
+        team1Player2: p1t2,
         team2Player1: t2p1,
-        team2Player2: t2p2,
+        team2Player2: p2t2,
         winningScore: parseInt(winningScore),
         scoreTeam1: 0,
         scoreTeam2: 0,
@@ -250,25 +230,26 @@ export default function RefereeTools() {
         isServer1: firstServer === 1,
         isServer2: firstServer === 2,
         serverNumber: 1,
+        type: matchType,
       });
 
       const params = new URLSearchParams({
-        matchId: String(newMatch.id),
         t1p1,
-        t1p2,
+        t1p2: p1t2,
         t2p1,
-        t2p2,
+        t2p2: p2t2,
         win: winningScore,
         serve: String(firstServer),
+        type: matchType,
       });
-      setLocation(`/match?${params.toString()}`);
+      setLocation(`/match/${newMatch.id}?${params.toString()}`);
     } catch (error) {
       console.error("Không thể tạo trận đấu:", error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 p-2 pb-24 flex flex-col font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground p-2 pb-24 flex flex-col font-sans overflow-x-hidden transition-colors">
       {/* Brand Header */}
       <div className="text-center py-6">
         <motion.h3
@@ -278,38 +259,29 @@ export default function RefereeTools() {
         >
           TRONGTAISO.COM
         </motion.h3>
-        <p className="text-slate-400 text-[10px] tracking-[0.4em] uppercase font-bold">
+        <p className="text-muted-foreground text-[10px] tracking-[0.4em] uppercase font-bold">
           Referee Support
         </p>
       </div>
 
       <div className="flex-1 max-w-md mx-auto w-full">
         {/* TABS */}
-        <div className="flex gap-1 mb-4 bg-slate-100 p-1 rounded-xl">
+        <div className="flex gap-1 mb-4 bg-muted p-1 rounded-xl">
           <button
             onClick={() => handleTabChange("create")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
-              activeTab === "create" ? "bg-blue-500 text-white shadow" : "text-slate-500 hover:bg-slate-200"
-            }`}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${activeTab === "create" ? "bg-blue-500 text-white shadow" : "text-muted-foreground hover:bg-accent"
+              }`}
           >
             Trận đấu
           </button>
           <button
             onClick={() => handleTabChange("history")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
-              activeTab === "history" ? "bg-blue-500 text-white shadow" : "text-slate-500 hover:bg-slate-200"
-            }`}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${activeTab === "history" ? "bg-blue-500 text-white shadow" : "text-muted-foreground hover:bg-accent"
+              }`}
           >
             Lịch sử
           </button>
-          <button
-            onClick={() => handleTabChange("draw")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
-              activeTab === "draw" ? "bg-blue-500 text-white shadow" : "text-slate-500 hover:bg-slate-200"
-            }`}
-          >
-            Bốc thăm
-          </button>
+
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -317,60 +289,81 @@ export default function RefereeTools() {
             value="create"
             className="space-y-6 animate-in fade-in zoom-in-95 duration-300"
           >
-            <Card className="p-4 bg-white border border-slate-100 backdrop-blur-xl rounded-3xl space-y-2 shadow-lg">
-              <div className="flex items-center gap-2 text-blue-500 mb-2">
-                <Users className="w-4 h-4" />
-                <span className="text-[10px] font-black italic uppercase tracking-widest">
-                  THÔNG TIN VẬN ĐỘNG VIÊN
-                </span>
+            <Card className="p-4 bg-card border border-border backdrop-blur-xl rounded-3xl space-y-4 shadow-lg transition-colors">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-blue-500">
+                  <Users className="w-4 h-4" />
+                  <span className="text-[10px] font-black italic uppercase tracking-widest">
+                    THÔNG TIN VẬN ĐỘNG VIÊN
+                  </span>
+                </div>
+                <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                  <button
+                    onClick={() => setMatchType("singles")}
+                    className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all ${matchType === "singles" ? "bg-blue-500 text-white" : "text-muted-foreground hover:bg-accent"}`}
+                  >
+                    Đơn
+                  </button>
+                  <button
+                    onClick={() => setMatchType("doubles")}
+                    className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all ${matchType === "doubles" ? "bg-blue-500 text-white" : "text-muted-foreground hover:bg-accent"}`}
+                  >
+                    Đôi
+                  </button>
+                </div>
               </div>
-              <div className="space-y-2">
+
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <span className="text-[10px] font-black text-blue-500 uppercase italic">
-                    Team 1
+                    Team 1 {matchType === "singles" ? "(1 Người)" : "(2 Người)"}
                   </span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={`grid gap-2 ${matchType === "doubles" ? "grid-cols-2" : "grid-cols-1"}`}>
                     <input
                       type="text"
                       value={t1p1}
                       onChange={(e) => setT1p1(e.target.value)}
                       placeholder="Player 1"
-                      className="bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-sm text-slate-900 focus:border-blue-500 outline-none transition-all"
+                      className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-blue-500 outline-none transition-all w-full"
                     />
-                    <input
-                      type="text"
-                      value={t1p2}
-                      onChange={(e) => setT1p2(e.target.value)}
-                      placeholder="Player 2"
-                      className="bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-sm text-slate-900 focus:border-blue-500 outline-none transition-all"
-                    />
+                    {matchType === "doubles" && (
+                      <input
+                        type="text"
+                        value={t1p2}
+                        onChange={(e) => setT1p2(e.target.value)}
+                        placeholder="Player 2"
+                        className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-blue-500 outline-none transition-all w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <span className="text-[10px] font-black text-orange-500 uppercase italic">
-                    Team 2
+                    Team 2 {matchType === "singles" ? "(1 Người)" : "(2 Người)"}
                   </span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={`grid gap-2 ${matchType === "doubles" ? "grid-cols-2" : "grid-cols-1"}`}>
                     <input
                       type="text"
                       value={t2p1}
                       onChange={(e) => setT2p1(e.target.value)}
                       placeholder="Player 3"
-                      className="bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-sm text-slate-900 focus:border-orange-500 outline-none transition-all"
+                      className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
                     />
-                    <input
-                      type="text"
-                      value={t2p2}
-                      onChange={(e) => setT2p2(e.target.value)}
-                      placeholder="Player 4"
-                      className="bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-sm text-slate-900 focus:border-orange-500 outline-none transition-all"
-                    />
+                    {matchType === "doubles" && (
+                      <input
+                        type="text"
+                        value={t2p2}
+                        onChange={(e) => setT2p2(e.target.value)}
+                        placeholder="Player 4"
+                        className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-white border border-slate-100 backdrop-blur-xl rounded-3xl space-y-2 shadow-xl">
+            <Card className="p-4 bg-card border border-border backdrop-blur-xl rounded-3xl space-y-2 shadow-xl transition-colors">
               <div className="flex items-center gap-2 text-blue-500">
                 <Settings2 className="w-4 h-4" />
                 <span className="text-[10px] font-black italic uppercase tracking-widest">
@@ -379,15 +372,15 @@ export default function RefereeTools() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase mb-2 block">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
                     Điểm thắng
                   </label>
-                  <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                  <div className="flex gap-1 bg-muted p-1 rounded-xl">
                     {["11", "15", "21"].map((score) => (
                       <button
                         key={score}
                         onClick={() => setWinningScore(score)}
-                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${winningScore === score ? "bg-blue-500 text-white" : "text-slate-500"}`}
+                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${winningScore === score ? "bg-blue-500 text-white" : "text-muted-foreground"}`}
                       >
                         {score}
                       </button>
@@ -395,15 +388,15 @@ export default function RefereeTools() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase mb-2 block">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
                     Team Phát Bóng Đầu
                   </label>
-                  <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                  <div className="flex gap-1 bg-muted p-1 rounded-xl">
                     {[1, 2].map((team) => (
                       <button
                         key={team}
                         onClick={() => setFirstServer(team as 1 | 2)}
-                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${firstServer === team ? (team === 1 ? "bg-cyan-500" : "bg-rose-500") : "text-slate-500"}`}
+                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${firstServer === team ? (team === 1 ? "bg-cyan-500" : "bg-rose-500") : "text-muted-foreground"}`}
                       >
                         Team {team}
                       </button>
@@ -413,7 +406,7 @@ export default function RefereeTools() {
               </div>
               <Button
                 onClick={() => setShowCoinToss(true)}
-                className="w-full bg-slate-100 border border-slate-200 text-blue-500 font-black text-[10px] py-3 rounded-xl gap-4 hover:bg-slate-200 transition-all"
+                className="w-full bg-muted border border-border text-blue-500 font-black text-[10px] py-3 rounded-xl gap-4 hover:bg-accent transition-all"
               >
                 <Coins className="w-2 h-2" /> TUNG XU PHÂN ĐỊNH
               </Button>
@@ -422,9 +415,16 @@ export default function RefereeTools() {
             <Button
               onClick={handleStart}
               disabled={
-                !t1p1 || !t1p2 || !t2p1 || !t2p2 || createMatch.isPending
+                (matchType === "doubles" && (!t1p1 || !t1p2 || !t2p1 || !t2p2)) ||
+                (matchType === "singles" && (!t1p1 || !t2p1)) ||
+                createMatch.isPending
               }
-              className={`w-full py-8 rounded-2xl font-black italic text-lg shadow-[0_10px_30px_rgba(0,0,0,0.1)] gap-2 transition-all ${!t1p1 || !t1p2 || !t2p1 || !t2p2 ? "bg-slate-200 text-slate-400" : "bg-blue-500 text-white hover:scale-[1.02] active:scale-95"}`}
+              className={`w-full py-8 rounded-2xl font-black italic text-lg shadow-[0_10px_30px_rgba(0,0,0,0.1)] gap-2 transition-all ${
+                (matchType === "doubles" && (!t1p1 || !t1p2 || !t2p1 || !t2p2)) ||
+                (matchType === "singles" && (!t1p1 || !t2p1))
+                  ? "bg-muted text-muted-foreground"
+                  : "bg-blue-500 text-white hover:scale-[1.02] active:scale-95"
+              }`}
             >
               {createMatch.isPending
                 ? "ĐANG VÀO TRẬN ĐẤU..."
@@ -433,88 +433,24 @@ export default function RefereeTools() {
             </Button>
           </TabsContent>
 
-          {/* TAB 2: BỐC THĂM / CHIA BẢNG */}
-          <TabsContent
-            value="draw"
-            className="space-y-6 animate-in slide-in-from-right-4 duration-300"
-          >
-            <Card className="p-4 bg-white border border-slate-100 rounded-3xl space-y-4 shadow-lg">
-              <ExcelUpload onDataLoaded={handleExcelData} />
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-white/5"></div>
-                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-600 uppercase italic">
-                  Hoặc nhập tay
-                </span>
-                <div className="flex-grow border-t border-white/5"></div>
-              </div>
-                <textarea
-                  value={playerInput}
-                  onChange={(e) => setPlayerInput(e.target.value)}
-                  className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-black focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
-                  placeholder="Nhập danh sách VĐV, mỗi người một dòng..."
-                />
-              <Button
-                onClick={handleDraw}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black italic rounded-2xl h-14 shadow-lg uppercase tracking-widest"
-              >
-                <Shuffle className="w-4 h-4 mr-2" /> Xác nhận chia bảng
-              </Button>
-            </Card>
-
-            {tournamentGroups && (
-              <div className="space-y-6 pb-10">
-                {Object.values(tournamentGroups).map((group: any) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    key={group.name}
-                    className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xl"
-                  >
-                    <div className="bg-white/5 px-5 py-3 border-b border-white/5 flex justify-between items-center">
-                      <span className="font-black italic text-indigo-400 uppercase tracking-tighter text-sm">
-                        Bảng {group.name}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">
-                        {group.players.length} Players
-                      </span>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      {group.matches.map((m: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 text-[11px] font-bold"
-                        >
-                          <span className="w-[42%] text-right truncate text-slate-800">
-                            {m.home}
-                          </span>
-                          <span className="text-blue-500 font-black mx-2 italic opacity-50">
-                            VS
-                          </span>
-                          <span className="w-[42%] text-left truncate text-slate-800">
-                            {m.away}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* TAB 3: LỊCH SỬ TRẬN ĐẤU */}
+          {/* TAB 2: LỊCH SỬ TRẬN ĐẤU */}
           <TabsContent
             value="history"
             className="space-y-4 animate-in slide-in-from-left-4 duration-300"
           >
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-slate-800 uppercase italic">
-                Lịch sử trận đấu
-              </h2>
-              <span className="text-xs font-bold text-slate-400 uppercase">
-                {myMatchesData?.pagination.total || 0} trận
-              </span>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h2 className="text-xl font-black text-foreground uppercase italic tracking-tight">
+                  Lịch sử
+                </h2>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                  {myMatchesData?.pagination.total || 0} trận đã ghi nhận
+                </p>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-blue-400" />
+              </div>
             </div>
 
             {/* Match List */}
@@ -524,117 +460,291 @@ export default function RefereeTools() {
                 const isCompleted = match.status === "completed";
                 const isPending = match.status === "pending";
                 const winner = match.winnerTeam as 1 | 2 | null;
+                const hasWinner = winner !== null;
                 const isServer1 = match.isServer1;
                 const serverNumber = match.serverNumber || 1;
 
                 return (
                   <div
                     key={match.id}
-                    className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
+                    className={`relative bg-card dark:bg-slate-950/70 dark:backdrop-blur-xl border rounded-2xl overflow-hidden shadow-sm dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-md dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 ${
+                      isLive && !hasWinner
+                        ? "border-red-400/40 dark:border-red-500/25 dark:shadow-[0_4px_20px_rgba(239,68,68,0.1)]"
+                        : "border-border dark:border-white/10"
+                    }`}
                   >
-                    {/* Header: Status (trái) | Actions (phải) */}
-                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
-                      {/* Status */}
+                    {/* Top bar: Status + Actions */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-muted/60 dark:bg-black/30 border-b border-border dark:border-white/5">
+                      {/* Status badge */}
                       <div className="flex items-center gap-2">
-                        {isLive && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                            <span className="text-red-500 font-black italic text-xs">LIVE</span>
+                        {hasWinner && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full" />
+                            <span className="text-emerald-600 dark:text-emerald-400 font-black text-[9px] uppercase tracking-widest">
+                              KẾT THÚC
+                            </span>
                           </div>
                         )}
-                        {isPending && (
-                          <span className="text-yellow-500 font-bold text-[10px] uppercase tracking-wider">
-                            Pending...
-                          </span>
+                        {!hasWinner && isLive && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded-full">
+                            <div className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                            </div>
+                            <span className="text-red-500 dark:text-red-400 font-black text-[9px] uppercase tracking-widest">LIVE</span>
+                          </div>
                         )}
-                        {isCompleted && (
-                          <span className="text-green-500 font-bold text-[10px] uppercase tracking-wider">
-                            Complete
-                          </span>
+                        {isPending && !isLive && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full" />
+                            <span className="text-amber-600 dark:text-amber-400 font-black text-[9px] uppercase tracking-widest">CHỜ</span>
+                          </div>
+                        )}
+                        {!hasWinner && isCompleted && !isLive && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-muted border border-border dark:bg-slate-500/10 dark:border-slate-500/20 rounded-full">
+                            <span className="text-muted-foreground dark:text-slate-400 font-black text-[9px] uppercase tracking-widest">HOÀN TẤT</span>
+                          </div>
                         )}
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-1">
-                        {/* EYE - Chỉ hiện khi completed */}
-                        {isCompleted && (
+                        {hasWinner && (
                           <button
-                            onClick={() => window.open(`/match-detail/${match.id}`, "_blank")}
-                            className="h-7 w-7 rounded-md bg-slate-200 hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center"
+                            onClick={() => setLocation(`/match-detail/${match.id}`)}
+                            className="h-7 w-7 rounded-lg bg-muted dark:bg-white/5 border border-border dark:border-white/10 text-muted-foreground dark:text-slate-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all flex items-center justify-center"
+                            title="Chi tiết trận đấu"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-3 h-3" />
                           </button>
                         )}
-
-                        {/* PLAY - Chỉ hiện khi live */}
-                        {isLive && (
+                        {!hasWinner && isLive && (
                           <button
                             onClick={() => {
-                              const url = `/match?matchId=${match.id}&t1p1=${encodeURIComponent(match.team1Player1)}&t1p2=${encodeURIComponent(match.team1Player2)}&t2p1=${encodeURIComponent(match.team2Player1)}&t2p2=${encodeURIComponent(match.team2Player2)}&win=${match.winningScore}&serve=1`;
-                              window.open(url, "_blank");
+                              const url = `/match/${match.id}?t1p1=${encodeURIComponent(match.team1Player1)}&t1p2=${encodeURIComponent(match.team1Player2)}&t2p1=${encodeURIComponent(match.team2Player1)}&t2p2=${encodeURIComponent(match.team2Player2)}&win=${match.winningScore}&serve=1`;
+                              setLocation(url);
                             }}
-                            className="h-7 w-7 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center justify-center"
+                            className="h-7 w-7 rounded-lg bg-blue-600/80 text-white hover:bg-blue-500 transition-all flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                            title="Tiếp tục trận đấu"
                           >
-                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <Play className="w-3 h-3 fill-current" />
                           </button>
                         )}
-
-                        {/* RECYCLEBIN - Luôn hiện */}
+                        {!hasWinner && isLive && (
+                          <button
+                            onClick={() => {
+                              window.open(`/match-overlay/${match.id}`, "_blank", "width=650,height=250");
+                            }}
+                            className="h-7 w-7 rounded-lg bg-emerald-600/80 text-white hover:bg-emerald-500 transition-all flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                            title="Mở Overlay Livestream"
+                          >
+                            <MonitorPlay className="w-3 h-3" />
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             if (confirm("Bạn có chắc muốn xóa trận đấu này?")) {
                               deleteMatch.mutate(match.id);
                             }
                           }}
-                          className="h-7 w-7 rounded-md bg-red-100 text-red-500 hover:bg-red-200 hover:text-red-600 transition-colors flex items-center justify-center"
+                          className="h-7 w-7 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-400 dark:text-red-400/70 hover:bg-red-100 dark:hover:bg-red-900/60 hover:text-red-500 dark:hover:text-red-300 border border-red-200 dark:border-red-900/20 transition-all flex items-center justify-center"
+                          title="Xóa trận đấu"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Team 1 */}
-                    <div className={`flex items-center justify-between px-4 py-3 ${isServer1 ? "bg-blue-50" : "bg-white"}`}>
-                      <div className={`flex flex-col ${isServer1 ? "text-black" : "text-slate-900"}`}>
-                        <div className="flex items-center gap-1">
-                          {winner === 1 && <Trophy className="w-4 h-4 text-yellow-500" />}
-                          <span className={`font-black italic uppercase leading-tight ${winner === 1 ? "text-lg" : "text-base"}`}>
-                            {match.team1Player1}
+                    {/* Scores area */}
+                    <div className="flex flex-col">
+                      {/* Team 1 Row */}
+                      <div className="relative flex items-center justify-between px-5 py-3.5 group">
+                        {/* Serving or Winning left indicator */}
+                        <div
+                          className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500 ${
+                            isLive && isServer1
+                              ? "bg-gradient-to-b from-blue-400 to-blue-600 shadow-[0_0_12px_rgba(59,130,246,0.6)]"
+                              : winner === 1
+                              ? "bg-blue-500 dark:bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+                              : "bg-transparent"
+                          }`}
+                        />
+                        {/* Subtle team color bg when serving or winning */}
+                        {((isLive && isServer1) || winner === 1) && (
+                          <div className={`absolute inset-0 pointer-events-none ${
+                            winner === 1 
+                              ? "bg-blue-500/10 dark:bg-blue-500/20" 
+                              : "bg-gradient-to-r from-blue-500/8 dark:from-blue-500/5 to-transparent"
+                          }`} />
+                        )}
+
+                        <div className="flex flex-col z-10 pl-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
+                                isLive
+                                  ? isServer1 && serverNumber === 1
+                                    ? "text-blue-500 dark:text-blue-400 drop-shadow-[0_0_10px_rgba(96,165,250,0.4)] dark:drop-shadow-[0_0_10px_rgba(96,165,250,0.6)] text-base"
+                                    : isServer1
+                                    ? "text-foreground text-base"
+                                    : "text-muted-foreground text-sm"
+                                  : winner === 1
+                                  ? "text-foreground text-base"
+                                  : winner === 2
+                                  ? "text-muted-foreground text-sm"
+                                  : "text-foreground/80 text-sm"
+                              }`}
+                            >
+                              {match.team1Player1}
+                            </span>
+                          </div>
+                          {match.type === "doubles" && (
+                            <span
+                              className={`font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
+                                isLive
+                                  ? isServer1 && serverNumber === 2
+                                    ? "text-blue-500 dark:text-blue-400 drop-shadow-[0_0_10px_rgba(96,165,250,0.4)] dark:drop-shadow-[0_0_10px_rgba(96,165,250,0.6)] text-base"
+                                    : isServer1
+                                    ? "text-foreground/80 text-sm"
+                                    : "text-muted-foreground text-sm"
+                                  : winner === 1
+                                  ? "text-foreground/70 text-sm"
+                                  : winner === 2
+                                  ? "text-muted-foreground text-sm"
+                                  : "text-foreground/60 text-sm"
+                              }`}
+                            >
+                              {match.team1Player2}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 z-10">
+                          {/* Serve dots */}
+                          <div className="flex flex-col gap-1 items-center">
+                            <div
+                              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                                isLive && isServer1 && serverNumber >= 1
+                                  ? "bg-blue-500 dark:bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.7)] dark:shadow-[0_0_8px_rgba(96,165,250,0.9)] scale-110"
+                                  : "bg-border dark:bg-white/10"
+                              }`}
+                            />
+                            {match.type === "doubles" && (
+                              <div
+                                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                                  isLive && isServer1 && serverNumber >= 2
+                                    ? "bg-blue-500 dark:bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.7)] dark:shadow-[0_0_8px_rgba(96,165,250,0.9)] scale-110"
+                                    : "bg-border dark:bg-white/10"
+                                }`}
+                              />
+                            )}
+                          </div>
+                          {/* Score */}
+                          <span
+                            className={`font-black tabular-nums text-right transition-all duration-300 ${
+                              isLive && isServer1
+                                ? "text-blue-500 dark:text-blue-400 drop-shadow-[0_0_12px_rgba(96,165,250,0.5)] dark:drop-shadow-[0_0_15px_rgba(96,165,250,0.9)] text-4xl"
+                                : "text-blue-500/70 dark:text-blue-400/80 text-3xl"
+                            }`}
+                            style={{ minWidth: "2.5rem" }}
+                          >
+                            {match.scoreTeam1}
                           </span>
                         </div>
-                        <span className={`font-black italic uppercase leading-tight opacity-80 ${winner === 1 ? "text-lg" : "text-base"}`}>
-                          {match.team1Player2}
-                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-black text-blue-600 leading-none">{match.scoreTeam1}</span>
-                        <div className="flex flex-col gap-0.5">
-                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${isServer1 && serverNumber >= 1 ? "bg-green-500" : "bg-slate-200"} ${isServer1 && serverNumber >= 1 ? "animate-pulse" : ""}`} />
-                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${isServer1 && serverNumber >= 2 ? "bg-green-500" : "bg-slate-200"} ${isServer1 && serverNumber >= 2 ? "animate-pulse" : ""}`} />
+
+                      {/* Divider */}
+                      <div className="h-px bg-border dark:bg-gradient-to-r dark:from-transparent dark:via-white/10 dark:to-transparent mx-5" />
+
+                      {/* Team 2 Row */}
+                      <div className="relative flex items-center justify-between px-5 py-3.5 group">
+                        <div
+                          className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500 ${
+                            isLive && !isServer1
+                              ? "bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.6)]"
+                              : winner === 2
+                              ? "bg-orange-500 dark:bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]"
+                              : "bg-transparent"
+                          }`}
+                        />
+                        {((isLive && !isServer1) || winner === 2) && (
+                          <div className={`absolute inset-0 pointer-events-none ${
+                            winner === 2 
+                              ? "bg-orange-500/10 dark:bg-orange-500/20" 
+                              : "bg-gradient-to-r from-orange-500/8 dark:from-orange-500/5 to-transparent"
+                          }`} />
+                        )}
+
+                        <div className="flex flex-col z-10 pl-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
+                                isLive
+                                  ? !isServer1 && serverNumber === 1
+                                    ? "text-orange-500 dark:text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.4)] dark:drop-shadow-[0_0_10px_rgba(251,146,60,0.6)] text-base"
+                                    : !isServer1
+                                    ? "text-foreground text-base"
+                                    : "text-muted-foreground text-sm"
+                                  : winner === 2
+                                  ? "text-foreground text-base"
+                                  : winner === 1
+                                  ? "text-muted-foreground text-sm"
+                                  : "text-foreground/80 text-sm"
+                              }`}
+                            >
+                              {match.team2Player1}
+                            </span>
+                          </div>
+                          {match.type === "doubles" && (
+                            <span
+                              className={`font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
+                                isLive
+                                  ? !isServer1 && serverNumber === 2
+                                    ? "text-orange-500 dark:text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.4)] dark:drop-shadow-[0_0_10px_rgba(251,146,60,0.6)] text-base"
+                                    : !isServer1
+                                    ? "text-foreground/80 text-sm"
+                                    : "text-muted-foreground text-sm"
+                                  : winner === 2
+                                  ? "text-foreground/70 text-sm"
+                                  : winner === 1
+                                  ? "text-muted-foreground text-sm"
+                                  : "text-foreground/60 text-sm"
+                              }`}
+                            >
+                              {match.team2Player2}
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    </div>
 
-                    <div className="h-px bg-slate-100" />
-
-                    {/* Team 2 */}
-                    <div className={`flex items-center justify-between px-4 py-3 ${!isServer1 ? "bg-blue-50" : "bg-white"}`}>
-                      <div className={`flex flex-col ${!isServer1 ? "text-black" : "text-slate-900"}`}>
-                        <div className="flex items-center gap-1">
-                          {winner === 2 && <Trophy className="w-4 h-4 text-yellow-500" />}
-                          <span className={`font-black italic uppercase leading-tight ${winner === 2 ? "text-lg" : "text-base"}`}>
-                            {match.team2Player1}
+                        <div className="flex items-center gap-3 z-10">
+                          <div className="flex flex-col gap-1 items-center">
+                            <div
+                              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                                isLive && !isServer1 && serverNumber >= 1
+                                  ? "bg-orange-500 dark:bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.7)] dark:shadow-[0_0_8px_rgba(251,146,60,0.9)] scale-110"
+                                  : "bg-border dark:bg-white/10"
+                              }`}
+                            />
+                            {match.type === "doubles" && (
+                              <div
+                                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                                  isLive && !isServer1 && serverNumber >= 2
+                                    ? "bg-orange-500 dark:bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.7)] dark:shadow-[0_0_8px_rgba(251,146,60,0.9)] scale-110"
+                                    : "bg-border dark:bg-white/10"
+                                }`}
+                              />
+                            )}
+                          </div>
+                          <span
+                            className={`font-black tabular-nums text-right transition-all duration-300 ${
+                              isLive && !isServer1
+                                ? "text-orange-500 dark:text-orange-400 drop-shadow-[0_0_12px_rgba(251,146,60,0.5)] dark:drop-shadow-[0_0_15px_rgba(251,146,60,0.9)] text-4xl"
+                                : "text-orange-500/70 dark:text-orange-400/80 text-3xl"
+                            }`}
+                            style={{ minWidth: "2.5rem" }}
+                          >
+                            {match.scoreTeam2}
                           </span>
-                        </div>
-                        <span className={`font-black italic uppercase leading-tight opacity-80 ${winner === 2 ? "text-lg" : "text-base"}`}>
-                          {match.team2Player2}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-black text-orange-600 leading-none">{match.scoreTeam2}</span>
-                        <div className="flex flex-col gap-0.5">
-                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${!isServer1 && serverNumber >= 1 ? "bg-green-500" : "bg-slate-200"} ${!isServer1 && serverNumber >= 1 ? "animate-pulse" : ""}`} />
-                          <div className={`w-3.5 h-3.5 rounded-full transition-colors duration-300 ${!isServer1 && serverNumber >= 2 ? "bg-green-500" : "bg-slate-200"} ${!isServer1 && serverNumber >= 2 ? "animate-pulse" : ""}`} />
                         </div>
                       </div>
                     </div>
@@ -643,10 +753,15 @@ export default function RefereeTools() {
               })}
 
               {(!myMatchesData?.matches || myMatchesData.matches.length === 0) && (
-                <div className="text-center py-12">
-                  <Trophy className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 rounded-2xl bg-muted dark:bg-white/5 border border-border dark:border-white/10 flex items-center justify-center mx-auto mb-4">
+                    <Trophy className="w-7 h-7 text-muted-foreground/40 dark:text-white/20" />
+                  </div>
+                  <p className="text-sm font-black text-muted-foreground dark:text-white/30 uppercase tracking-widest">
                     Chưa có trận đấu nào
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60 dark:text-white/20 uppercase tracking-wider mt-1">
+                    Tạo trận đấu mới để bắt đầu
                   </p>
                 </div>
               )}
@@ -654,13 +769,13 @@ export default function RefereeTools() {
 
             {/* Pagination */}
             {myMatchesData && myMatchesData.pagination.totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 pt-4">
+              <div className="flex justify-center items-center gap-3 pt-4">
                 <button
                   onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
                   disabled={historyPage === 1}
-                  className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-9 h-9 rounded-xl bg-muted dark:bg-white/5 border border-border dark:border-white/10 text-muted-foreground dark:text-white/50 hover:bg-accent dark:hover:bg-white/10 hover:text-foreground dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, myMatchesData.pagination.totalPages) }, (_, i) => {
@@ -669,10 +784,10 @@ export default function RefereeTools() {
                       <button
                         key={pageNum}
                         onClick={() => setHistoryPage(pageNum)}
-                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                        className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${
                           historyPage === pageNum
-                            ? "bg-blue-500 text-white"
-                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                            ? "bg-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.4)]"
+                            : "bg-muted dark:bg-white/5 border border-border dark:border-white/10 text-muted-foreground dark:text-white/40 hover:bg-accent dark:hover:bg-white/10 hover:text-foreground dark:hover:text-white"
                         }`}
                       >
                         {pageNum}
@@ -683,9 +798,9 @@ export default function RefereeTools() {
                 <button
                   onClick={() => setHistoryPage((p) => p + 1)}
                   disabled={!myMatchesData.pagination.hasMore}
-                  className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-9 h-9 rounded-xl bg-muted dark:bg-white/5 border border-border dark:border-white/10 text-muted-foreground dark:text-white/50 hover:bg-accent dark:hover:bg-white/10 hover:text-foreground dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             )}

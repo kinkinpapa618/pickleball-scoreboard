@@ -13,6 +13,8 @@ import {
   insertNotificationSchema,
 } from "@shared/schema";
 
+const startingMatches = new Set<number>();
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // 1. Lấy danh sách người chơi
   // Sửa lỗi: Thay 'req' bằng '_' để báo hiệu biến này không dùng đến
@@ -129,10 +131,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (isServer2 !== undefined) updateData.isServer2 = isServer2;
     if (serverNumber !== undefined) updateData.serverNumber = serverNumber;
     if (isFirstServeOfMatch !== undefined) updateData.isFirstServeOfMatch = isFirstServeOfMatch;
-    if (timeline !== undefined) updateData.timeline = timeline;
-    if (timeouts !== undefined) updateData.timeouts = timeouts;
-    if (stacking !== undefined) updateData.stacking = stacking;
-    if (penalties !== undefined) updateData.penalties = penalties;
+    const parseSafe = (val: any) => {
+      if (typeof val === 'string') {
+        try {
+          return JSON.parse(val);
+        } catch (e) {
+          console.error("Failed to parse field from request body:", e);
+          return val;
+        }
+      }
+      return val;
+    };
+
+    if (timeline !== undefined) updateData.timeline = parseSafe(timeline);
+    if (timeouts !== undefined) updateData.timeouts = parseSafe(timeouts);
+    if (stacking !== undefined) updateData.stacking = parseSafe(stacking);
+    if (penalties !== undefined) updateData.penalties = parseSafe(penalties);
 
     console.log(`[PATCH /api/matches/${id}] Update data:`, JSON.stringify(updateData));
 
@@ -401,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const stats = {
       totalMatches: matches.length,
-      completedMatches: matches.filter(m => m.status === "finished").length,
+      completedMatches: matches.filter(m => m.status === "finished" || m.status === "completed").length,
       pendingMatches: matches.filter(m => m.status === "pending").length,
       totalSchedules: schedules.length,
       completedSchedules: schedules.filter(s => s.status === "completed").length,
@@ -866,6 +880,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/tournaments/:tournamentId/matches/:matchId/start", async (req, res) => {
     const tournamentId = parseInt(req.params.tournamentId as string);
     const matchId = parseInt(req.params.matchId as string);
+    
+    if (startingMatches.has(matchId)) {
+      return res.status(409).json({ message: "Trận đấu đang được khởi tạo, vui lòng đợi..." });
+    }
+
     const user = req.user as any;
 
     if (!user) {
@@ -904,38 +923,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(409).json({ message: "Trận đấu đã được bắt đầu" });
     }
 
-    const matchResult = matchSchema.safeParse({
-      team1Player1: tournamentMatch.team1Player1,
-      team1Player2: tournamentMatch.team1Player2,
-      team2Player1: tournamentMatch.team2Player1,
-      team2Player2: tournamentMatch.team2Player2,
-      scoreTeam1: 0,
-      scoreTeam2: 0,
-      winningScore: tournament.winningScore,
-      status: "live",
-      isServer1: false,
-      isServer2: false,
-      serverNumber: 1,
-    });
+    startingMatches.add(matchId);
+    try {
+      const matchResult = matchSchema.safeParse({
+        team1Player1: tournamentMatch.team1Player1,
+        team1Player2: tournamentMatch.team1Player2,
+        team2Player1: tournamentMatch.team2Player1,
+        team2Player2: tournamentMatch.team2Player2,
+        scoreTeam1: 0,
+        scoreTeam2: 0,
+        winningScore: tournament.winningScore,
+        status: "live",
+        isServer1: false,
+        isServer2: false,
+        serverNumber: 1,
+      });
 
-    if (!matchResult.success) {
-      return res.status(400).json({ message: "Dữ liệu trận đấu không hợp lệ" });
+      if (!matchResult.success) {
+        return res.status(400).json({ message: "Dữ liệu trận đấu không hợp lệ" });
+      }
+
+      const refereeId = isGroupMember ? user.id : (tournamentMatch.refereeId || user.id);
+
+      const createdMatch = await storage.createMatch({
+        ...matchResult.data,
+        refereeId,
+      });
+
+      await storage.updateTournamentMatch(matchId, { 
+        matchId: createdMatch.id, 
+        status: "live",
+        refereeId: refereeId,
+      });
+
+      res.json(createdMatch);
+    } catch (error: any) {
+      console.error("Lỗi khi start match:", error);
+      res.status(500).json({ message: error.message || "Lỗi server khi khởi tạo trận đấu" });
+    } finally {
+      startingMatches.delete(matchId);
     }
-
-    const refereeId = isGroupMember ? user.id : (tournamentMatch.refereeId || user.id);
-
-    const createdMatch = await storage.createMatch({
-      ...matchResult.data,
-      refereeId,
-    });
-
-    await storage.updateTournamentMatch(matchId, { 
-      matchId: createdMatch.id, 
-      status: "live",
-      refereeId: refereeId,
-    });
-
-    res.json(createdMatch);
   });
 
   // === SETTINGS APIs ===
@@ -1444,6 +1471,338 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(chat);
   });
 
+  // ═══════════════════════════════════════════════════════
+  // BADMINTON MATCH ROUTES
+  // ═══════════════════════════════════════════════════════
+
+  // GET /api/badminton/matches — danh sách có phân trang
+  app.get("/api/badminton/matches", async (req, res) => {
+    const user = req.user as any;
+    if (!user) return res.status(401).json({ message: "Chưa đăng nhập" });
+
+    const page = parseInt((req.query.page as string) || "1");
+    const perPage = 10;
+    const offset = (page - 1) * perPage;
+
+    const [matches, total] = await Promise.all([
+      storage.getUserBadmintonMatches(user.id, perPage, offset),
+      storage.getUserBadmintonMatchCount(user.id),
+    ]);
+
+    res.json({
+      matches,
+      pagination: {
+        page,
+        perPage,
+        total,
+        totalPages: Math.ceil(total / perPage),
+        hasMore: page * perPage < total,
+      },
+    });
+  });
+
+  // GET /api/badminton/matches/:id — chi tiết trận
+  app.get("/api/badminton/matches/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const match = await storage.getBadmintonMatch(id);
+    if (!match) {
+      return res.status(404).json({ message: "Không tìm thấy trận đấu" });
+    }
+    res.json(match);
+  });
+
+  // POST /api/badminton/matches — tạo trận mới
+  app.post("/api/badminton/matches", async (req, res) => {
+    const user = req.user as any;
+    if (!user) return res.status(401).json({ message: "Chưa đăng nhập" });
+
+    const {
+      team1Player1, team1Player2, team2Player1, team2Player2,
+      type, bestOf, winningPoints, servingTeam,
+    } = req.body;
+
+    if (!team1Player1 || !team2Player1) {
+      return res.status(400).json({ message: "Thiếu thông tin cầu thủ" });
+    }
+
+    const firstServingTeam = Number(servingTeam || 1) as 1 | 2;
+
+    const match = await storage.createBadmintonMatch({
+      team1Player1,
+      team1Player2: team1Player2 || "",
+      team2Player1,
+      team2Player2: team2Player2 || "",
+      type: type || "doubles",
+      bestOf: Number(bestOf || 3) as 3 | 5,
+      winningPoints: Number(winningPoints || 21) as 21 | 15,
+      status: "live",
+      currentGame: 1,
+      gamesWonTeam1: 0,
+      gamesWonTeam2: 0,
+      currentScoreTeam1: 0,
+      currentScoreTeam2: 0,
+      servingTeam: firstServingTeam,
+      servingPlayer: 1,
+      team1Swapped: false,
+      team2Swapped: false,
+      team1Side: "left",
+      endsChanged: false,
+      gameScores: [],
+      stateHistory: [],
+      timeline: [],
+      refereeId: user.id,
+      creatorId: user.id,
+    });
+
+    res.json(match);
+  });
+
+  // PATCH /api/badminton/matches/:id/rally — ghi nhận rally result
+  app.patch("/api/badminton/matches/:id/rally", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const user = req.user as any;
+    const match = await storage.getBadmintonMatch(id);
+    if (!match) return res.status(404).json({ message: "Không tìm thấy trận đấu" });
+    if (match.status === "completed") {
+      return res.status(400).json({ message: "Trận đấu đã kết thúc" });
+    }
+
+    const { winner } = req.body; // 1 or 2
+    if (winner !== 1 && winner !== 2) {
+      return res.status(400).json({ message: "winner phải là 1 hoặc 2" });
+    }
+
+    // Save current state to history for undo
+    const currentStateSnapshot = {
+      currentGame: match.currentGame,
+      gamesWonTeam1: match.gamesWonTeam1,
+      gamesWonTeam2: match.gamesWonTeam2,
+      currentScoreTeam1: match.currentScoreTeam1,
+      currentScoreTeam2: match.currentScoreTeam2,
+      servingTeam: match.servingTeam,
+      servingPlayer: match.servingPlayer,
+      team1Swapped: match.team1Swapped,
+      team2Swapped: match.team2Swapped,
+      team1Side: match.team1Side,
+      endsChanged: match.endsChanged,
+      gameScores: match.gameScores,
+      status: match.status,
+      winnerTeam: match.winnerTeam,
+    };
+    const history = ((match.stateHistory as any[]) || []);
+    history.push(currentStateSnapshot);
+
+    // Process rally using the shared logic (imported inline for server context)
+    const { processRally, dbToGameState } = await import("../client/src/utils/badmintonLogic.js").catch(() => {
+      // Fallback: inline logic calculation on server
+      return { processRally: null, dbToGameState: null };
+    });
+
+    // Simple inline calculation to avoid import complexity
+    let updateData: any = { stateHistory: history };
+    const gameState = {
+      type: match.type,
+      bestOf: match.bestOf,
+      winningPoints: match.winningPoints,
+      status: match.status,
+      currentGame: match.currentGame,
+      gamesWonTeam1: match.gamesWonTeam1,
+      gamesWonTeam2: match.gamesWonTeam2,
+      winnerTeam: match.winnerTeam ?? null,
+      gameScores: (match.gameScores as Array<[number, number]>) ?? [],
+      currentScoreTeam1: match.currentScoreTeam1,
+      currentScoreTeam2: match.currentScoreTeam2,
+      servingTeam: match.servingTeam,
+      servingPlayer: match.servingPlayer,
+      team1Swapped: match.team1Swapped,
+      team2Swapped: match.team2Swapped,
+      team1Side: match.team1Side,
+      endsChanged: match.endsChanged,
+    };
+
+    // Inline processRally for server
+    const next = JSON.parse(JSON.stringify(gameState));
+    const rallyWinner = winner as 1 | 2;
+    const isServingTeamWon = rallyWinner === next.servingTeam;
+    if (rallyWinner === 1) next.currentScoreTeam1 += 1;
+    else next.currentScoreTeam2 += 1;
+
+    if (isServingTeamWon) {
+      if (next.type !== "singles") {
+        if (next.servingTeam === 1) {
+          next.team1Swapped = !next.team1Swapped;
+          next.servingPlayer = next.team1Swapped ? 2 : 1;
+        } else {
+          next.team2Swapped = !next.team2Swapped;
+          next.servingPlayer = next.team2Swapped ? 2 : 1;
+        }
+      }
+    } else {
+      next.servingTeam = next.servingTeam === 1 ? 2 : 1;
+      if (next.type !== "singles") {
+        const isSwapped = next.servingTeam === 1 ? next.team1Swapped : next.team2Swapped;
+        next.servingPlayer = isSwapped ? 2 : 1;
+      }
+    }
+
+    // Check game over
+    const wp = next.winningPoints;
+    const maxScore = Math.max(next.currentScoreTeam1, next.currentScoreTeam2);
+    const diff = Math.abs(next.currentScoreTeam1 - next.currentScoreTeam2);
+    const cap = wp === 21 ? 30 : 24;
+    const gameOver = (maxScore >= wp && diff >= 2) || maxScore >= cap;
+
+    const timeline = ((match.timeline as any[]) || []);
+    timeline.push({
+      id: Date.now().toString() + Math.random().toString(36).substring(7),
+      type: "score",
+      scorerTeam: winner,
+      score1: next.currentScoreTeam1,
+      score2: next.currentScoreTeam2,
+      timestamp: new Date().toISOString()
+    });
+
+    if (gameOver) {
+      next.gameScores.push([next.currentScoreTeam1, next.currentScoreTeam2]);
+      if (next.currentScoreTeam1 > next.currentScoreTeam2) next.gamesWonTeam1 += 1;
+      else next.gamesWonTeam2 += 1;
+
+      const needed = Math.ceil(next.bestOf / 2);
+      const matchOver = next.gamesWonTeam1 >= needed || next.gamesWonTeam2 >= needed;
+      if (matchOver) {
+        next.status = "completed";
+        next.winnerTeam = next.gamesWonTeam1 > next.gamesWonTeam2 ? 1 : 2;
+        updateData.endTime = new Date();
+        timeline.push({
+          id: Date.now().toString() + "go",
+          type: "event",
+          message: `Team ${next.winnerTeam} thắng trận!`,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        timeline.push({
+          id: Date.now().toString() + "g_end",
+          type: "event",
+          message: `Game ${next.currentGame} kết thúc.`,
+          timestamp: new Date().toISOString()
+        });
+        next.currentGame += 1;
+        next.currentScoreTeam1 = 0;
+        next.currentScoreTeam2 = 0;
+        next.team1Swapped = false;
+        next.team2Swapped = false;
+        next.endsChanged = false;
+        next.servingTeam = rallyWinner;
+        next.servingPlayer = 1;
+      }
+    } else {
+      // Check end switching in deciding game
+      const gamesNeeded = Math.ceil(next.bestOf / 2);
+      const isDecidingGame = next.currentGame === gamesNeeded * 2 - 1;
+      if (isDecidingGame && !next.endsChanged) {
+        const switchPt = wp === 21 ? 11 : 8;
+        if (Math.max(next.currentScoreTeam1, next.currentScoreTeam2) >= switchPt) {
+          next.team1Side = next.team1Side === "left" ? "right" : "left";
+          next.endsChanged = true;
+          timeline.push({
+            id: Date.now().toString() + "swap",
+            type: "event",
+            message: "Đổi sân",
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+    }
+
+    Object.assign(updateData, {
+      currentGame: next.currentGame,
+      gamesWonTeam1: next.gamesWonTeam1,
+      gamesWonTeam2: next.gamesWonTeam2,
+      currentScoreTeam1: next.currentScoreTeam1,
+      currentScoreTeam2: next.currentScoreTeam2,
+      servingTeam: next.servingTeam,
+      servingPlayer: next.servingPlayer,
+      team1Swapped: next.team1Swapped,
+      team2Swapped: next.team2Swapped,
+      team1Side: next.team1Side,
+      endsChanged: next.endsChanged,
+      gameScores: next.gameScores,
+      status: next.status,
+      winnerTeam: next.winnerTeam ?? null,
+      timeline: timeline,
+    });
+
+    const updated = await storage.updateBadmintonMatch(id, updateData);
+    res.json(updated);
+  });
+
+  // PATCH /api/badminton/matches/:id/undo — hoàn tác rally cuối
+  app.patch("/api/badminton/matches/:id/undo", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const match = await storage.getBadmintonMatch(id);
+    if (!match) return res.status(404).json({ message: "Không tìm thấy trận đấu" });
+
+    const history = ((match.stateHistory as any[]) || []);
+    if (history.length === 0) {
+      return res.status(400).json({ message: "Không có gì để hoàn tác" });
+    }
+
+    const previousState = history.pop();
+    const timeline = ((match.timeline as any[]) || []);
+    timeline.push({
+      id: Date.now().toString() + "undo",
+      type: "undo",
+      timestamp: new Date().toISOString()
+    });
+
+    const updated = await storage.updateBadmintonMatch(id, {
+      ...previousState,
+      stateHistory: history,
+      timeline: timeline,
+    });
+    res.json(updated);
+  });
+
+  // PATCH /api/badminton/matches/:id/timeout — ghi nhận timeout
+  app.patch("/api/badminton/matches/:id/timeout", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const { team } = req.body;
+    const match = await storage.getBadmintonMatch(id);
+    if (!match) return res.status(404).json({ message: "Không tìm thấy trận đấu" });
+    if (match.status === "completed") {
+      return res.status(400).json({ message: "Trận đấu đã kết thúc" });
+    }
+
+    const timeline = ((match.timeline as any[]) || []);
+    timeline.push({
+      id: Date.now().toString() + "to",
+      type: "timeout",
+      scorerTeam: team,
+      timestamp: new Date().toISOString()
+    });
+
+    const updated = await storage.updateBadmintonMatch(id, { timeline });
+    res.json(updated);
+  });
+
+  // DELETE /api/badminton/matches/:id — xóa trận
+  app.delete("/api/badminton/matches/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const user = req.user as any;
+    if (!user) return res.status(401).json({ message: "Chưa đăng nhập" });
+
+    const match = await storage.getBadmintonMatch(id);
+    if (!match) return res.status(404).json({ message: "Không tìm thấy trận đấu" });
+
+    if (user.role !== "admin" && match.refereeId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền xóa trận đấu này" });
+    }
+
+    await storage.deleteBadmintonMatch(id);
+    res.json({ message: "Xóa thành công" });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
+

@@ -1,15 +1,19 @@
-# fly.toml app configuration file generated for pickleball-scoreboard on 2026-02-27T21:38:23Z
+# fly.toml app configuration file generated for trongtaiso on 2026-05-23T02:20:19+07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'pickleball-scoreboard'
+app = 'trongtaiso'
 primary_region = 'iad'
 
 [build]
 
+[env]
+  NODE_ENV = 'production'
+  PORT = '5000'
+
 [http_service]
-  internal_port = 3000
+  internal_port = 5000
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true

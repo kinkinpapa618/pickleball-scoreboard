@@ -79,7 +79,7 @@ function SettingsTab() {
     { key: "autoStartTimer", label: "Tự động bắt đầu timer", type: "boolean", defaultValue: "true", description: "Tự động bắt đầu đếm thời gian khi vào trận" },
     { key: "showServerNumber", label: "Hiển thị số lượt giao", type: "boolean", defaultValue: "true", description: "Hiển thị số (1 hoặc 2) lượt giao hiện tại" },
     { key: "enableStacking", label: "Cho phép khóa vị trí (Stacking)", type: "boolean", defaultValue: "true", description: "Cho phép người chơi khóa vị trí trên sân" },
-    { key: "enablePenalties", label: "Cho phép thẻ phạt", type: "boolean", defaultValue: "true", description: "Bật chức năng thẻ vàng/đỏ" },
+    
   ];
 
   const getSettingValue = (key: string) => {
@@ -98,27 +98,27 @@ function SettingsTab() {
     }
   };
 
-  if (isLoading) return <div className="text-slate-500 text-center py-8">Đang tải...</div>;
+  if (isLoading) return <div className="text-muted-foreground text-center py-8">Đang tải...</div>;
 
   return (
     <div className="space-y-4">
-      <h3 className="font-black text-slate-900 text-xl">Cài đặt hệ thống</h3>
-      <p className="text-sm text-slate-500">Cấu hình các thông số mặc định cho trận đấu</p>
+      <h3 className="font-black text-foreground text-xl">Cài đặt hệ thống</h3>
+      <p className="text-sm text-muted-foreground">Cấu hình các thông số mặc định cho trận đấu</p>
       
       <div className="grid gap-3">
         {defaultSettings.map((setting) => (
-          <div key={setting.key} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <div key={setting.key} className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <label className="font-bold text-slate-700 text-sm block">{setting.label}</label>
-                <p className="text-xs text-slate-400 mt-0.5">{setting.description}</p>
+                <label className="font-bold text-foreground text-sm block">{setting.label}</label>
+                <p className="text-xs text-muted-foreground mt-0.5">{setting.description}</p>
               </div>
               {setting.type === "boolean" ? (
                 <button
                   onClick={() => handleUpdate(setting.key, getSettingValue(setting.key) === "true" ? "false" : "true")}
                   disabled={updateSetting.isPending}
                   className={`w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
-                    getSettingValue(setting.key) === "true" ? "bg-green-500" : "bg-slate-300"
+                    getSettingValue(setting.key) === "true" ? "bg-green-500" : "bg-muted-foreground/30"
                   }`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -131,7 +131,7 @@ function SettingsTab() {
                   value={getSettingValue(setting.key)}
                   onChange={(e) => handleUpdate(setting.key, e.target.value)}
                   disabled={updateSetting.isPending}
-                  className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-center font-bold text-slate-700"
+                  className="w-20 bg-muted border border-border rounded-xl px-3 py-2 text-sm text-center font-bold text-foreground"
                 />
               )}
             </div>
@@ -421,18 +421,18 @@ export default function AdminPanel() {
   };
 
   const getMatchReferee = (refereeId: number | null) => {
-    if (!refereeId) return <span className="text-slate-400 text-xs">Chưa phân công</span>;
+    if (!refereeId) return <span className="text-muted-foreground text-xs">Chưa phân công</span>;
     const referee = users.find(u => u.id === refereeId);
     return referee ? (
-      <span className="text-blue-600 text-xs font-medium">{referee.fullName || referee.username}</span>
-    ) : <span className="text-slate-400 text-xs">Unknown</span>;
+      <span className="text-blue-600 dark:text-blue-400 text-xs font-medium">{referee.fullName || referee.username}</span>
+    ) : <span className="text-muted-foreground text-xs">Unknown</span>;
   };
 
   if (!user || (user.role !== "admin" && user.role !== "manager")) {
     return (
-      <div className="p-4 flex items-center justify-center min-h-screen bg-[#F8FAFC]">
+      <div className="p-4 flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
-          <p className="text-slate-500">Không có quyền truy cập</p>
+          <p className="text-muted-foreground">Không có quyền truy cập</p>
           <button onClick={() => setLocation("/profile")} className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-xl font-bold">
             Quay lại
           </button>
@@ -442,13 +442,13 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="p-4 space-y-4 min-h-screen pb-20 bg-[#F8FAFC]">
+    <div className="p-4 space-y-4 min-h-screen pb-20 bg-background">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => setLocation("/profile")} className="p-2 bg-white rounded-xl hover:bg-slate-100 transition shadow-sm">
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        <button onClick={() => setLocation("/profile")} className="p-2 bg-card rounded-xl hover:bg-accent transition-colors shadow-sm">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="text-xl font-black italic uppercase text-slate-900">
+        <h1 className="text-xl font-black italic uppercase text-foreground">
           Quản {isManager ? "Lý" : "Trị"} <span className="text-blue-600">{isManager ? "Giải" : "Hệ"}</span>
         </h1>
       </div>
@@ -465,8 +465,8 @@ export default function AdminPanel() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as TabType)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition ${
-              activeTab === tab.id ? "bg-blue-500 text-white" : "bg-white text-slate-600"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-colors ${
+              activeTab === tab.id ? "bg-blue-500 text-white" : "bg-card text-muted-foreground hover:bg-accent"
             }`}
           >
             <tab.icon className="w-4 h-4" />
@@ -486,15 +486,15 @@ export default function AdminPanel() {
           </button>
 
           {users.map((u) => (
-            <div key={u.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+            <div key={u.id} className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-black text-blue-600 text-sm">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center font-black text-blue-600 dark:text-blue-400 text-sm">
                     {(u.fullName || u.username).slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm">{u.fullName || u.username}</h3>
-                    <p className="text-xs text-slate-400">@{u.username}</p>
+                    <h3 className="font-bold text-sm text-foreground">{u.fullName || u.username}</h3>
+                    <p className="text-xs text-muted-foreground">@{u.username}</p>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${getRoleBadge(u.role)}`}>
                       {getRoleLabel(u.role)}
                     </span>
@@ -502,12 +502,12 @@ export default function AdminPanel() {
                 </div>
                 <button
                   onClick={() => setEditingUser(u)}
-                  className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200"
+                  className="p-2 bg-muted rounded-lg hover:bg-accent transition-colors"
                 >
-                  <Edit2 className="w-4 h-4 text-slate-500" />
+                  <Edit2 className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex gap-4 text-xs text-slate-400">
+              <div className="mt-2 pt-2 border-t border-border flex gap-4 text-xs text-muted-foreground">
                 <span>{u.phone}</span>
                 <span>{u.idCard}</span>
               </div>
@@ -527,12 +527,12 @@ export default function AdminPanel() {
           </button>
 
           {schedules.map((s) => (
-            <div key={s.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+            <div key={s.id} className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-bold text-sm">{s.title}</h3>
-                  <p className="text-xs text-slate-400 mt-1">{s.description}</p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                  <h3 className="font-bold text-sm text-foreground">{s.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{s.description}</p>
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(s.date).toLocaleString("vi-VN")}</span>
                     {s.location && <span>{s.location}</span>}
                   </div>
@@ -542,18 +542,18 @@ export default function AdminPanel() {
                     {s.status === "assigned" ? "Chờ" : s.status === "completed" ? "Hoàn thành" : "Hủy"}
                   </span>
                   <div className="flex gap-1">
-                    <button onClick={() => setEditingSchedule(s)} className="p-1.5 bg-slate-100 rounded">
-                      <Edit2 className="w-3 h-3 text-slate-500" />
+                    <button onClick={() => setEditingSchedule(s)} className="p-1.5 bg-muted rounded hover:bg-accent transition-colors">
+                      <Edit2 className="w-3 h-3 text-muted-foreground" />
                     </button>
-                    <button onClick={() => handleDeleteSchedule(s.id)} className="p-1.5 bg-red-50 rounded">
+                    <button onClick={() => handleDeleteSchedule(s.id)} className="p-1.5 bg-red-50 dark:bg-red-950/40 rounded">
                       <Trash2 className="w-3 h-3 text-red-500" />
                     </button>
                   </div>
                 </div>
               </div>
               {s.refereeId && (
-                <div className="mt-2 pt-2 border-t border-slate-100 text-xs">
-                  <span className="text-slate-400">TT: </span>
+                <div className="mt-2 pt-2 border-t border-border text-xs">
+                  <span className="text-muted-foreground">TT: </span>
                   {getMatchReferee(s.refereeId)}
                 </div>
               )}
@@ -566,25 +566,25 @@ export default function AdminPanel() {
       {activeTab === "matches" && (
         <div className="space-y-3">
           {matches.filter(m => m.status === "live" || m.status === "pending").map((m) => (
-            <div key={m.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+            <div key={m.id} className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-400">#{m.id}</span>
+                <span className="text-xs font-bold text-muted-foreground">#{m.id}</span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${m.status === "live" ? "bg-red-500/20 text-red-600" : "bg-slate-500/20 text-slate-600"}`}>
                   {m.status === "live" ? "Đang đấu" : "Chờ"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-slate-700">{m.team1Player1}/{m.team1Player2}</div>
-                  <div className="text-sm font-bold text-slate-700">{m.team2Player1}/{m.team2Player2}</div>
+                  <div className="text-sm font-bold text-foreground">{m.team1Player1}/{m.team1Player2}</div>
+                  <div className="text-sm font-bold text-foreground">{m.team2Player1}/{m.team2Player2}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-xl font-black text-blue-600">{m.scoreTeam1}</div>
                   <div className="text-xl font-black text-orange-600">{m.scoreTeam2}</div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-slate-500">
+              <div className="mt-3 pt-2 border-t border-border flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">
                   {getMatchReferee(m.refereeId)}
                 </div>
                 <button
@@ -603,11 +603,11 @@ export default function AdminPanel() {
       {activeTab === "tournaments" && (
         <div className="space-y-3">
           {tournaments.map((t) => (
-            <div key={t.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+            <div key={t.id} className="bg-card p-4 rounded-2xl border border-border shadow-sm transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-bold text-sm">{t.name}</h3>
-                  <p className="text-xs text-slate-400 mt-1">{t.description || "Không có mô tả"}</p>
+                  <h3 className="font-bold text-sm text-foreground">{t.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{t.description || "Không có mô tả"}</p>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${
                   t.status === "active" ? "bg-green-500/20 text-green-600" :
@@ -617,7 +617,7 @@ export default function AdminPanel() {
                   {t.status === "active" ? "Đang đấu" : t.status === "completed" ? "Hoàn thành" : "Bản nháp"}
                 </span>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 flex gap-2">
+              <div className="mt-3 pt-2 border-t border-border flex gap-2">
                 {t.status === "draft" && (
                   <button
                     onClick={() => handleUpdateTournamentStatus(t.id, "active")}
@@ -635,7 +635,7 @@ export default function AdminPanel() {
                   </button>
                 )}
                 <button
-                  onClick={() => setLocation(`/tools?tournament=${t.id}`)}
+                  onClick={() => setLocation(`/tournament/${t.id}`)}
                   className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1"
                 >
                   <Trophy className="w-3 h-3" /> Chi tiết
@@ -654,21 +654,21 @@ export default function AdminPanel() {
       {/* ADD USER MODAL */}
       {showUserModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
-            <h2 className="text-lg font-black">Thêm User mới</h2>
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl transition-colors">
+            <h2 className="text-lg font-black text-foreground">Thêm User mới</h2>
             <form onSubmit={handleAddUser} className="space-y-3">
-              <input type="text" id="username" name="username" placeholder="Tên đăng nhập" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="password" id="password" name="password" placeholder="Mật khẩu" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="text" id="fullName" name="fullName" placeholder="Họ tên" value={userForm.fullName} onChange={e => setUserForm({...userForm, fullName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <input type="text" id="phone" name="phone" placeholder="Số điện thoại" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="text" id="idCard" name="idCard" placeholder="Căn cước/CMND" value={userForm.idCard} onChange={e => setUserForm({...userForm, idCard: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <select id="role" name="role" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="username" name="username" placeholder="Tên đăng nhập" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" required />
+              <input type="password" id="password" name="password" placeholder="Mật khẩu" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" required />
+              <input type="text" id="fullName" name="fullName" placeholder="Họ tên" value={userForm.fullName} onChange={e => setUserForm({...userForm, fullName: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" />
+              <input type="text" id="phone" name="phone" placeholder="Số điện thoại" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" required />
+              <input type="text" id="idCard" name="idCard" placeholder="Căn cước/CMND" value={userForm.idCard} onChange={e => setUserForm({...userForm, idCard: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" required />
+              <select id="role" name="role" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground">
                 <option value="referee">Trọng tài</option>
                 <option value="manager">Quản lý</option>
                 <option value="admin">Admin</option>
               </select>
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-sm">Hủy</button>
+                <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 bg-muted py-3 rounded-xl font-bold text-sm text-foreground hover:bg-accent transition-colors">Hủy</button>
                 <button type="submit" className="flex-1 bg-blue-500 py-3 rounded-xl font-bold text-sm text-white">Thêm</button>
               </div>
             </form>
@@ -679,19 +679,19 @@ export default function AdminPanel() {
       {/* EDIT USER MODAL */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
-            <h2 className="text-lg font-black">Sửa User</h2>
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl transition-colors">
+            <h2 className="text-lg font-black text-foreground">Sửa User</h2>
             <form onSubmit={handleUpdateUser} className="space-y-3">
-              <input type="text" id="editFullName" name="fullName" placeholder="Họ tên" value={editingUser.fullName || ""} onChange={e => setEditingUser({...editingUser, fullName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <input type="text" id="editPhone" name="phone" placeholder="Số điện thoại" value={editingUser.phone} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <input type="text" id="editIdCard" name="idCard" placeholder="Căn cước/CMND" value={editingUser.idCard} onChange={e => setEditingUser({...editingUser, idCard: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <select id="editRole" name="role" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="editFullName" name="fullName" placeholder="Họ tên" value={editingUser.fullName || ""} onChange={e => setEditingUser({...editingUser, fullName: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" />
+              <input type="text" id="editPhone" name="phone" placeholder="Số điện thoại" value={editingUser.phone} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" />
+              <input type="text" id="editIdCard" name="idCard" placeholder="Căn cước/CMND" value={editingUser.idCard} onChange={e => setEditingUser({...editingUser, idCard: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" />
+              <select id="editRole" name="role" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground">
                 <option value="referee">Trọng tài</option>
                 <option value="manager">Quản lý</option>
                 <option value="admin">Admin</option>
               </select>
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setEditingUser(null)} className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-sm">Hủy</button>
+                <button type="button" onClick={() => setEditingUser(null)} className="flex-1 bg-muted py-3 rounded-xl font-bold text-sm text-foreground hover:bg-accent transition-colors">Hủy</button>
                 <button type="submit" className="flex-1 bg-blue-500 py-3 rounded-xl font-bold text-sm text-white">Lưu</button>
               </div>
             </form>
@@ -702,21 +702,21 @@ export default function AdminPanel() {
       {/* ADD SCHEDULE MODAL */}
       {showScheduleModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
-            <h2 className="text-lg font-black">Thêm Lịch Công Tác</h2>
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl transition-colors">
+            <h2 className="text-lg font-black text-foreground">Thêm Lịch Công Tác</h2>
             <form onSubmit={handleAddSchedule} className="space-y-3">
-              <input type="text" id="scheduleTitle" name="title" placeholder="Tiêu đề" value={scheduleForm.title} onChange={e => setScheduleForm({...scheduleForm, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <textarea id="scheduleDescription" name="description" placeholder="Mô tả" value={scheduleForm.description} onChange={e => setScheduleForm({...scheduleForm, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20" />
-              <input type="datetime-local" id="scheduleDate" name="date" value={scheduleForm.date} onChange={e => setScheduleForm({...scheduleForm, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <input type="text" id="scheduleLocation" name="location" placeholder="Địa điểm" value={scheduleForm.location} onChange={e => setScheduleForm({...scheduleForm, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <select id="scheduleRefereeId" name="refereeId" value={scheduleForm.refereeId} onChange={e => setScheduleForm({...scheduleForm, refereeId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="scheduleTitle" name="title" placeholder="Tiêu đề" value={scheduleForm.title} onChange={e => setScheduleForm({...scheduleForm, title: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" required />
+              <textarea id="scheduleDescription" name="description" placeholder="Mô tả" value={scheduleForm.description} onChange={e => setScheduleForm({...scheduleForm, description: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm h-20 text-foreground" />
+              <input type="datetime-local" id="scheduleDate" name="date" value={scheduleForm.date} onChange={e => setScheduleForm({...scheduleForm, date: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" required />
+              <input type="text" id="scheduleLocation" name="location" placeholder="Địa điểm" value={scheduleForm.location} onChange={e => setScheduleForm({...scheduleForm, location: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" />
+              <select id="scheduleRefereeId" name="refereeId" value={scheduleForm.refereeId} onChange={e => setScheduleForm({...scheduleForm, refereeId: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground">
                 <option value="">Chọn Trọng tài...</option>
                 {users.filter(u => u.role === "referee").map(u => (
                   <option key={u.id} value={u.id}>{u.fullName || u.username}</option>
                 ))}
               </select>
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setShowScheduleModal(false)} className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-sm">Hủy</button>
+                <button type="button" onClick={() => setShowScheduleModal(false)} className="flex-1 bg-muted py-3 rounded-xl font-bold text-sm text-foreground hover:bg-accent transition-colors">Hủy</button>
                 <button type="submit" className="flex-1 bg-blue-500 py-3 rounded-xl font-bold text-sm text-white">Thêm</button>
               </div>
             </form>
@@ -727,19 +727,19 @@ export default function AdminPanel() {
       {/* EDIT SCHEDULE MODAL */}
       {editingSchedule && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
-            <h2 className="text-lg font-black">Sửa Lịch Công Tác</h2>
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl transition-colors">
+            <h2 className="text-lg font-black text-foreground">Sửa Lịch Công Tác</h2>
             <form onSubmit={handleUpdateSchedule} className="space-y-3">
-              <input type="text" id="editScheduleTitle" name="title" placeholder="Tiêu đề" value={editingSchedule.title} onChange={e => setEditingSchedule({...editingSchedule, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required />
-              <textarea id="editScheduleDescription" name="description" placeholder="Mô tả" value={editingSchedule.description || ""} onChange={e => setEditingSchedule({...editingSchedule, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20" />
-              <input type="text" id="editScheduleLocation" name="location" placeholder="Địa điểm" value={editingSchedule.location || ""} onChange={e => setEditingSchedule({...editingSchedule, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-              <select id="editScheduleStatus" name="status" value={editingSchedule.status} onChange={e => setEditingSchedule({...editingSchedule, status: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+              <input type="text" id="editScheduleTitle" name="title" placeholder="Tiêu đề" value={editingSchedule.title} onChange={e => setEditingSchedule({...editingSchedule, title: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" required />
+              <textarea id="editScheduleDescription" name="description" placeholder="Mô tả" value={editingSchedule.description || ""} onChange={e => setEditingSchedule({...editingSchedule, description: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm h-20 text-foreground" />
+              <input type="text" id="editScheduleLocation" name="location" placeholder="Địa điểm" value={editingSchedule.location || ""} onChange={e => setEditingSchedule({...editingSchedule, location: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground" />
+              <select id="editScheduleStatus" name="status" value={editingSchedule.status} onChange={e => setEditingSchedule({...editingSchedule, status: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground">
                 <option value="assigned">Chờ</option>
                 <option value="completed">Hoàn thành</option>
                 <option value="cancelled">Hủy</option>
               </select>
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setEditingSchedule(null)} className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-sm">Hủy</button>
+                <button type="button" onClick={() => setEditingSchedule(null)} className="flex-1 bg-muted py-3 rounded-xl font-bold text-sm text-foreground hover:bg-accent transition-colors">Hủy</button>
                 <button type="submit" className="flex-1 bg-blue-500 py-3 rounded-xl font-bold text-sm text-white">Lưu</button>
               </div>
             </form>
@@ -750,19 +750,19 @@ export default function AdminPanel() {
       {/* ASSIGN REFEREE MODAL */}
       {showMatchAssignModal && selectedMatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl">
-            <h2 className="text-lg font-black">Phân công Trọng tài</h2>
-            <div className="bg-slate-50 p-3 rounded-xl text-sm">
-              <div className="font-bold">{selectedMatch.team1Player1}/{selectedMatch.team1Player2}</div>
-              <div className="text-slate-400">vs</div>
-              <div className="font-bold">{selectedMatch.team2Player1}/{selectedMatch.team2Player2}</div>
+          <div className="bg-card p-6 rounded-2xl w-full max-w-md space-y-3 shadow-xl transition-colors">
+            <h2 className="text-lg font-black text-foreground">Phân công Trọng tài</h2>
+            <div className="bg-muted p-3 rounded-xl text-sm">
+              <div className="font-bold text-foreground">{selectedMatch.team1Player1}/{selectedMatch.team1Player2}</div>
+              <div className="text-muted-foreground">vs</div>
+              <div className="font-bold text-foreground">{selectedMatch.team2Player1}/{selectedMatch.team2Player2}</div>
             </div>
             {/* Group selector */}
             {groups && groups.length > 0 && (
               <select 
                 value={selectedGroupForAssign || ""} 
                 onChange={e => setSelectedGroupForAssign(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm mb-2"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-sm mb-2 text-foreground"
               >
                 <option value="">Chọn nhóm...</option>
                 {groups.map(g => (
@@ -770,7 +770,7 @@ export default function AdminPanel() {
                 ))}
               </select>
             )}
-            <select id="assignRefereeId" name="refereeId" value={assignForm.refereeId} onChange={e => setAssignForm({...assignForm, refereeId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+            <select id="assignRefereeId" name="refereeId" value={assignForm.refereeId} onChange={e => setAssignForm({...assignForm, refereeId: e.target.value})} className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground">
               <option value="">Chọn Trọng tài từ nhóm...</option>
               {(groupMembers || []).map(m => (
                 <option key={m.userId} value={m.userId}>
@@ -782,7 +782,7 @@ export default function AdminPanel() {
               )}
             </select>
             <div className="flex gap-2 pt-2">
-              <button onClick={() => { setShowMatchAssignModal(false); setSelectedMatch(null); }} className="flex-1 bg-slate-200 py-3 rounded-xl font-bold text-sm">Hủy</button>
+              <button onClick={() => { setShowMatchAssignModal(false); setSelectedMatch(null); }} className="flex-1 bg-muted py-3 rounded-xl font-bold text-sm text-foreground hover:bg-accent transition-colors">Hủy</button>
               <button onClick={handleAssignReferee} className="flex-1 bg-blue-500 py-3 rounded-xl font-bold text-sm text-white">Phân công</button>
             </div>
           </div>

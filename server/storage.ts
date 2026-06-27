@@ -11,6 +11,7 @@ import {
   groupMembers,
   chats,
   notifications,
+  badmintonMatches,
   type User,
   type InsertUser,
   type Match,
@@ -35,6 +36,8 @@ import {
   type Notification,
   type InsertNotification,
   type NotificationType,
+  type BadmintonMatch,
+  type InsertBadmintonMatch,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, sql, desc, or, isNull } from "drizzle-orm";
@@ -313,7 +316,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMatch(insertMatch: InsertMatch): Promise<Match> {
-    const result = await db.insert(matches).values(insertMatch).returning();
+    const result = await db.insert(matches).values({
+      ...insertMatch,
+      endTime: null as any,
+    }).returning();
     const [match] = result;
     return match;
   }
@@ -336,7 +342,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(matches)
       .where(eq(matches.refereeId, userId))
-      .orderBy(matches.date, desc(matches.id))
+      .orderBy(desc(matches.id))
       .limit(limit)
       .offset(offset);
   }
@@ -355,7 +361,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(matches)
       .where(eq(matches.refereeId, userId))
-      .orderBy(matches.date, desc(matches.id))
+      .orderBy(desc(matches.id))
       .offset(maxOffset);
   }
 
@@ -776,6 +782,67 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNotification(id: number): Promise<void> {
     await db.delete(notifications).where(eq(notifications.id, id));
+  }
+
+  // --- BADMINTON MATCH METHODS ---
+  async getBadmintonMatches(): Promise<BadmintonMatch[]> {
+    return db.select().from(badmintonMatches).orderBy(desc(badmintonMatches.id));
+  }
+
+  async getBadmintonMatch(id: number): Promise<BadmintonMatch | undefined> {
+    const [match] = await db
+      .select()
+      .from(badmintonMatches)
+      .where(eq(badmintonMatches.id, id));
+    return match;
+  }
+
+  async getUserBadmintonMatches(
+    userId: number,
+    limit: number,
+    offset: number
+  ): Promise<BadmintonMatch[]> {
+    return db
+      .select()
+      .from(badmintonMatches)
+      .where(eq(badmintonMatches.refereeId, userId))
+      .orderBy(desc(badmintonMatches.id))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getUserBadmintonMatchCount(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(badmintonMatches)
+      .where(eq(badmintonMatches.refereeId, userId));
+    return Number(result[0]?.count || 0);
+  }
+
+  async createBadmintonMatch(
+    data: InsertBadmintonMatch
+  ): Promise<BadmintonMatch> {
+    const [match] = await db
+      .insert(badmintonMatches)
+      .values({ ...data, endTime: null as any })
+      .returning();
+    return match;
+  }
+
+  async updateBadmintonMatch(
+    id: number,
+    data: Partial<BadmintonMatch>
+  ): Promise<BadmintonMatch> {
+    const [updated] = await db
+      .update(badmintonMatches)
+      .set(data)
+      .where(eq(badmintonMatches.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBadmintonMatch(id: number): Promise<void> {
+    await db.delete(badmintonMatches).where(eq(badmintonMatches.id, id));
   }
 }
 

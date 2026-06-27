@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useLocation } from "wouter";
 import { useGameLogic } from "@/hooks/use-game-logic";
 import { useCreateMatch, useUpdateMatch, useMatch } from "@/hooks/use-api";
 import Scoreboard from "@/components/ScoreBoard";
@@ -12,7 +12,6 @@ import {
   AlertOctagon,
   Undo2,
   Home,
-  ShieldAlert,
   Layers,
   UserCog,
   Lock,
@@ -32,23 +31,14 @@ import {
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
 
-interface PlayerPenalty {
-  yellow: number;
-  red: boolean;
-}
-interface PenaltiesState {
-  [key: string]: PlayerPenalty;
-}
-
 type TimelineEventType =
   | "score"
   | "fault"
   | "switch-sides"
-  | "yellow-card"
-  | "red-card"
   | "stacking"
   | "undo"
-  | "timeout";
+  | "timeout"
+  | "swap-positions";
 
 interface TimelineEvent {
   id: string;
@@ -66,8 +56,21 @@ interface TimelineEvent {
 
 export default function Match() {
   const [, setLocation] = useLocation();
+  const { id } = useParams();
   const search = new URLSearchParams(window.location.search);
-  const matchId = parseInt(search.get("matchId") || "0");
+  const initialMatchId = parseInt(id || search.get("matchId") || "0");
+  const [currentMatchId, setCurrentMatchId] = useState(initialMatchId);
+  const matchIdRef = useRef(initialMatchId);
+
+  // Sync URL changes to state
+  useEffect(() => {
+    const newSearch = new URLSearchParams(window.location.search);
+    const newId = parseInt(id || newSearch.get("matchId") || "0");
+    if (newId && newId !== currentMatchId) {
+      setCurrentMatchId(newId);
+      matchIdRef.current = newId;
+    }
+  }, [window.location.search, id]);
 
   const names = {
     t1p1: search.get("t1p1") || "P1",
@@ -77,14 +80,20 @@ export default function Match() {
   };
   const winningScore = parseInt(search.get("win") || "11");
   const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
+  const matchTypeFromUrl = search.get("type") as "singles" | "doubles" | null;
 
-  const { state, scorePoint, fault, undo, getMatchData, resetState, setWinner } =
-    useGameLogic(winningScore, initialServer, names);
+  const { data: serverMatch } = useMatch(currentMatchId);
+  const matchType = matchTypeFromUrl || (serverMatch?.type as "singles" | "doubles") || "doubles";
+
+  const { state, scorePoint, fault, undo, getMatchData, resetState, setWinner, swapPositions } =
+    useGameLogic(winningScore, initialServer, names, matchType);
 
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
-  const { data: serverMatch } = useMatch(matchId);
   const [saved, setSaved] = useState(false);
+
+  // Guard ref to prevent concurrent match creation (race condition)
+  const isCreatingRef = useRef(false);
 
   useEffect(() => {
     if (!serverMatch) return;
@@ -116,7 +125,9 @@ export default function Match() {
 
       if (serverMatch.timeouts) {
         try {
-          const savedTimeouts = JSON.parse(serverMatch.timeouts);
+          const savedTimeouts = typeof serverMatch.timeouts === "string"
+            ? JSON.parse(serverMatch.timeouts)
+            : serverMatch.timeouts;
           setTimeouts(savedTimeouts);
         } catch (e) {
           console.error("Failed to parse timeouts", e);
@@ -125,7 +136,9 @@ export default function Match() {
 
       if (serverMatch.timeline) {
         try {
-          const savedTimeline = JSON.parse(serverMatch.timeline);
+            const savedTimeline: TimelineEvent[] = typeof serverMatch.timeline === "string"
+              ? JSON.parse(serverMatch.timeline)
+              : serverMatch.timeline;
           setTimeline(savedTimeline);
         } catch (e) {
           console.error("Failed to parse timeline", e);
@@ -134,19 +147,12 @@ export default function Match() {
 
       if (serverMatch.stacking) {
         try {
-          const savedStacking = JSON.parse(serverMatch.stacking);
-          setStackingMap(savedStacking);
+          const stackingData = typeof serverMatch.stacking === "string"
+            ? JSON.parse(serverMatch.stacking)
+            : serverMatch.stacking;
+          setStackingMap(stackingData);
         } catch (e) {
           console.error("Failed to parse stacking", e);
-        }
-      }
-
-      if (serverMatch.penalties) {
-        try {
-          const savedPenalties = JSON.parse(serverMatch.penalties);
-          setPenalties(savedPenalties);
-        } catch (e) {
-          console.error("Failed to parse penalties", e);
         }
       }
     }
@@ -187,10 +193,14 @@ export default function Match() {
   useEffect(() => {
     const handleUpdate = async () => {
       if (!pendingScoreUpdate) return;
-      
-      let currentMatchId = matchId;
-      
-      if (currentMatchId === 0) {
+      // Prevent running again while already handling
+      if (isCreatingRef.current) return;
+
+      let matchId = matchIdRef.current;
+
+      if (matchId === 0) {
+        // Guard: prevent concurrent creation
+        isCreatingRef.current = true;
         try {
           const newMatch = await createMatch.mutateAsync({
             team1Player1: names.t1p1,
@@ -201,18 +211,24 @@ export default function Match() {
             scoreTeam2: 0,
             status: "live",
             winningScore,
+            type: matchType,
           });
-          currentMatchId = newMatch.id;
+          matchId = newMatch.id;
+          matchIdRef.current = matchId;
+          setCurrentMatchId(matchId);
           const url = new URL(window.location.href);
-          url.searchParams.set("matchId", currentMatchId.toString());
+          url.searchParams.set("matchId", matchId.toString());
           window.history.replaceState({}, "", url.toString());
         } catch (e) {
           console.error("Failed to create match:", e);
           setPendingScoreUpdate(null);
+          isCreatingRef.current = false;
           return;
+        } finally {
+          isCreatingRef.current = false;
         }
       }
-      
+
       const updateData: any = {
         scoreTeam1: pendingScoreUpdate.score1,
         scoreTeam2: pendingScoreUpdate.score2,
@@ -222,9 +238,10 @@ export default function Match() {
         isFirstServeOfMatch: pendingScoreUpdate.isFirstServeOfMatch,
         status: "live",
       };
-      
+
+      // Use local matchId (not stale React state) to avoid wrong match update
       updateMatch.mutate({
-        id: currentMatchId,
+        id: matchId,
         data: updateData,
       });
 
@@ -237,11 +254,12 @@ export default function Match() {
 
       setPendingScoreUpdate(null);
     };
-    
+
     if (pendingScoreUpdate) {
       handleUpdate();
     }
-  }, [pendingScoreUpdate, matchId, updateMatch, createMatch, names, winningScore]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingScoreUpdate]);
 
   const [pendingFaultUpdate, setPendingFaultUpdate] = useState<{
     serverTeam: 1 | 2;
@@ -267,10 +285,12 @@ export default function Match() {
   useEffect(() => {
     const handleFaultUpdate = async () => {
       if (!pendingFaultUpdate) return;
-      
-      let currentMatchId = matchId;
-      
-      if (currentMatchId === 0) {
+      if (isCreatingRef.current) return;
+
+      let matchId = matchIdRef.current;
+
+      if (matchId === 0) {
+        isCreatingRef.current = true;
         try {
           const newMatch = await createMatch.mutateAsync({
             team1Player1: names.t1p1,
@@ -281,32 +301,37 @@ export default function Match() {
             scoreTeam2: state.score2,
             status: "live",
             winningScore,
+            type: matchType,
           });
-          currentMatchId = newMatch.id;
+          matchId = newMatch.id;
+          matchIdRef.current = matchId;
+          setCurrentMatchId(matchId);
           const url = new URL(window.location.href);
-          url.searchParams.set("matchId", currentMatchId.toString());
+          url.searchParams.set("matchId", matchId.toString());
           window.history.replaceState({}, "", url.toString());
         } catch (e) {
           console.error("Failed to create match:", e);
           setPendingFaultUpdate(null);
+          isCreatingRef.current = false;
           return;
+        } finally {
+          isCreatingRef.current = false;
         }
       }
-      
-      const currentScore1 = state.score1;
-      const currentScore2 = state.score2;
+
       const updateData: any = {
-        scoreTeam1: currentScore1,
-        scoreTeam2: currentScore2,
+        scoreTeam1: state.score1,
+        scoreTeam2: state.score2,
         isServer1: state.serverTeam === 1,
         isServer2: state.serverTeam === 2,
         serverNumber: state.serverHand,
         isFirstServeOfMatch: state.isFirstServeOfMatch,
         status: "live",
       };
-      
+
+      // Use local matchId (not stale React state)
       updateMatch.mutate({
-        id: currentMatchId,
+        id: matchId,
         data: updateData,
       });
 
@@ -318,19 +343,14 @@ export default function Match() {
 
       setPendingFaultUpdate(null);
     };
-    
+
     if (pendingFaultUpdate) {
       handleFaultUpdate();
     }
-  }, [pendingFaultUpdate, matchId, state, updateMatch, createMatch, names, winningScore]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFaultUpdate]);
 
   const [stackingMap, setStackingMap] = useState<StackingMap>({});
-  const [penalties, setPenalties] = useState<PenaltiesState>({
-    t1p1: { yellow: 0, red: false },
-    t1p2: { yellow: 0, red: false },
-    t2p1: { yellow: 0, red: false },
-    t2p2: { yellow: 0, red: false },
-  });
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [matchStartTime, setMatchStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -349,9 +369,9 @@ export default function Match() {
       setMatchStartTime(now);
       setIsTimerRunning(true);
       setTimerInitialized(true);
-      if (matchId > 0) {
+      if (currentMatchId > 0) {
         updateMatch.mutate({
-          id: matchId,
+          id: currentMatchId,
           data: {
             startTime: new Date(now).toISOString() as any,
           },
@@ -359,6 +379,23 @@ export default function Match() {
       }
     }
   }, [serverMatch, timerInitialized]);
+
+    // Reset UI state when switching to a new match
+    useEffect(() => {
+      // Clear timeline and stacking map
+      setTimeline([]);
+      setStackingMap({});
+      // Reset previous history length tracker
+      setPrevHistoryLength(0);
+      // Reset timer related states
+      setMatchStartTime(null);
+      setElapsedSeconds(0);
+      setIsTimerRunning(false);
+      setTimerInitialized(false);
+      // Reset game logic state
+      resetState({ score1: 0, score2: 0 });
+      matchIdRef.current = currentMatchId;
+    }, [currentMatchId]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -408,12 +445,12 @@ export default function Match() {
   }, [state.winner]);
 
   useEffect(() => {
-    if (state.winner && matchId > 0) {
+    if (state.winner && currentMatchId > 0) {
       setIsTimerRunning(false);
       const shouldSave = !serverMatch || serverMatch.winnerTeam !== state.winner;
       if (shouldSave) {
         updateMatch.mutate({
-          id: matchId,
+          id: currentMatchId,
           data: {
             winnerTeam: state.winner as number,
             status: "completed" as const,
@@ -429,7 +466,7 @@ export default function Match() {
         });
       }
     }
-  }, [state.winner, matchId]);
+  }, [state.winner, currentMatchId]);
 
   const formatTimerDisplay = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -445,7 +482,6 @@ export default function Match() {
   useEffect(() => {
     const handleTimeoutsUpdate = async () => {
       if (!timeouts) return;
-      let currentMatchId = matchId;
       if (currentMatchId === 0) return;
       updateMatch.mutate({
         id: currentMatchId,
@@ -454,32 +490,18 @@ export default function Match() {
         },
       });
     };
-    if (matchId > 0) {
+    if (currentMatchId > 0) {
       handleTimeoutsUpdate();
     }
-  }, [timeouts, matchId]);
-
-  useEffect(() => {
-    if (matchId > 0 && Object.keys(stackingMap).length >= 0) {
+    if (currentMatchId > 0 && Object.keys(stackingMap).length >= 0) {
       updateMatch.mutate({
-        id: matchId,
+        id: currentMatchId,
         data: {
           stacking: JSON.stringify(stackingMap),
         },
       });
     }
-  }, [stackingMap, matchId]);
-
-  useEffect(() => {
-    if (matchId > 0 && penalties) {
-      updateMatch.mutate({
-        id: matchId,
-        data: {
-          penalties: JSON.stringify(penalties),
-        },
-      });
-    }
-  }, [penalties, matchId]);
+  }, [stackingMap, currentMatchId]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -542,9 +564,9 @@ export default function Match() {
     };
     setTimeline((prev) => {
       const newTimeline = [...prev, event];
-      if (matchId > 0) {
+      if (currentMatchId > 0) {
         updateMatch.mutate({
-          id: matchId,
+          id: currentMatchId,
           data: {
             timeline: JSON.stringify(newTimeline),
           },
@@ -575,34 +597,6 @@ export default function Match() {
     name: string;
     currentSide: "left" | "right";
   } | null>(null);
-
-  const giveCard = (playerKey: string, type: "yellow" | "red") => {
-    const playerName = names[playerKey as keyof typeof names];
-    setPenalties((prev) => {
-      const newState = { ...prev };
-      newState[playerKey] = { ...prev[playerKey] };
-      if (type === "yellow") {
-        newState[playerKey].yellow += 1;
-        addTimelineEvent("yellow-card", playerKey.startsWith("t1") ? 1 : 2, {
-          playerName,
-        });
-        if (newState[playerKey].yellow >= 2) handleForfeit(playerKey);
-      } else {
-        newState[playerKey].red = true;
-        addTimelineEvent("red-card", playerKey.startsWith("t1") ? 1 : 2, {
-          playerName,
-        });
-        handleForfeit(playerKey);
-      }
-      return newState;
-    });
-    setSelectedPlayer(null);
-  };
-
-  const handleForfeit = (loserKey: string) => {
-    const winningTeam = loserKey.startsWith("t1") ? 2 : 1;
-    setWinner(winningTeam);
-  };
 
   const togglePlayerStacking = () => {
     if (!selectedPlayer) return;
@@ -637,16 +631,14 @@ export default function Match() {
         return <CheckCircle2 className="w-3 h-3" />;
       case "fault":
         return <AlertOctagon className="w-3 h-3" />;
-      case "yellow-card":
-        return <ShieldAlert className="w-3 h-3 text-yellow-500" />;
-      case "red-card":
-        return <ShieldAlert className="w-3 h-3 text-red-500" />;
       case "stacking":
         return <Layers className="w-3 h-3 text-indigo-400" />;
       case "undo":
         return <Undo2 className="w-3 h-3" />;
       case "timeout":
         return <Timer className="w-3 h-3 text-yellow-400" />;
+      case "swap-positions":
+        return <ArrowLeftRight className="w-3 h-3 text-emerald-400" />;
       default:
         return <Clock className="w-3 h-3" />;
     }
@@ -660,10 +652,6 @@ export default function Match() {
           : "bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30";
       case "fault":
         return "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30";
-      case "yellow-card":
-        return "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30";
-      case "red-card":
-        return "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30";
       case "stacking":
         return "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/30";
       case "undo":
@@ -672,6 +660,8 @@ export default function Match() {
         return team === 1
           ? "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/30"
           : "bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30";
+      case "swap-positions":
+        return "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
       default:
         return "bg-muted text-muted-foreground border-border";
     }
@@ -683,16 +673,14 @@ export default function Match() {
         return event.team === 1 ? "+1 T1" : "+1 T2";
       case "fault":
         return "Lỗi/Đổi giao";
-      case "yellow-card":
-        return `${event.playerName} THV`;
-      case "red-card":
-        return `${event.playerName} THĐ`;
       case "stacking":
         return `${event.playerName} Stack`;
       case "undo":
         return "Hoàn tác";
       case "timeout":
         return `T${event.team} TO`;
+      case "swap-positions":
+        return "Đổi vị trí";
       default:
         return "";
     }
@@ -736,7 +724,7 @@ export default function Match() {
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col font-sans overflow-hidden" data-testid="match-page">
-      <section className="flex-shrink-0" data-testid="section-court">
+      <section className="flex-shrink-0 w-full max-w-lg mx-auto" data-testid="section-court">
           <Court
             positions={state.positions}
             serverTeam={displayServerTeam}
@@ -747,7 +735,6 @@ export default function Match() {
             firstServe={isFirstServeActive}
             compact
             stackingMap={stackingMap}
-            penalties={penalties}
             courtSwapped={courtSwapped}
             onPlayerClick={(id, team, name, currentSide) =>
               setSelectedPlayer({ id, team, name, currentSide })
@@ -769,12 +756,12 @@ export default function Match() {
           <div className="flex items-center gap-1 px-2.5 py-1 bg-muted rounded-md border border-border">
             <button
               onClick={() => {
-                if (!matchStartTime && matchId > 0) {
+                if (!matchStartTime && currentMatchId > 0) {
                   const now = Date.now();
                   setMatchStartTime(now);
                   setIsTimerRunning(true);
                   updateMatch.mutate({
-                    id: matchId,
+                    id: currentMatchId,
                     data: {
                       startTime: new Date(now).toISOString() as any,
                     },
@@ -854,6 +841,8 @@ export default function Match() {
                         ? "Đổi sân"
                         : event.type === "timeout"
                         ? `T${event.team} Timeout`
+                        : event.type === "swap-positions"
+                        ? "Đổi vị trí"
                         : getEventLabel(event)
                       }
                     </span>
@@ -1003,33 +992,21 @@ export default function Match() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="text-[9px] font-bold text-muted-foreground uppercase ml-1">
-                  Xử lý vi phạm
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => giveCard(selectedPlayer.id, "yellow")}
-                    className="h-10 bg-yellow-400/10 border border-yellow-400/30 rounded-lg flex items-center justify-center gap-1.5 hover:bg-yellow-400 hover:text-black hover:border-transparent transition-all group"
-                    data-testid="button-yellow-card"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-yellow-500 group-hover:text-black" />
-                    <span className="font-bold text-yellow-600 dark:text-yellow-400 group-hover:text-black text-xs">
-                      THẺ VÀNG
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => giveCard(selectedPlayer.id, "red")}
-                    className="h-10 bg-red-600/10 border border-red-600/30 rounded-lg flex items-center justify-center gap-1.5 hover:bg-red-600 hover:text-white hover:border-transparent transition-all group"
-                    data-testid="button-red-card"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-red-500 group-hover:text-white" />
-                    <span className="font-bold text-red-600 dark:text-red-400 group-hover:text-white text-xs">
-                      THẺ ĐỎ
-                    </span>
-                  </button>
-                </div>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (selectedPlayer) {
+                    swapPositions(selectedPlayer.team);
+                    addTimelineEvent("swap-positions", selectedPlayer.team);
+                    setSelectedPlayer(null);
+                  }
+                }}
+                className="w-full text-foreground border-border hover:bg-muted"
+              >
+                <ArrowLeftRight className="w-4 h-4 mr-2 text-emerald-500" />
+                Đổi vị trí với đồng đội
+              </Button>
+
             </div>
           )}
         </DialogContent>
@@ -1095,13 +1072,6 @@ export default function Match() {
                       </div>
                     )}
                   </>
-                )}
-
-                {(selectedEvent.type === "yellow-card" || selectedEvent.type === "red-card") && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] text-muted-foreground uppercase">VĐV</span>
-                    <span className="text-sm font-bold text-foreground">{selectedEvent.playerName}</span>
-                  </div>
                 )}
 
                 {selectedEvent.type === "stacking" && (
@@ -1170,7 +1140,7 @@ export default function Match() {
           </div>
           <div className="space-y-2">
             <Button
-              onClick={() => setLocation("/match-detail/" + matchId)}
+              onClick={() => setLocation("/match-detail/" + currentMatchId)}
               className="w-full bg-gradient-to-r from-[#FF5722] to-[#FF9800] hover:from-[#FF7043] hover:to-[#FFB74D] text-white font-black italic h-12 rounded-xl shadow-lg shadow-orange-500/30 animate-pulse"
             >
               <Layers className="w-5 h-5 mr-2" /> CHI TIẾT TRẬN ĐẤU

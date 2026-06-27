@@ -170,7 +170,7 @@ export function FloatingChat() {
       {/* Chat Window */}
       {isOpen && (
         <div
-          className="fixed z-[101] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          className="fixed z-[101] bg-card border border-border rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-colors"
           style={{
             left: "5%",
             top: "20%",
@@ -195,13 +195,13 @@ export function FloatingChat() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#F8FAFC]">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-background">
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <MessageCircle className="w-10 h-10 mb-2 opacity-30" />
                 <p className="text-sm">Chưa có tin nhắn</p>
               </div>
@@ -219,9 +219,9 @@ export function FloatingChat() {
                           {msg.senderRole === "manager" ? (
                             <Crown className="w-4 h-4 text-orange-500" />
                           ) : (
-                            <User className="w-4 h-4 text-slate-400" />
+                            <User className="w-4 h-4 text-muted-foreground" />
                           )}
-                          <span className="text-xs font-medium text-slate-600">
+                          <span className="text-xs font-medium text-muted-foreground">
                             {msg.senderName}
                             {msg.senderRole === "manager" && (
                               <span className="text-orange-500 ml-1">(QL)</span>
@@ -233,13 +233,13 @@ export function FloatingChat() {
                         className={`px-3 py-2 rounded-2xl ${
                           isMe
                             ? "bg-blue-500 text-white rounded-br-md"
-                            : "bg-white text-slate-900 rounded-bl-md shadow-sm border border-slate-100"
+                            : "bg-card text-foreground rounded-bl-md shadow-sm border border-border"
                         }`}
                       >
                         <p className="text-sm break-words">{msg.message}</p>
                       </div>
                       <div
-                        className={`text-[10px] text-slate-400 mt-1 ${
+                        className={`text-[10px] text-muted-foreground mt-1 ${
                           isMe ? "text-right" : "text-left"
                         }`}
                       >
@@ -256,7 +256,7 @@ export function FloatingChat() {
           {/* Input */}
           <form
             onSubmit={handleSend}
-            className="bg-white border-t border-slate-200 p-3 flex-shrink-0"
+            className="bg-card border-t border-border p-3 flex-shrink-0 transition-colors"
           >
             <div className="flex gap-2">
               <input
@@ -264,7 +264,7 @@ export function FloatingChat() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Nhập tin nhắn..."
-                className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 text-sm text-black focus:outline-none focus:border-blue-500"
+                className="flex-1 bg-muted border border-border rounded-full px-4 py-2 text-sm text-foreground focus:outline-none focus:border-blue-500"
               />
               <button
                 type="submit"

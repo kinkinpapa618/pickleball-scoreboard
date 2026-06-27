@@ -258,9 +258,9 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Card className="bg-white border border-slate-200 shadow-sm">
+          <Card className="bg-card border border-border shadow-sm transition-colors">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-blue-500" />
                 Thông tin giải đấu
               </CardTitle>
@@ -268,25 +268,25 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-700 text-xs font-medium uppercase">
+                  <Label className="text-foreground text-xs font-medium uppercase">
                     Tên giải <span className="text-rose-500">*</span>
                   </Label>
                   <Input
                     placeholder="VD: Giải Pickleball ABC"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500"
+                    className="bg-muted border border-border text-foreground focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-700 text-xs font-medium uppercase">
+                  <Label className="text-foreground text-xs font-medium uppercase">
                     Nội dung thi đấu <span className="text-rose-500">*</span>
                   </Label>
                   <Select
                     value={formData.content}
                     onValueChange={(value) => handleInputChange("content", value)}
                   >
-                    <SelectTrigger className="bg-slate-50 border border-slate-200">
+                    <SelectTrigger className="bg-muted border border-border">
                       <SelectValue placeholder="Chọn nội dung" />
                     </SelectTrigger>
                     <SelectContent>
@@ -302,63 +302,63 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-700 text-xs font-medium uppercase">
+                  <Label className="text-foreground text-xs font-medium uppercase">
                     Ngày <span className="text-rose-500">*</span>
                   </Label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type="date"
                       value={formData.date}
                       onChange={(e) => handleInputChange("date", e.target.value)}
-                      className="pl-10 bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500"
+                      className="pl-10 bg-muted border border-border text-foreground focus:border-blue-500"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-700 text-xs font-medium uppercase">
+                  <Label className="text-foreground text-xs font-medium uppercase">
                     Giờ
                   </Label>
                   <Input
                     type="time"
                     value={formData.time}
                     onChange={(e) => handleInputChange("time", e.target.value)}
-                    className="bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500"
+                    className="bg-muted border border-border text-foreground focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-700 text-xs font-medium uppercase">
+                  <Label className="text-foreground text-xs font-medium uppercase">
                     Địa điểm <span className="text-rose-500">*</span>
                   </Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="VD: Sân Pickleball ABC - TP.Hà Nội"
                       value={formData.location}
                       onChange={(e) => handleInputChange("location", e.target.value)}
-                      className="pl-10 bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500"
+                      className="pl-10 bg-muted border border-border text-foreground focus:border-blue-500"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-700 text-xs font-medium uppercase">
+                  <Label className="text-foreground text-xs font-medium uppercase">
                     Level (Điểm trình)
                   </Label>
                   <Input
                     placeholder="Chỉ nhập 1 lv duy nhất (VD: A hoặc 1200)"
                     value={formData.level}
                     onChange={(e) => handleInputChange("level", e.target.value)}
-                    className="bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500"
+                    className="bg-muted border border-border text-foreground focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-700 text-xs font-medium uppercase">
+                <Label className="text-foreground text-xs font-medium uppercase">
                   Ảnh bìa (không bắt buộc)
                 </Label>
                 <div className="flex items-center gap-4">
@@ -412,9 +412,9 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Card className="bg-white border border-slate-200 shadow-sm">
+          <Card className="bg-card border border-border shadow-sm transition-colors">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500" />
                 Danh sách Vận động viên
               </CardTitle>
@@ -428,7 +428,7 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
                 ← Quay lại
               </Button>
 
-              <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-blue-300 transition-colors">
+              <div className="border-2 border-dashed border-border rounded-xl p-4 text-center hover:border-blue-300 transition-colors">
                 <input
                   type="file"
                   accept=".xlsx,.xls"
@@ -438,31 +438,31 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
                 />
                 <label htmlFor="excel-upload" className="cursor-pointer">
                   <FileSpreadsheet className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-slate-700">
+                  <p className="text-sm font-medium text-foreground">
                     {fileName ? fileName : "Tải file Excel"}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Cột 1: Player 1 | Cột 2: Player 2 | Cột 3: Level
                   </p>
                 </label>
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 rounded-lg text-sm text-red-600 dark:text-red-400">
                   {error}
                 </div>
               )}
 
               <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-4 text-[10px] font-medium text-slate-500 uppercase">
+                <div className="flex-grow border-t border-border"></div>
+                <span className="flex-shrink mx-4 text-[10px] font-medium text-muted-foreground uppercase">
                   Hoặc dán dữ liệu từ Excel
                 </span>
-                <div className="flex-grow border-t border-slate-200"></div>
+                <div className="flex-grow border-t border-border"></div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-slate-600">
+                <Label className="text-xs font-medium text-foreground">
                   Dán dữ liệu (Copy từ Excel và dán vào đây)
                 </Label>
                 <textarea
@@ -473,9 +473,9 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
                     const text = e.clipboardData.getData("text");
                     parsePastedData(text);
                   }}
-                  className="w-full h-40 bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-900 focus:border-blue-500 outline-none resize-none font-mono"
+                  className="w-full h-40 bg-muted border border-border rounded-lg p-3 text-sm text-foreground focus:border-blue-500 outline-none resize-none font-mono"
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Mỗi dòng là một cặp, các cột cách nhau bằng Tab hoặc dấu phẩy
                 </p>
               </div>
@@ -483,7 +483,7 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
               {players.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium text-slate-600">
+                    <Label className="text-xs font-medium text-foreground">
                       Danh sách ({players.length} cặp)
                     </Label>
                     <Button
@@ -493,32 +493,32 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
                       Tạo giải <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
-                  <div className="max-h-[200px] overflow-y-auto space-y-1 border border-slate-100 rounded-lg p-2">
+                  <div className="max-h-[200px] overflow-y-auto space-y-1 border border-border rounded-lg p-2">
                     {players.map((player, index) => (
                       <div
                         key={player.id}
-                        className="flex items-center justify-between p-2 bg-slate-50 rounded-lg text-sm"
+                        className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs font-medium text-slate-400 w-6">
+                          <span className="text-xs font-medium text-muted-foreground w-6">
                             {index + 1}.
                           </span>
-                          <span className="truncate font-medium text-slate-700">
+                          <span className="truncate font-medium text-foreground">
                             {player.player1}
                           </span>
-                          <span className="text-slate-400">-</span>
-                          <span className="truncate text-slate-600">
+                          <span className="text-muted-foreground">-</span>
+                          <span className="truncate text-foreground">
                             {player.player2}
                           </span>
                           {player.level && (
-                            <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded shrink-0">
+                            <span className="text-xs bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0">
                               {player.level}
                             </span>
                           )}
                         </div>
                         <button
                           onClick={() => handleRemovePlayer(player.id)}
-                          className="text-slate-400 hover:text-red-500 shrink-0"
+                          className="text-muted-foreground hover:text-red-500 shrink-0"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -529,7 +529,7 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
               )}
 
               {players.length === 0 && (
-                <div className="text-center py-6 text-sm text-slate-500">
+                <div className="text-center py-6 text-sm text-muted-foreground">
                   Chưa có cặp nào. Hãy tải file Excel hoặc dán dữ liệu từ Excel.
                 </div>
               )}
@@ -554,9 +554,9 @@ export default function CreateTournament({ onSubmit, onSaveDraft, initialData }:
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Card className="bg-white border border-slate-200 shadow-sm">
+          <Card className="bg-card border border-border shadow-sm transition-colors">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <Settings2 className="w-4 h-4 text-blue-500" />
                 Phương thức chia bảng
               </CardTitle>

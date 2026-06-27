@@ -15,6 +15,7 @@ export function useGameLogic(
   winningScore: number,
   initialServer: 1 | 2,
   names: { t1p1: string; t1p2: string; t2p1: string; t2p2: string },
+  matchType: "singles" | "doubles" = "doubles"
 ) {
   // KHỞI TẠO TRẠNG THÁI BAN ĐẦU
   const [state, setState] = useState<GameState>(() => {
@@ -106,40 +107,43 @@ export function useGameLogic(
 
       // TRƯỜNG HỢP A: Đội phát bóng THẮNG (được điểm)
       if (scoringTeam === prev.serverTeam) {
-        // Hoán đổi vị trí 2 người trong đội đang phát
-        const teamPrefix = `t${prev.serverTeam}`;
-        const player1 = `${teamPrefix}p1`;
-        const player2 = `${teamPrefix}p2`;
+        if (matchType === "doubles") {
+          // Đôi: Hoán đổi vị trí 2 người trong đội đang phát
+          const teamPrefix = `t${prev.serverTeam}`;
+          const player1 = `${teamPrefix}p1`;
+          const player2 = `${teamPrefix}p2`;
 
-        const temp = newPositions[player1];
-        newPositions[player1] = newPositions[player2];
-        newPositions[player2] = temp;
+          const temp = newPositions[player1];
+          newPositions[player1] = newPositions[player2];
+          newPositions[player2] = temp;
+        } else {
+          // Đơn: Đổi vị trí trái phải theo điểm số chẵn/lẻ (Server + Receiver cùng đổi)
+          const newServerScore = scoringTeam === 1 ? newScore1 : newScore2;
+          const isEven = newServerScore % 2 === 0;
+          
+          // Server đứng phải (right) nếu chẵn, trái (left) nếu lẻ.
+          // Receiver đứng chéo sân: đối với singles, receiver đứng cùng ô (right đối diện right).
+          newPositions.t1p1 = isEven ? "right" : "left";
+          newPositions.t2p1 = isEven ? "right" : "left";
+        }
       }
       // TRƯỜNG HỢP B: Đội phát bóng THUA (không được điểm)
       else {
-        if (prev.isFirstServeOfMatch) {
-          // Lượt phát đầu tiên của trận: chỉ có 1 người phát
-          newIsFirstServeOfMatch = false;
+        if (matchType === "singles") {
+          // Đơn: Side Out ngay lập tức (không có Server 2)
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
-
-          // Đội mới bắt đầu phát: Server 1 phải đứng bên phải (Ô 1)
-          const newTeamPrefix = `t${newServerTeam}`;
-          const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
-
-          if (newPositions[newServerPlayerId] !== "right") {
-            const otherPlayerId = `${newTeamPrefix}p2`;
-            const temp = newPositions[newServerPlayerId];
-            newPositions[newServerPlayerId] = newPositions[otherPlayerId];
-            newPositions[otherPlayerId] = temp;
-          }
+          
+          // Set vị trí dựa trên điểm của server mới
+          const newServerScore = newServerTeam === 1 ? newScore1 : newScore2;
+          const isEven = newServerScore % 2 === 0;
+          newPositions.t1p1 = isEven ? "right" : "left";
+          newPositions.t2p1 = isEven ? "right" : "left";
         } else {
-          if (prev.serverHand === 1) {
-            // Server 1 thua -> chuyển cho Server 2 cùng đội
-            newServerHand = 2;
-            // KHÔNG đổi vị trí
-          } else {
-            // Server 2 thua -> Side Out, chuyển đội
+          // Đôi: Xử lý theo logic Server 1 / Server 2
+          if (prev.isFirstServeOfMatch) {
+            // Lượt phát đầu tiên của trận: chỉ có 1 người phát
+            newIsFirstServeOfMatch = false;
             newServerTeam = prev.serverTeam === 1 ? 2 : 1;
             newServerHand = 1;
 
@@ -152,6 +156,27 @@ export function useGameLogic(
               const temp = newPositions[newServerPlayerId];
               newPositions[newServerPlayerId] = newPositions[otherPlayerId];
               newPositions[otherPlayerId] = temp;
+            }
+          } else {
+            if (prev.serverHand === 1) {
+              // Server 1 thua -> chuyển cho Server 2 cùng đội
+              newServerHand = 2;
+              // KHÔNG đổi vị trí
+            } else {
+              // Server 2 thua -> Side Out, chuyển đội
+              newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+              newServerHand = 1;
+
+              // Đội mới bắt đầu phát: Server 1 phải đứng bên phải (Ô 1)
+              const newTeamPrefix = `t${newServerTeam}`;
+              const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
+
+              if (newPositions[newServerPlayerId] !== "right") {
+                const otherPlayerId = `${newTeamPrefix}p2`;
+                const temp = newPositions[newServerPlayerId];
+                newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+                newPositions[otherPlayerId] = temp;
+              }
             }
           }
         }
@@ -185,24 +210,18 @@ export function useGameLogic(
       let newIsFirstServeOfMatch = prev.isFirstServeOfMatch;
       let newPositions = { ...prev.positions };
 
-      if (prev.isFirstServeOfMatch) {
-        newIsFirstServeOfMatch = false;
+      if (matchType === "singles") {
         newServerTeam = prev.serverTeam === 1 ? 2 : 1;
         newServerHand = 1;
-
-        const newTeamPrefix = `t${newServerTeam}`;
-        const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
-        if (newPositions[newServerPlayerId] !== "right") {
-          const otherPlayerId = `${newTeamPrefix}p2`;
-          const temp = newPositions[newServerPlayerId];
-          newPositions[newServerPlayerId] = newPositions[otherPlayerId];
-          newPositions[otherPlayerId] = temp;
-        }
+        
+        // Vị trí dựa vào điểm số của đội phục vụ mới
+        const newServerScore = newServerTeam === 1 ? prev.score1 : prev.score2;
+        const isEven = newServerScore % 2 === 0;
+        newPositions.t1p1 = isEven ? "right" : "left";
+        newPositions.t2p1 = isEven ? "right" : "left";
       } else {
-        if (prev.serverHand === 1) {
-          newServerHand = 2;
-          // KHÔNG đổi vị trí
-        } else {
+        if (prev.isFirstServeOfMatch) {
+          newIsFirstServeOfMatch = false;
           newServerTeam = prev.serverTeam === 1 ? 2 : 1;
           newServerHand = 1;
 
@@ -213,6 +232,23 @@ export function useGameLogic(
             const temp = newPositions[newServerPlayerId];
             newPositions[newServerPlayerId] = newPositions[otherPlayerId];
             newPositions[otherPlayerId] = temp;
+          }
+        } else {
+          if (prev.serverHand === 1) {
+            newServerHand = 2;
+            // KHÔNG đổi vị trí
+          } else {
+            newServerTeam = prev.serverTeam === 1 ? 2 : 1;
+            newServerHand = 1;
+
+            const newTeamPrefix = `t${newServerTeam}`;
+            const newServerPlayerId = `${newTeamPrefix}p${newServerHand}`;
+            if (newPositions[newServerPlayerId] !== "right") {
+              const otherPlayerId = `${newTeamPrefix}p2`;
+              const temp = newPositions[newServerPlayerId];
+              newPositions[newServerPlayerId] = newPositions[otherPlayerId];
+              newPositions[otherPlayerId] = temp;
+            }
           }
         }
       }
@@ -257,6 +293,31 @@ export function useGameLogic(
   }, []);
 
   // ==============================================
+  // HÀM ĐỔI VỊ TRÍ 2 VẬN ĐỘNG VIÊN CÙNG ĐỘI
+  // ==============================================
+  const swapPositions = useCallback((team: 1 | 2) => {
+    setState((prev) => {
+      if (prev.winner) return prev;
+
+      const history = [...prev.gameHistory, { ...prev }];
+      const newPositions = { ...prev.positions };
+      
+      const p1 = `t${team}p1`;
+      const p2 = `t${team}p2`;
+      
+      const temp = newPositions[p1];
+      newPositions[p1] = newPositions[p2];
+      newPositions[p2] = temp;
+      
+      return {
+        ...prev,
+        positions: newPositions,
+        gameHistory: history,
+      };
+    });
+  }, []);
+
+  // ==============================================
   // HÀM HOÀN TÁC
   // ==============================================
   const undo = useCallback(() => {
@@ -274,9 +335,10 @@ export function useGameLogic(
   // HÀM TÍNH SỐ LƯỢT PHÁT CÒN LẠI
   // ==============================================
   const getRemainingServes = useCallback(() => {
+    if (matchType === "singles") return 1;
     if (state.isFirstServeOfMatch) return 1;
     return state.serverHand === 1 ? 2 : 1;
-  }, [state.isFirstServeOfMatch, state.serverHand]);
+  }, [state.isFirstServeOfMatch, state.serverHand, matchType]);
 
   // ==============================================
   // HÀM KIỂM TRA VỊ TRÍ CHÉO
@@ -338,5 +400,6 @@ export function useGameLogic(
     getRemainingServes,
     checkDiagonalPositions,
     setWinner,
+    swapPositions,
   };
 }

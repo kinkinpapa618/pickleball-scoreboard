@@ -127,7 +127,7 @@ export default function RefereeMatchAccess() {
               onClick={() => {
                 // Tạo trận đấu mới hoặc chuyển đến trận đấu
                 if (match.matchId) {
-                  window.location.href = `/match?matchId=${match.matchId}`;
+                  window.location.href = `/match/${match.matchId}`;
                 } else {
                   alert("Trận đấu chưa được tạo. Vui lòng liên hệ ban tổ chức.");
                 }

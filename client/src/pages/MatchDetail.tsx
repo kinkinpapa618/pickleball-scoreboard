@@ -12,7 +12,6 @@ import {
   Timer,
   Lock,
   Award,
-  AlertTriangle,
   RotateCcw,
 } from "lucide-react";
 
@@ -75,10 +74,6 @@ function getEventIcon(type: string) {
       return { icon: Timer, color: "text-yellow-600", bg: "bg-yellow-100" };
     case "stacking":
       return { icon: Lock, color: "text-slate-600", bg: "bg-slate-100" };
-    case "yellow-card":
-      return { icon: AlertTriangle, color: "text-yellow-500", bg: "bg-yellow-100" };
-    case "red-card":
-      return { icon: AlertTriangle, color: "text-red-600", bg: "bg-red-100" };
     case "undo":
       return { icon: RotateCcw, color: "text-slate-500", bg: "bg-slate-100" };
     default:
@@ -94,20 +89,30 @@ export default function MatchDetail() {
   const [duration, setDuration] = useState<number>(0);
 
   useEffect(() => {
-    if (match?.timeline) {
-      try {
-        const parsed = JSON.parse(match.timeline);
-        setTimeline(parsed);
-
-        if (match.startTime) {
-          const start = new Date(match.startTime).getTime();
-          const end = (match as any).endTime
-            ? new Date((match as any).endTime).getTime()
-            : Date.now();
-          setDuration(end - start);
+    if (match) {
+      let parsedTimeline: TimelineEvent[] = [];
+      if (match.timeline) {
+        if (typeof match.timeline === "string") {
+          try {
+            parsedTimeline = JSON.parse(match.timeline);
+          } catch (e) {
+            console.error("Failed to parse timeline string", e);
+          }
+        } else if (Array.isArray(match.timeline)) {
+          parsedTimeline = match.timeline as TimelineEvent[];
+        } else {
+          parsedTimeline = match.timeline as unknown as TimelineEvent[];
         }
-      } catch (e) {
-        console.error("Failed to parse timeline", e);
+      }
+      
+      setTimeline(parsedTimeline);
+
+      if (match.startTime) {
+        const start = new Date(match.startTime).getTime();
+        const end = (match as any).endTime
+          ? new Date((match as any).endTime).getTime()
+          : Date.now();
+        setDuration(end - start);
       }
     }
   }, [match]);
@@ -125,16 +130,16 @@ export default function MatchDetail() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => setLocation("/tools")}
-          className="p-2 bg-white rounded-xl hover:bg-slate-100 transition shadow-sm"
+          className="p-2 bg-card rounded-xl hover:bg-accent transition-colors shadow-sm"
         >
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <h1 className="text-xl font-black italic uppercase text-slate-900">
           Chi tiết trận đấu
         </h1>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-4">
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-5 mb-4 transition-colors">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -199,8 +204,8 @@ export default function MatchDetail() {
       <h2 className="text-lg font-black text-slate-900 mb-3">Lịch sử trận đấu</h2>
 
       {timeline.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
-          <p className="text-slate-400 text-sm">Chưa có dữ liệu lịch sử</p>
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center transition-colors">
+          <p className="text-muted-foreground text-sm">Chưa có dữ liệu lịch sử</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -209,7 +214,7 @@ export default function MatchDetail() {
             return (
               <div
                 key={event.id || index}
-                className="bg-white rounded-xl border border-slate-100 shadow-sm p-4"
+                className="bg-card rounded-xl border border-border shadow-sm p-4 transition-colors"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-10 text-center">
@@ -230,8 +235,6 @@ export default function MatchDetail() {
                       {event.type === "switch-sides" && "Đổi phía"}
                       {event.type === "timeout" && "Timeout"}
                       {event.type === "stacking" && `Stacking: ${event.playerName || ""}`}
-                      {event.type === "yellow-card" && `Thẻ vàng: ${event.playerName || ""}`}
-                      {event.type === "red-card" && `Thẻ đỏ: ${event.playerName || ""}`}
                       {event.type === "undo" && "Hoàn tác"}
                     </div>
                     {event.type === "score" && (

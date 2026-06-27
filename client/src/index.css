@@ -185,3 +185,13 @@
 .light .scrollbar-thin::-webkit-scrollbar-track {
   background-color: rgb(241 245 249);
 }
+
+/* Hide scrollbar */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

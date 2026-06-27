@@ -140,7 +140,7 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center max-h-[90vh] bg-[#F8FAFC] pb-3">
+      <div className="flex items-center justify-center max-h-[90vh] bg-background pb-3">
         <div className="animate-spin h-8 w-8 border-2 border-blue-500 rounded-full border-t-transparent" />
       </div>
     );
@@ -148,14 +148,14 @@ export default function ChatPage() {
 
   if (allGroups.length === 0) {
     return (
-      <div className="flex flex-col max-h-[90vh] bg-[#F8FAFC] pb-3">
-        <div className="bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-2 flex-shrink-0">
-          <button onClick={() => setLocation("/profile")} className="p-1.5 hover:bg-slate-100 rounded-lg">
-            <ArrowLeft className="w-5 h-5 text-slate-600" />
+      <div className="flex flex-col max-h-[90vh] bg-background pb-3">
+        <div className="bg-card border-b border-border px-3 py-2 flex items-center gap-2 flex-shrink-0 transition-colors">
+          <button onClick={() => setLocation("/profile")} className="p-1.5 hover:bg-accent rounded-lg transition-colors">
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <div className="font-medium text-slate-900 text-sm">Chat Nhóm</div>
+          <div className="font-medium text-foreground text-sm">Chat Nhóm</div>
         </div>
-        <div className="flex-1 flex items-center justify-center text-slate-400 p-4">
+        <div className="flex-1 flex items-center justify-center text-muted-foreground p-4">
           <div className="text-center">
             <Users className="w-16 h-16 mx-auto mb-3 opacity-30" />
             <p>Bạn chưa tham gia nhóm nào</p>
@@ -167,41 +167,41 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col max-h-[90vh] bg-[#F8FAFC] pb-3">
+    <div className="flex flex-col max-h-[90vh] bg-background pb-3">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-2 flex-shrink-0">
-        <button onClick={() => setLocation("/profile")} className="p-1.5 hover:bg-slate-100 rounded-lg">
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+      <div className="bg-card border-b border-border px-3 py-2 flex items-center gap-2 flex-shrink-0 transition-colors">
+        <button onClick={() => setLocation("/profile")} className="p-1.5 hover:bg-accent rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         
         {/* Group Name - no dropdown */}
-        <div className="flex-1 font-medium text-slate-900 text-sm truncate">
+        <div className="flex-1 font-medium text-foreground text-sm truncate">
           {selectedGroup?.name || "Chat Nhóm"}
         </div>
         
         {/* Members button */}
         <button 
           onClick={() => setShowMembers(!showMembers)} 
-          className="p-1.5 hover:bg-slate-100 rounded-lg"
+          className="p-1.5 hover:bg-accent rounded-lg transition-colors"
         >
-          <Users className="w-5 h-5 text-slate-600" />
+          <Users className="w-5 h-5 text-foreground" />
         </button>
       </div>
 
       {/* Members list */}
       {showMembers && selectedGroup && (
-        <div className="bg-white border-b border-slate-200 px-3 py-2 flex-shrink-0 overflow-y-auto max-h-32">
+        <div className="bg-card border-b border-border px-3 py-2 flex-shrink-0 overflow-y-auto max-h-32 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500">Thành viên ({members?.length || 0})</span>
+            <span className="text-xs font-medium text-muted-foreground">Thành viên ({members?.length || 0})</span>
             <button onClick={() => setShowMembers(false)} className="p-1">
-              <X className="w-3 h-3 text-slate-400" />
+              <X className="w-3 h-3 text-muted-foreground" />
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
             {members?.map((m) => (
-              <div key={m.id} className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-full text-xs">
-                <User className="w-3 h-3 text-slate-500" />
-                <span className="text-slate-700">{m.user.fullName || m.user.username}</span>
+              <div key={m.id} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full text-xs">
+                <User className="w-3 h-3 text-muted-foreground" />
+                <span className="text-foreground">{m.user.fullName || m.user.username}</span>
                 {m.role === "admin" && <Crown className="w-3 h-3 text-orange-500" />}
               </div>
             ))}
@@ -212,7 +212,7 @@ export default function ChatPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400">
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <MessageCircle className="w-12 h-12 mb-3 opacity-30" />
             <p className="text-sm">Chưa có tin nhắn nào</p>
             <p className="text-xs">Hãy gửi tin nhắn đầu tiên!</p>
@@ -233,7 +233,7 @@ export default function ChatPage() {
                     {msg.senderRole === "manager" && (
                       <Crown className="w-3 h-3 text-orange-500" />
                     )}
-                    <span className="text-xs font-medium text-slate-600">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {msg.senderName}
                       {msg.senderRole === "manager" && (
                         <span className="text-orange-500 ml-1">(QL)</span>
@@ -245,13 +245,13 @@ export default function ChatPage() {
                   className={`px-3 py-2 sm:px-4 sm:py-2 rounded-2xl text-sm sm:text-base ${
                     isMe(msg.senderId)
                       ? "bg-blue-500 text-white rounded-br-md"
-                      : "bg-white text-slate-900 rounded-bl-md shadow-sm border border-slate-100"
+                      : "bg-card text-foreground rounded-bl-md shadow-sm border border-border"
                   }`}
                 >
                   <p className="break-words">{msg.message}</p>
                 </div>
                 <div
-                  className={`text-[10px] sm:text-xs text-slate-400 mt-1 ${
+                  className={`text-[10px] sm:text-xs text-muted-foreground mt-1 ${
                     isMe(msg.senderId) ? "text-right" : "text-left"
                   }`}
                 >
@@ -265,7 +265,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input - cố định ở dưới, trên BottomNav */}
-      <form onSubmit={handleSend} className="bg-white border-t border-slate-200 p-3 flex-shrink-0 pb-0">
+      <form onSubmit={handleSend} className="bg-card border-t border-border p-3 flex-shrink-0 pb-0 transition-colors">
         <div className="flex gap-2">
           <input
             id="message-input"
@@ -274,7 +274,7 @@ export default function ChatPage() {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Nhập tin nhắn..."
-            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 text-sm text-black focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-muted border border-border rounded-full px-4 py-2 text-sm text-foreground focus:outline-none focus:border-blue-500"
           />
           <button
             type="submit"

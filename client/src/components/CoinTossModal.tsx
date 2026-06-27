@@ -37,7 +37,7 @@ export function CoinTossModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-slate-100 text-slate-900 max-w-[320px] rounded-[2.5rem]">
+      <DialogContent className="bg-card border-border text-foreground max-w-[320px] rounded-[2.5rem] transition-colors">
         <DialogHeader>
           <DialogTitle className="text-center font-black italic uppercase tracking-tighter text-blue-500">
             Coin Toss
@@ -82,7 +82,7 @@ export function CoinTossModal({
               animate={{ opacity: 1, scale: 1 }}
               className="w-full space-y-3"
             >
-              <p className="text-center text-[10px] font-bold uppercase text-slate-400 tracking-widest">
+              <p className="text-center text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
                 Team {result} thắng! Chọn quyền:
               </p>
               <div className="grid grid-cols-2 gap-2">

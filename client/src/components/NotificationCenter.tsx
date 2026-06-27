@@ -13,11 +13,11 @@ const typeIcons = {
 };
 
 const typeColors = {
-  chat: "bg-blue-100 text-blue-600",
-  match: "bg-green-100 text-green-600",
-  tournament: "bg-purple-100 text-purple-600",
-  schedule: "bg-orange-100 text-orange-600",
-  system: "bg-gray-100 text-gray-600",
+  chat: "bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400",
+  match: "bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400",
+  tournament: "bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400",
+  schedule: "bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400",
+  system: "bg-muted text-muted-foreground",
 };
 
 function formatTimeAgo(dateString: string): string {
@@ -73,9 +73,9 @@ export function NotificationCenter() {
         className="fixed inset-0 bg-black/20 z-40"
         onClick={() => setIsOpen(false)}
       />
-      <div className="fixed right-4 top-20 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl z-50 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-slate-100">
-          <h3 className="font-bold text-lg text-slate-800">Thông báo</h3>
+      <div className="fixed right-4 top-20 w-96 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden transition-colors">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h3 className="font-bold text-lg text-foreground">Thông báo</h3>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button
@@ -87,34 +87,34 @@ export function NotificationCenter() {
             )}
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
             >
-              <X className="w-5 h-5 text-slate-400" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto">
           {isLoading ? (
-            <div className="p-8 text-center text-slate-400">
+            <div className="p-8 text-center text-muted-foreground">
               <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
               Đang tải...
             </div>
           ) : notifications.length === 0 ? (
-            <div className="p-8 text-center text-slate-400">
+            <div className="p-8 text-center text-muted-foreground">
               <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
               Chưa có thông báo nào
             </div>
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-border">
               {notifications.map((notification) => {
                 const Icon = typeIcons[notification.type] || Bell;
                 return (
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 cursor-pointer transition-colors hover:bg-slate-50 ${
-                      !notification.read ? "bg-blue-50/50" : ""
+                    className={`p-4 cursor-pointer transition-colors hover:bg-accent ${
+                      !notification.read ? "bg-blue-50/50 dark:bg-blue-950/20" : ""
                     }`}
                   >
                     <div className="flex gap-3">
@@ -123,23 +123,23 @@ export function NotificationCenter() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="font-medium text-slate-800 truncate">
+                          <p className="font-medium text-foreground truncate">
                             {notification.title}
                           </p>
                           {!notification.read && (
                             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
                           )}
                         </div>
-                        <p className="text-sm text-slate-500 line-clamp-2 mt-0.5">
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {formatTimeAgo(notification.createdAt)}
                         </p>
                       </div>
                       <button
                         onClick={(e) => handleDelete(e, notification.id)}
-                        className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-red-500 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

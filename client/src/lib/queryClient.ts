@@ -9,7 +9,11 @@ export async function apiRequest(
     "Content-Type": "application/json",
   };
 
-  const res = await fetch(url, {
+  // Get base URL from environment or fallback to empty string (relative path)
+  const baseUrl = import.meta.env.VITE_API_URL || "";
+  const fullUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
+
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,

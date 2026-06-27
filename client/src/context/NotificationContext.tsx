@@ -34,10 +34,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+const getFullUrl = (path: string) => path;
+
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/notifications", {
+
+      const response = await fetch(getFullUrl('/api/notifications'), {
         credentials: "same-origin",
       });
       if (response.ok) {
@@ -54,7 +57,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const response = await fetch("/api/notifications/unread-count", {
+      const response = await fetch(getFullUrl('/api/notifications/unread-count'), {
         credentials: "same-origin",
       });
       if (response.ok) {
@@ -74,7 +77,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const markAsRead = useCallback(async (id: number) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, {
+      await fetch(getFullUrl(`/api/notifications/${id}/read`), {
         method: "PATCH",
         credentials: "same-origin",
       });
@@ -89,7 +92,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const markAllAsRead = useCallback(async () => {
     try {
-      await fetch("/api/notifications/mark-all-read", {
+      await fetch(getFullUrl('/api/notifications/mark-all-read'), {
         method: "POST",
         credentials: "same-origin",
       });
@@ -102,7 +105,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const deleteNotification = useCallback(async (id: number) => {
     try {
-      await fetch(`/api/notifications/${id}`, {
+      await fetch(getFullUrl(`/api/notifications/${id}`), {
         method: "DELETE",
         credentials: "same-origin",
       });

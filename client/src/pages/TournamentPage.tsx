@@ -40,7 +40,7 @@ import {
   useDeleteTournament,
   useUpdateTournament,
 } from "@/hooks/use-api";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 
 interface MatchFromDB {
@@ -102,8 +102,22 @@ const CONTENT_LABELS: Record<string, string> = {
 export default function TournamentPage() {
   const { user: authUser } = useAuth();
   const [, setLocation] = useLocation();
-  const [step, setStep] = useState("list");
-  const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null);
+  const { id } = useParams();
+  const [step, setStep] = useState(id ? "detail" : "list");
+  const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(id ? parseInt(id) : null);
+
+  useEffect(() => {
+    if (id) {
+      const parsedId = parseInt(id);
+      if (!isNaN(parsedId)) {
+        setSelectedTournamentId(parsedId);
+        setStep("detail");
+      }
+    } else {
+      setSelectedTournamentId(null);
+      setStep("list");
+    }
+  }, [id]);
   const [editingTournamentId, setEditingTournamentId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -642,7 +656,7 @@ export default function TournamentPage() {
             Quay lại
           </Button>
 
-          <Card className="bg-white border border-slate-200 shadow-sm">
+          <Card className="bg-card transition-colors border border-slate-200 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 uppercase tracking-wider">
                 <Settings className="w-4 h-4 text-blue-500" />
@@ -882,7 +896,7 @@ export default function TournamentPage() {
             Hủy
           </Button>
 
-          <Card className="bg-white border border-slate-200 shadow-sm">
+          <Card className="bg-card transition-colors border border-slate-200 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 uppercase tracking-wider">
                 <FolderOpen className="w-4 h-4 text-blue-500" />
@@ -934,14 +948,13 @@ export default function TournamentPage() {
 
           <div className="space-y-3">
             {tournaments?.map((t: any) => (
-              <Card key={t.id} className="bg-white border border-slate-100 shadow-sm">
+              <Card key={t.id} className="bg-card transition-colors border border-slate-100 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start gap-2">
                     <div 
                       className="cursor-pointer flex-1 min-w-0"
                       onClick={() => {
-                        setSelectedTournamentId(t.id);
-                        setStep("detail");
+                        setLocation(`/tournament/${t.id}`);
                       }}
                     >
                       <h3 className="font-black text-slate-800 truncate">{t.name}</h3>
@@ -1011,7 +1024,7 @@ export default function TournamentPage() {
             ))}
 
             {(!tournaments || tournaments.length === 0) && (
-              <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm text-center">
+              <div className="bg-card transition-colors p-8 rounded-3xl border border-slate-100 shadow-sm text-center">
                 <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                 <p className="text-slate-400">
                   {authUser?.role === "referee" ? "Chưa có giải đấu nào từ Manager của bạn" : "Chưa có giải đấu nào"}
@@ -1032,8 +1045,7 @@ export default function TournamentPage() {
           <Button
             variant="ghost"
             onClick={() => {
-              setSelectedTournamentId(null);
-              setStep("list");
+              setLocation("/tournament");
             }}
             className="mb-4 flex items-center gap-2 text-slate-600"
           >
@@ -1041,7 +1053,7 @@ export default function TournamentPage() {
             Quay lại danh sách
           </Button>
 
-          <Card className="bg-white border border-slate-200 shadow-sm mb-4">
+          <Card className="bg-card transition-colors border border-slate-200 shadow-sm mb-4">
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-4 gap-2">
                 <div className="min-w-0 flex-1">
@@ -1178,7 +1190,7 @@ export default function TournamentPage() {
           </Card>
 
           {(tournament as any).matches?.length > 0 && (
-            <Card className="bg-white border border-slate-200 shadow-sm">
+            <Card className="bg-card transition-colors border border-slate-200 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">
                   Lịch đấu
@@ -1198,7 +1210,7 @@ export default function TournamentPage() {
                           ? "bg-green-50 border-green-200"
                           : match.status === "completed"
                           ? "bg-slate-50 border-slate-200"
-                          : "bg-white border-slate-200"
+                          : "bg-card transition-colors border-slate-200"
                       }`}
                     >
                       <div className="flex justify-between items-center mb-2">
@@ -1240,6 +1252,7 @@ export default function TournamentPage() {
                               onClick={() => handleStartMatch(match.id)}
                               className="bg-green-500 text-white text-xs w-full"
                               data-testid={`btn-start-match-${match.id}`}
+                              disabled={startMatch.isPending}
                             >
                               <Play className="w-3 h-3 mr-1" />
                               Vào trận
@@ -1266,6 +1279,7 @@ export default function TournamentPage() {
                                 onClick={() => handleStartMatch(match.id)}
                                 className="bg-green-500 text-white text-xs shrink-0"
                                 data-testid={`btn-start-match-${match.id}`}
+                                disabled={startMatch.isPending}
                               >
                                 Bắt đầu
                               </Button>
