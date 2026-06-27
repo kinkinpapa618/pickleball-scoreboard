@@ -27,8 +27,10 @@ export default defineConfig({
           ],
         },
         workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
           cleanupOutdatedCaches: true,
-          runtimeCaching: [{ urlPattern: /.*/, handler: 'NetworkFirst' }],
+          navigateFallback: 'index.html',
+          navigateFallbackDenylist: [/^\/api/],
         },
       })],
   root: path.resolve(__dirname, "client"),
