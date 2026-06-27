@@ -437,7 +437,7 @@ export default function BadmintonMatch() {
                       )}
                       
                       {event.type === 'score' && (
-                        <span className="font-bold tabular-nums w-[40px] text-center flex-shrink-0 bg-background/50 rounded px-1">
+                        <span className="font-bold tabular-nums min-w-[50px] whitespace-nowrap text-center flex-shrink-0 bg-background/50 rounded px-1.5">
                           {event.score1} - {event.score2}
                         </span>
                       )}

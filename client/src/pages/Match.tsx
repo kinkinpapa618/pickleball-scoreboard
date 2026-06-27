@@ -814,9 +814,9 @@ export default function Match() {
         </section>
 
         {timeline.length > 0 && (
-          <section className="bg-white border border-gray-100 rounded-xl p-2 flex-shrink-0" data-testid="section-timeline">
+          <section className="bg-card border border-border rounded-xl p-2 flex-shrink-0" data-testid="section-timeline">
             <div className="flex items-center justify-between mb-2 px-1">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Timeline</h3>
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Timeline</h3>
               <button className="text-xs font-semibold text-[#FF5722]">...</button>
             </div>
             <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
@@ -826,13 +826,13 @@ export default function Match() {
                   <button
                     key={event.id}
                     onClick={() => setSelectedEvent(event)}
-                    className="flex-shrink-0 bg-white border border-gray-100 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm hover:bg-gray-50 transition"
+                    className="flex-shrink-0 bg-slate-900 border border-white/5 dark:bg-white/5 dark:border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm hover:bg-slate-800 dark:hover:bg-white/10 transition"
                     data-testid={`timeline-event-${event.id}`}
                   >
                     <span className="text-[10px] font-bold text-[#FF5722]">
                       {formatTime(event.timestamp)}
                     </span>
-                    <span className="text-xs font-medium text-gray-700">
+                    <span className="text-xs font-medium text-slate-300">
                       {event.type === "score" 
                         ? (event.team === 1 ? "Đội 1 +1 điểm" : "Đội 2 +1 điểm")
                         : event.type === "fault" 
@@ -866,13 +866,13 @@ export default function Match() {
               }
             }}
             disabled={!!state.winner || (timeouts.team1 === 0 && timeouts.team2 === 0) || isTimeoutActive}
-            className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-gray-50 transition disabled:opacity-40"
+            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-timeout"
           >
-            <div className="w-8 h-8 flex items-center justify-center text-gray-600">
+            <div className="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-300">
               <Timer className="w-6 h-6" />
             </div>
-            <span className="text-[11px] font-bold text-gray-600">Timeout ({timeouts.team1 + timeouts.team2})</span>
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-300">Timeout ({timeouts.team1 + timeouts.team2})</span>
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -881,24 +881,24 @@ export default function Match() {
               addTimelineEvent("undo", null);
             }}
             disabled={state.gameHistory.length === 0}
-            className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-gray-50 transition disabled:opacity-40"
+            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-undo"
           >
-            <div className="w-8 h-8 flex items-center justify-center text-gray-600">
+            <div className="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-300">
               <Undo2 className="w-6 h-6" />
             </div>
-            <span className="text-[11px] font-bold text-gray-600">Undo</span>
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-300">Undo</span>
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleSwitchCourt}
-            className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-gray-50 transition"
+            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
             data-testid="button-switch-court"
           >
-            <div className="w-8 h-8 flex items-center justify-center text-gray-600">
+            <div className="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-300">
               <ArrowLeftRight className="w-6 h-6" />
             </div>
-            <span className="text-[11px] font-bold text-gray-600">Đổi sân</span>
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-300">Đổi sân</span>
           </motion.button>
         </section>
 
@@ -909,7 +909,7 @@ export default function Match() {
               onClick={handleScorePoint}
               disabled={!!state.winner}
               style={{ color: 'white' }}
-              className="h-20 rounded-2xl bg-[#FF5722] font-black py-4 px-5 flex items-center justify-center gap-2 shadow-lg shadow-orange-200 active:scale-95 transition text-lg"
+              className="h-20 rounded-2xl bg-green-600 hover:bg-green-500 font-black py-4 px-5 flex items-center justify-center gap-2 active:scale-95 transition text-lg"
               data-testid="button-score"
             >
               <CheckCircle2 className="w-7 h-7" style={{ color: 'white' }} />
@@ -920,7 +920,7 @@ export default function Match() {
               onClick={handleFault}
               disabled={!!state.winner}
               style={{ color: 'white' }}
-              className="h-20 rounded-2xl bg-[#1A1C1E] font-black py-4 px-5 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition text-lg"
+              className="h-20 rounded-2xl bg-rose-600 hover:bg-rose-500 font-black py-4 px-5 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition text-lg"
               data-testid="button-fault"
             >
               <AlertOctagon className="w-7 h-7" style={{ color: 'white' }} />

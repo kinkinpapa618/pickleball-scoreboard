@@ -1,28 +1,47 @@
 import { useParams } from "wouter";
 import { useMatch } from "@/hooks/use-api";
+import { useState, useEffect } from "react";
 
 export default function MatchOverlay() {
   const { id } = useParams();
   const { data: match } = useMatch(parseInt(id || "0"), 1000);
+  const [visible, setVisible] = useState(true);
+
+  const isCompleted = match?.status === "completed";
+
+  useEffect(() => {
+    if (isCompleted) {
+      const timer = setTimeout(() => {
+        setVisible(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setVisible(true);
+    }
+  }, [isCompleted]);
 
   if (!match) return null;
 
+  const isDoubles = match.type === "doubles";
+
   return (
-    <div className="h-screen w-full bg-transparent font-sans overflow-hidden">
-      <div className="absolute top-[15px] left-[15px] w-[550px] bg-slate-950/70 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+    <div className={`h-screen w-full bg-transparent font-sans overflow-hidden select-none transition-opacity duration-1000 ${
+      visible ? "opacity-100" : "opacity-0 pointer-events-none"
+    }`}>
+      <div className="absolute top-[15px] left-[15px] w-[420px] bg-slate-950/85 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.65)] flex flex-col">
         
         {/* Header / LIVE TAG */}
         <div className="h-8 bg-black/40 flex items-center justify-between px-4 border-b border-white/5">
-          <div className="text-white/50 text-xs font-semibold tracking-widest uppercase">
-            Pickleball Match
+          <div className="text-white/40 text-[10px] font-bold tracking-widest uppercase">
+            PICKLEBALL MATCH
           </div>
           {match.status === "live" && (
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-2.5 w-2.5">
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
               </div>
-              <span className="text-red-500 font-bold tracking-widest text-[11px] uppercase">
+              <span className="text-red-500 font-bold tracking-widest text-[10px] uppercase">
                 LIVE
               </span>
             </div>
@@ -31,140 +50,131 @@ export default function MatchOverlay() {
         
         <div className="flex flex-col relative">
           {/* Team 1 Row */}
-          <div className="relative flex items-center justify-between px-6 py-5 group">
-            {/* Serving Indicator Line */}
+          <div className="relative flex items-center justify-between pl-4 pr-3 py-3">
+            {/* Active indicator bar */}
             <div
-              className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500 ${
+              className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300 ${
                 match.isServer1
-                  ? "bg-gradient-to-b from-blue-400 to-blue-600 shadow-[0_0_15px_rgba(59,130,246,0.6)]"
+                  ? "bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.8)]"
                   : "bg-transparent"
               }`}
             />
+            
+            {/* Subtle serve background highlight */}
+            {match.isServer1 && !isCompleted && (
+              <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
+            )}
 
-            <div className="flex flex-col z-10">
-              <span className={`text-2xl font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
-                  match.isServer1
-                    ? match.serverNumber === 1
-                      ? "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]"
-                      : "text-white"
-                    : "text-slate-400"
-                }`}
-              >
+            {/* Player Names */}
+            <div className="flex flex-col z-10 pl-2">
+              <span className={`font-extrabold uppercase tracking-wide text-[15px] leading-tight transition-colors ${
+                isCompleted && match.gamesWonTeam1 > match.gamesWonTeam2 ? "text-blue-400" : "text-white"
+              }`}>
                 {match.team1Player1}
               </span>
-              {match.type === "doubles" && (
-                <span className={`text-2xl font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
-                    match.isServer1
-                      ? match.serverNumber === 2
-                        ? "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]"
-                        : "text-white"
-                      : "text-slate-400"
-                  }`}
-                >
+              {isDoubles && match.team1Player2 && (
+                <span className={`font-bold uppercase tracking-wide text-[11px] mt-0.5 transition-colors ${
+                  isCompleted && match.gamesWonTeam1 > match.gamesWonTeam2 ? "text-blue-400/80" : "text-slate-400"
+                }`}>
                   {match.team1Player2}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-12 z-10">
-              <div className="flex flex-col gap-2">
-                <div
-                  className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
-                    match.isServer1 && match.serverNumber >= 1
-                      ? "bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.8)]"
-                      : "bg-white/10"
-                  }`}
-                />
-                {match.type === "doubles" && (
-                  <div
-                    className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
-                      match.isServer1 && match.serverNumber >= 2
-                        ? "bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.8)]"
-                        : "bg-white/10"
-                    }`}
-                  />
-                )}
-              </div>
-              <span
-                className={`text-6xl font-black transition-all duration-300 text-blue-400 text-right w-20 ${
-                  match.isServer1
-                    ? "drop-shadow-[0_0_15px_rgba(96,165,250,0.8)]"
-                    : ""
-                }`}
-              >
+            {/* Scores Area */}
+            <div className="flex items-center gap-3 z-10">
+              {/* Server Number indicator dots/capsules */}
+              {match.isServer1 && !isCompleted && (
+                <div className="flex flex-col gap-1 items-end justify-center mr-1">
+                  <div className={`h-1.5 w-3 rounded-full transition-all duration-300 ${
+                    match.serverNumber >= 1 ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "bg-white/10"
+                  }`} />
+                  {isDoubles && (
+                    <div className={`h-1.5 w-3 rounded-full transition-all duration-300 ${
+                      match.serverNumber === 2 ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "bg-white/10"
+                    }`} />
+                  )}
+                </div>
+              )}
+
+              {/* Main Score Box */}
+              <div className={`w-12 h-11 flex items-center justify-center rounded-xl font-black text-2xl transition-all duration-300 ${
+                isCompleted 
+                  ? (match.gamesWonTeam1 > match.gamesWonTeam2 ? "bg-blue-600 text-white" : "bg-slate-900 text-slate-500")
+                  : (match.isServer1 
+                      ? "bg-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]" 
+                      : "bg-slate-900 text-slate-300"
+                    )
+              }`}>
                 {match.scoreTeam1}
-              </span>
+              </div>
             </div>
           </div>
 
-          <div className="h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent w-full" />
+          <div className="h-px bg-white/5 mx-4" />
 
           {/* Team 2 Row */}
-          <div className="relative flex items-center justify-between px-6 py-5 group">
-            {/* Serving Indicator Line */}
+          <div className="relative flex items-center justify-between pl-4 pr-3 py-3">
+            {/* Active indicator bar */}
             <div
-              className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500 ${
+              className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300 ${
                 match.isServer2
-                  ? "bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_0_15px_rgba(249,115,22,0.6)]"
+                  ? "bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.8)]"
                   : "bg-transparent"
               }`}
             />
+            
+            {/* Subtle serve background highlight */}
+            {match.isServer2 && !isCompleted && (
+              <div className="absolute inset-0 bg-orange-500/5 pointer-events-none" />
+            )}
 
-            <div className="flex flex-col z-10">
-              <span className={`text-2xl font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
-                  match.isServer2
-                    ? match.serverNumber === 1
-                      ? "text-orange-400 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]"
-                      : "text-white"
-                    : "text-slate-400"
-                }`}
-              >
+            {/* Player Names */}
+            <div className="flex flex-col z-10 pl-2">
+              <span className={`font-extrabold uppercase tracking-wide text-[15px] leading-tight transition-colors ${
+                isCompleted && match.gamesWonTeam2 > match.gamesWonTeam1 ? "text-orange-400" : "text-white"
+              }`}>
                 {match.team2Player1}
               </span>
-              {match.type === "doubles" && (
-                <span className={`text-2xl font-black uppercase tracking-wide leading-tight transition-all duration-300 ${
-                    match.isServer2
-                      ? match.serverNumber === 2
-                        ? "text-orange-400 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]"
-                        : "text-white"
-                      : "text-slate-400"
-                  }`}
-                >
+              {isDoubles && match.team2Player2 && (
+                <span className={`font-bold uppercase tracking-wide text-[11px] mt-0.5 transition-colors ${
+                  isCompleted && match.gamesWonTeam2 > match.gamesWonTeam1 ? "text-orange-400/80" : "text-slate-400"
+                }`}>
                   {match.team2Player2}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-12 z-10">
-              <div className="flex flex-col gap-2">
-                <div
-                  className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
-                    match.isServer2 && match.serverNumber >= 1
-                      ? "bg-orange-400 shadow-[0_0_12px_rgba(251,146,60,0.8)]"
-                      : "bg-white/10"
-                  }`}
-                />
-                {match.type === "doubles" && (
-                  <div
-                    className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
-                      match.isServer2 && match.serverNumber >= 2
-                        ? "bg-orange-400 shadow-[0_0_12px_rgba(251,146,60,0.8)]"
-                        : "bg-white/10"
-                    }`}
-                  />
-                )}
-              </div>
-              <span
-                className={`text-6xl font-black transition-all duration-300 text-orange-400 text-right w-20 ${
-                  match.isServer2
-                    ? "drop-shadow-[0_0_15px_rgba(251,146,60,0.8)]"
-                    : ""
-                }`}
-              >
+            {/* Scores Area */}
+            <div className="flex items-center gap-3 z-10">
+              {/* Server Number indicator dots/capsules */}
+              {match.isServer2 && !isCompleted && (
+                <div className="flex flex-col gap-1 items-end justify-center mr-1">
+                  <div className={`h-1.5 w-3 rounded-full transition-all duration-300 ${
+                    match.serverNumber >= 1 ? "bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "bg-white/10"
+                  }`} />
+                  {isDoubles && (
+                    <div className={`h-1.5 w-3 rounded-full transition-all duration-300 ${
+                      match.serverNumber === 2 ? "bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "bg-white/10"
+                    }`} />
+                  )}
+                </div>
+              )}
+
+              {/* Main Score Box */}
+              <div className={`w-12 h-11 flex items-center justify-center rounded-xl font-black text-2xl transition-all duration-300 ${
+                isCompleted 
+                  ? (match.gamesWonTeam2 > match.gamesWonTeam1 ? "bg-orange-600 text-white" : "bg-slate-900 text-slate-500")
+                  : (match.isServer2 
+                      ? "bg-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.35)]" 
+                      : "bg-slate-900 text-slate-300"
+                    )
+              }`}>
                 {match.scoreTeam2}
-              </span>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

@@ -16,7 +16,7 @@ Tệp này kiểm soát hành vi của AI Agent.
 
 ## Quy tắc hành vi: SME
 
-**Tự động chạy lệnh**: false
+**Tự động chạy lệnh**: true
 **Mức độ xác nhận**: Hỏi trước các tác vụ quan trọng
 
 ## 🌐 Giao thức Ngôn ngữ (Language Protocol)

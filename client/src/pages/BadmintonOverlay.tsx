@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -36,6 +36,7 @@ interface BadmintonMatch {
 
 export default function BadmintonOverlay() {
   const { id } = useParams<{ id: string }>();
+  const [visible, setVisible] = useState(true);
 
   // ─── Data ──────────────────────────────────────────────
   const { data: match, isLoading } = useQuery<BadmintonMatch>({
@@ -44,6 +45,19 @@ export default function BadmintonOverlay() {
       apiRequest("GET", `/api/badminton/matches/${id}`).then((r) => r.json()),
     refetchInterval: 1000, // Update every second for live feel
   });
+
+  const isCompleted = match?.status === "completed";
+
+  useEffect(() => {
+    if (isCompleted) {
+      const timer = setTimeout(() => {
+        setVisible(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setVisible(true);
+    }
+  }, [isCompleted]);
 
   // Apply transparent background to body for OBS
   useEffect(() => {
@@ -65,110 +79,162 @@ export default function BadmintonOverlay() {
     );
   }
 
-  const gameState = dbToGameState(match);
-  const isCompleted = match.status === "completed";
   const isDoubles = match.type !== "singles";
 
-  // Name highlighting logic based on serve position
-  const isT1P1Serving = match.servingTeam === 1 && (
-    match.type === "singles" ? true : !match.team1Swapped ? match.servingPlayer === 1 : match.servingPlayer === 2
-  );
-  const isT1P2Serving = match.servingTeam === 1 && isDoubles && !isT1P1Serving;
-  const isT2P1Serving = match.servingTeam === 2 && (
-    match.type === "singles" ? true : !match.team2Swapped ? match.servingPlayer === 1 : match.servingPlayer === 2
-  );
-  const isT2P2Serving = match.servingTeam === 2 && isDoubles && !isT2P1Serving;
-
   return (
-    <div className="w-[650px] p-4 font-sans select-none">
-      <div className="flex flex-col">
-        {/* ── SCOREBOARD BODY ── */}
-        <div className="flex rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black/40 backdrop-blur-sm">
-          {/* Team 1 Side */}
-          <div className="flex-1 flex items-stretch">
-            {/* Serve Indicator Line */}
-            <div className={`w-1.5 transition-all duration-300 ${
-              match.servingTeam === 1 && !isCompleted ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" : "bg-transparent"
+    <div className={`w-[500px] p-2 font-sans select-none bg-transparent transition-opacity duration-1000 ${
+      visible ? "opacity-100" : "opacity-0 pointer-events-none"
+    }`}>
+      {/* ── SCOREBOARD BODY ── */}
+      <div className="bg-transparent border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        {/* Team 1 Row */}
+        <div className="relative flex items-center justify-between px-5 py-3.5">
+          {/* Serving or Winning indicator */}
+          <div
+            className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300 ${
+              !isCompleted && match.servingTeam === 1
+                ? "bg-gradient-to-b from-blue-400 to-blue-600 shadow-[0_0_12px_rgba(59,130,246,0.8)]"
+                : isCompleted && match.winnerTeam === 1
+                ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                : "bg-transparent"
+            }`}
+          />
+          
+          {/* Highlight bg */}
+          {((!isCompleted && match.servingTeam === 1) || (isCompleted && match.winnerTeam === 1)) && (
+            <div className={`absolute inset-0 pointer-events-none ${
+              isCompleted && match.winnerTeam === 1
+                ? "bg-blue-500/10"
+                : "bg-gradient-to-r from-blue-500/8 to-transparent"
             }`} />
-            
-            <div className="flex-1 px-4 py-3 flex items-center justify-between bg-gradient-to-r from-blue-500/10 to-transparent">
-              <div className="flex flex-col">
-                <span className={`font-black uppercase tracking-wide text-lg leading-tight transition-colors ${
-                  isCompleted ? (match.winnerTeam === 1 ? "text-blue-400" : "text-white/40") :
-                  isT1P1Serving ? "text-blue-300 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "text-white"
-                }`}>
-                  {match.team1Player1}
-                </span>
-                {isDoubles && match.team1Player2 && (
-                  <span className={`font-black uppercase tracking-wide text-sm transition-colors ${
-                    isCompleted ? (match.winnerTeam === 1 ? "text-blue-400/80" : "text-white/30") :
-                    isT1P2Serving ? "text-blue-300 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "text-white/70"
-                  }`}>
-                    {match.team1Player2}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex gap-0.5">
-                  {match.gameScores.map(([s1], i) => (
-                    <div key={i} className="w-5 text-center text-xs font-bold text-white/40">{s1}</div>
-                  ))}
-                  {(!isCompleted) && (
-                    <div className="w-5" /> // Spacer for current game if previous games exist
-                  )}
-                </div>
-                <span className={`tabular-nums font-black text-5xl w-16 text-right transition-colors ${
-                  isCompleted ? (match.winnerTeam === 1 ? "text-blue-400" : "text-white/30") :
-                  match.servingTeam === 1 ? "text-blue-400 drop-shadow-[0_0_12px_rgba(96,165,250,0.6)]" : "text-white"
-                }`}>
-                  {isCompleted ? match.gamesWonTeam1 : match.currentScoreTeam1}
-                </span>
-              </div>
-            </div>
+          )}
+
+          {/* Player names */}
+          <div className="flex flex-col z-10 pl-2">
+            <span className={`font-black uppercase tracking-wide text-base transition-colors ${
+              isCompleted && match.winnerTeam === 1 ? "text-blue-400" : "text-white"
+            }`}>
+              {match.team1Player1}
+            </span>
+            {isDoubles && match.team1Player2 && (
+              <span className={`font-black uppercase tracking-wide text-xs transition-colors ${
+                isCompleted && match.winnerTeam === 1 ? "text-blue-400/80" : "text-white/60"
+              }`}>
+                {match.team1Player2}
+              </span>
+            )}
           </div>
 
-          <div className="w-px bg-white/10" />
+          {/* Scores */}
+          <div className="flex items-center gap-4 z-10">
+            {/* Set breakdowns */}
+            {match.bestOf > 1 && (
+              <div className="flex items-center gap-2">
+                {match.gameScores.map(([s1], i) => (
+                  <span key={i} className="text-[13px] font-bold text-white/40 w-6 text-center">{s1}</span>
+                ))}
+              </div>
+            )}
+            
+            {/* Serve Icon */}
+            {!isCompleted && (
+              <div className="w-6 flex items-center justify-center">
+                <Feather className={`w-5 h-5 transition-all duration-300 ${
+                  match.servingTeam === 1 ? "text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" : "text-transparent"
+                }`} />
+              </div>
+            )}
 
-          {/* Team 2 Side */}
-          <div className="flex-1 flex items-stretch">
-            <div className="flex-1 px-4 py-3 flex items-center justify-between bg-gradient-to-l from-orange-500/10 to-transparent">
-              <div className="flex items-center gap-3">
-                <span className={`tabular-nums font-black text-5xl w-16 text-left transition-colors ${
-                  isCompleted ? (match.winnerTeam === 2 ? "text-orange-400" : "text-white/30") :
-                  match.servingTeam === 2 ? "text-orange-400 drop-shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "text-white"
-                }`}>
-                  {isCompleted ? match.gamesWonTeam2 : match.currentScoreTeam2}
-                </span>
-                <div className="flex gap-0.5">
-                  {(!isCompleted) && (
-                    <div className="w-5" />
-                  )}
-                  {match.gameScores.map(([, s2], i) => (
-                    <div key={i} className="w-5 text-center text-xs font-bold text-white/40">{s2}</div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className={`font-black uppercase tracking-wide text-lg leading-tight text-right transition-colors ${
-                  isCompleted ? (match.winnerTeam === 2 ? "text-orange-400" : "text-white/40") :
-                  isT2P1Serving ? "text-orange-300 drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "text-white"
-                }`}>
-                  {match.team2Player1}
-                </span>
-                {isDoubles && match.team2Player2 && (
-                  <span className={`font-black uppercase tracking-wide text-sm text-right transition-colors ${
-                    isCompleted ? (match.winnerTeam === 2 ? "text-orange-400/80" : "text-white/30") :
-                    isT2P2Serving ? "text-orange-300 drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "text-white/70"
-                  }`}>
-                    {match.team2Player2}
-                  </span>
-                )}
-              </div>
-            </div>
-            {/* Serve Indicator Line */}
-            <div className={`w-1.5 transition-all duration-300 ${
-              match.servingTeam === 2 && !isCompleted ? "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" : "bg-transparent"
+            {/* Main Score */}
+            <span className={`font-black tabular-nums text-right transition-all duration-300 min-w-[2.5rem] ${
+              isCompleted && match.winnerTeam === 1
+                ? "text-blue-400 text-4xl"
+                : !isCompleted && match.servingTeam === 1
+                ? "text-blue-400 drop-shadow-[0_0_12px_rgba(96,165,250,0.6)] text-4xl"
+                : "text-white/70 text-3xl"
+            }`}>
+              {match.bestOf === 1
+                ? (isCompleted ? (match.gameScores[0]?.[0] ?? match.currentScoreTeam1) : match.currentScoreTeam1)
+                : (isCompleted ? match.gamesWonTeam1 : match.currentScoreTeam1)
+              }
+            </span>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-white/10 mx-5" />
+
+        {/* Team 2 Row */}
+        <div className="relative flex items-center justify-between px-5 py-3.5">
+          {/* Serving or Winning indicator */}
+          <div
+            className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300 ${
+              !isCompleted && match.servingTeam === 2
+                ? "bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.8)]"
+                : isCompleted && match.winnerTeam === 2
+                ? "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+                : "bg-transparent"
+            }`}
+          />
+          
+          {/* Highlight bg */}
+          {((!isCompleted && match.servingTeam === 2) || (isCompleted && match.winnerTeam === 2)) && (
+            <div className={`absolute inset-0 pointer-events-none ${
+              isCompleted && match.winnerTeam === 2
+                ? "bg-orange-500/10"
+                : "bg-gradient-to-r from-orange-500/8 to-transparent"
             }`} />
+          )}
+
+          {/* Player names */}
+          <div className="flex flex-col z-10 pl-2">
+            <span className={`font-black uppercase tracking-wide text-base transition-colors ${
+              isCompleted && match.winnerTeam === 2 ? "text-orange-400" : "text-white"
+            }`}>
+              {match.team2Player1}
+            </span>
+            {isDoubles && match.team2Player2 && (
+              <span className={`font-black uppercase tracking-wide text-xs transition-colors ${
+                isCompleted && match.winnerTeam === 2 ? "text-orange-400/80" : "text-white/60"
+              }`}>
+                {match.team2Player2}
+              </span>
+            )}
+          </div>
+
+          {/* Scores */}
+          <div className="flex items-center gap-4 z-10">
+            {/* Set breakdowns */}
+            {match.bestOf > 1 && (
+              <div className="flex items-center gap-2">
+                {match.gameScores.map(([, s2], i) => (
+                  <span key={i} className="text-[13px] font-bold text-white/40 w-6 text-center">{s2}</span>
+                ))}
+              </div>
+            )}
+            
+            {/* Serve Icon */}
+            {!isCompleted && (
+              <div className="w-6 flex items-center justify-center">
+                <Feather className={`w-5 h-5 transition-all duration-300 ${
+                  match.servingTeam === 2 ? "text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]" : "text-transparent"
+                }`} />
+              </div>
+            )}
+
+            {/* Main Score */}
+            <span className={`font-black tabular-nums text-right transition-all duration-300 min-w-[2.5rem] ${
+              isCompleted && match.winnerTeam === 2
+                ? "text-orange-400 text-4xl"
+                : !isCompleted && match.servingTeam === 2
+                ? "text-orange-400 drop-shadow-[0_0_12px_rgba(251,146,60,0.6)] text-4xl"
+                : "text-white/70 text-3xl"
+            }`}>
+              {match.bestOf === 1
+                ? (isCompleted ? (match.gameScores[0]?.[1] ?? match.currentScoreTeam2) : match.currentScoreTeam2)
+                : (isCompleted ? match.gamesWonTeam2 : match.currentScoreTeam2)
+              }
+            </span>
           </div>
         </div>
       </div>
