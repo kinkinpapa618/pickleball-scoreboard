@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { Zap } from "lucide-react";
 
 interface BadmintonScoreboardProps {
   score1: number;
@@ -48,18 +49,15 @@ export function BadmintonScoreboard({
       <div className="flex items-center justify-center gap-8 sm:gap-12">
         {/* Team 1 Score */}
         <div className="flex flex-col items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="relative">
+            <FlipDigit value={score1} color="bg-blue-600" />
             {servingTeam === 1 && (
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <div className="absolute -top-1.5 -right-1.5 z-20 flex items-center gap-0.5 px-2 py-0.5 bg-yellow-400 rounded-full shadow-md">
+                <Zap className="w-2.5 h-2.5 text-yellow-800 fill-yellow-600" />
+                <span className="text-[8px] font-black text-yellow-800">PHÁT</span>
+              </div>
             )}
-            <span className={`text-[11px] sm:text-xs font-black uppercase tracking-wider truncate max-w-[100px] ${servingTeam === 1 ? 'text-blue-500' : 'text-muted-foreground'}`}>
-              {team1Name}
-            </span>
           </div>
-          <FlipDigit value={score1} color="bg-blue-600" />
-          {servingTeam === 1 && (
-            <span className="text-[10px] font-bold uppercase text-yellow-600 dark:text-yellow-400 tracking-widest mt-1">PHÁT BÓNG</span>
-          )}
         </div>
 
         <div className="flex flex-col items-center gap-1 px-2">
@@ -68,18 +66,15 @@ export function BadmintonScoreboard({
 
         {/* Team 2 Score */}
         <div className="flex flex-col items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="relative">
+            <FlipDigit value={score2} color="bg-orange-600" />
             {servingTeam === 2 && (
-              <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+              <div className="absolute -top-1.5 -right-1.5 z-20 flex items-center gap-0.5 px-2 py-0.5 bg-yellow-400 rounded-full shadow-md">
+                <Zap className="w-2.5 h-2.5 text-yellow-800 fill-yellow-600" />
+                <span className="text-[8px] font-black text-yellow-800">PHÁT</span>
+              </div>
             )}
-            <span className={`text-[11px] sm:text-xs font-black uppercase tracking-wider truncate max-w-[100px] ${servingTeam === 2 ? 'text-orange-500' : 'text-muted-foreground'}`}>
-              {team2Name}
-            </span>
           </div>
-          <FlipDigit value={score2} color="bg-orange-600" />
-          {servingTeam === 2 && (
-            <span className="text-[10px] font-bold uppercase text-yellow-600 dark:text-yellow-400 tracking-widest mt-1">PHÁT BÓNG</span>
-          )}
         </div>
       </div>
     </div>

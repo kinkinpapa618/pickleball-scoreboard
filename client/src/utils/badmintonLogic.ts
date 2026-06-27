@@ -12,7 +12,7 @@ export interface BadmintonGameState {
   // Match settings
   type: MatchType;
   bestOf: 1 | 3 | 5;
-  winningPoints: 21 | 15;
+  winningPoints: 21 | 31;
 
   // Match state
   status: "pending" | "live" | "completed";
@@ -76,16 +76,14 @@ export function isGameOver(
   winningPoints: number
 ): boolean {
   const maxScore = Math.max(score1, score2);
+  if (winningPoints === 21) {
+    // A. 21 (chạm 21 điểm - win)
+    return maxScore >= 21;
+  }
+  // B. 31 (từ điểm 21 trở đi, cách đối thủ 2 điểm -> win, mốc điểm chạm 31 -> win)
   const diff = Math.abs(score1 - score2);
-
-  // Reached winning points and ahead by 2 → game over
-  if (maxScore >= winningPoints && diff >= 2) return true;
-
-  // Sudden death cap (30 in 21-pt mode, 20 in 15-pt mode)
-  const cap = winningPoints + 9; // 21→30, 15→24 (BWF uses +9 for 21 mode, but for 15 mode we keep ratio)
-  const actualCap = winningPoints === 21 ? 30 : 24; // 15-pt mode: sudden death at 24
-  if (maxScore >= actualCap) return true;
-
+  if (maxScore >= 21 && diff >= 2) return true;
+  if (maxScore >= 31) return true;
   return false;
 }
 
@@ -102,8 +100,7 @@ export function isMatchOver(
 }
 
 /**
- * At 11 points (half of 21) or 8 points (half of 15) in the deciding game,
- * players switch ends.
+ * At 11 points in the deciding game, players switch ends.
  */
 export function shouldSwitchEnds(
   currentGame: number,
@@ -116,11 +113,9 @@ export function shouldSwitchEnds(
   if (endsChanged) return false;
   const isDecidingGame = currentGame === gamesNeeded * 2 - 1; // game 3 in BO3, game 5 in BO5
   if (!isDecidingGame) return false;
-  const switchPoint = Math.floor(winningPoints / 2) + (winningPoints === 21 ? 0 : 0); // 10 for 21-pt, 8 for 15-pt? BWF says 11 in 21, we use floor(21/2)=10? Actually BWF: at 11 in 3rd game switch.
-  // BWF exact rule: "When the leading score reaches 11 points" in a third game
-  const actualSwitchPoint = winningPoints === 21 ? 11 : 8;
+  // BWF exact rule: switch ends when leading score reaches 11 points
   const leadingScore = Math.max(scoreTeam1, scoreTeam2);
-  return leadingScore >= actualSwitchPoint;
+  return leadingScore >= 11;
 }
 
 // ─────────────────────────────────────────────
@@ -165,13 +160,13 @@ export function processRally(
     const newServingTeam: 1 | 2 = next.servingTeam === 1 ? 2 : 1;
     next.servingTeam = newServingTeam;
     // Receiving team does NOT swap positions
-    // The player in the RIGHT court of the new serving team serves
-    // Right court = not swapped = servingPlayer 1
-    // Left court = swapped = servingPlayer 2
-    // After service transfer, no swap occurs, so the one in right court serves
+    // Server is determined by the team's new score:
+    // Even score -> Server is the player in the right court
+    // Odd score -> Server is the player in the left court
     if (next.type !== "singles") {
-      const isSwapped = newServingTeam === 1 ? next.team1Swapped : next.team2Swapped;
-      next.servingPlayer = isSwapped ? 2 : 1;
+      const teamScore = newServingTeam === 1 ? next.currentScoreTeam1 : next.currentScoreTeam2;
+      const isScoreEven = teamScore % 2 === 0;
+      next.servingPlayer = isScoreEven ? 1 : 2;
     }
   }
 
@@ -234,7 +229,7 @@ export function processRally(
 export interface CreateMatchOptions {
   type: MatchType;
   bestOf: 1 | 3 | 5;
-  winningPoints: 21 | 15;
+  winningPoints: 21 | 31;
   firstServingTeam: 1 | 2;
 }
 
@@ -316,7 +311,7 @@ export function dbToGameState(match: any): BadmintonGameState {
   return {
     type: match.type as MatchType,
     bestOf: match.bestOf as 1 | 3 | 5,
-    winningPoints: match.winningPoints as 21 | 15,
+    winningPoints: match.winningPoints as 21 | 31,
     status: match.status,
     currentGame: match.currentGame,
     gamesWonTeam1: match.gamesWonTeam1,

@@ -12,7 +12,7 @@ import {
   insertMatchSchema as matchSchema,
   insertNotificationSchema,
 } from "@shared/schema";
-import { pool, db } from "./db";
+import { processRally } from "../client/src/utils/badmintonLogic";
 
 const startingMatches = new Set<number>();
 
@@ -1577,7 +1577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       team2Player2: team2Player2 || "",
       type: type || "doubles",
       bestOf: Number(bestOf || 3) as 3 | 5,
-      winningPoints: Number(winningPoints || 21) as 21 | 15,
+      winningPoints: Number(winningPoints || 21) as 21 | 31,
       status: "live",
       currentGame: 1,
       gamesWonTeam1: 0,
@@ -1635,19 +1635,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const history = ((match.stateHistory as any[]) || []);
     history.push(currentStateSnapshot);
 
-    // Process rally using the shared logic (imported inline for server context)
-    const { processRally, dbToGameState } = await import("../client/src/utils/badmintonLogic.js").catch(() => {
-      // Fallback: inline logic calculation on server
-      return { processRally: null, dbToGameState: null };
-    });
-
-    // Simple inline calculation to avoid import complexity
-    let updateData: any = { stateHistory: history };
+    // Process rally using the shared logic
     const gameState = {
-      type: match.type,
-      bestOf: match.bestOf,
-      winningPoints: match.winningPoints,
-      status: match.status,
+      type: match.type as any,
+      bestOf: match.bestOf as any,
+      winningPoints: match.winningPoints as any,
+      status: match.status as any,
       currentGame: match.currentGame,
       gamesWonTeam1: match.gamesWonTeam1,
       gamesWonTeam2: match.gamesWonTeam2,
@@ -1655,66 +1648,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       gameScores: (match.gameScores as Array<[number, number]>) ?? [],
       currentScoreTeam1: match.currentScoreTeam1,
       currentScoreTeam2: match.currentScoreTeam2,
-      servingTeam: match.servingTeam,
-      servingPlayer: match.servingPlayer,
+      servingTeam: match.servingTeam as any,
+      servingPlayer: match.servingPlayer as any,
       team1Swapped: match.team1Swapped,
       team2Swapped: match.team2Swapped,
-      team1Side: match.team1Side,
+      team1Side: match.team1Side as any,
       endsChanged: match.endsChanged,
     };
 
-    // Inline processRally for server
-    const next = JSON.parse(JSON.stringify(gameState));
-    const rallyWinner = winner as 1 | 2;
-    const isServingTeamWon = rallyWinner === next.servingTeam;
-    if (rallyWinner === 1) next.currentScoreTeam1 += 1;
-    else next.currentScoreTeam2 += 1;
+    const next = processRally(gameState, winner as 1 | 2);
 
-    if (isServingTeamWon) {
-      if (next.type !== "singles") {
-        if (next.servingTeam === 1) {
-          next.team1Swapped = !next.team1Swapped;
-          next.servingPlayer = next.team1Swapped ? 2 : 1;
-        } else {
-          next.team2Swapped = !next.team2Swapped;
-          next.servingPlayer = next.team2Swapped ? 2 : 1;
-        }
-      }
-    } else {
-      next.servingTeam = next.servingTeam === 1 ? 2 : 1;
-      if (next.type !== "singles") {
-        const isSwapped = next.servingTeam === 1 ? next.team1Swapped : next.team2Swapped;
-        next.servingPlayer = isSwapped ? 2 : 1;
-      }
-    }
-
-    // Check game over
-    const wp = next.winningPoints;
-    const maxScore = Math.max(next.currentScoreTeam1, next.currentScoreTeam2);
-    const diff = Math.abs(next.currentScoreTeam1 - next.currentScoreTeam2);
-    const cap = wp === 21 ? 30 : 24;
-    const gameOver = (maxScore >= wp && diff >= 2) || maxScore >= cap;
-
+    let updateData: any = { stateHistory: history };
     const timeline = ((match.timeline as any[]) || []);
-    timeline.push({
-      id: Date.now().toString() + Math.random().toString(36).substring(7),
-      type: "score",
-      scorerTeam: winner,
-      score1: next.currentScoreTeam1,
-      score2: next.currentScoreTeam2,
-      timestamp: new Date().toISOString()
-    });
 
-    if (gameOver) {
-      next.gameScores.push([next.currentScoreTeam1, next.currentScoreTeam2]);
-      if (next.currentScoreTeam1 > next.currentScoreTeam2) next.gamesWonTeam1 += 1;
-      else next.gamesWonTeam2 += 1;
+    const finalScoreTeam1 = winner === 1 ? gameState.currentScoreTeam1 + 1 : gameState.currentScoreTeam1;
+    const finalScoreTeam2 = winner === 2 ? gameState.currentScoreTeam2 + 1 : gameState.currentScoreTeam2;
 
-      const needed = Math.ceil(next.bestOf / 2);
-      const matchOver = next.gamesWonTeam1 >= needed || next.gamesWonTeam2 >= needed;
-      if (matchOver) {
-        next.status = "completed";
-        next.winnerTeam = next.gamesWonTeam1 > next.gamesWonTeam2 ? 1 : 2;
+    if (next.currentGame > gameState.currentGame || next.status === "completed") {
+      // Game ended
+      timeline.push({
+        id: Date.now().toString() + Math.random().toString(36).substring(7),
+        type: "score",
+        scorerTeam: winner,
+        score1: finalScoreTeam1,
+        score2: finalScoreTeam2,
+        timestamp: new Date().toISOString()
+      });
+
+      if (next.status === "completed") {
         updateData.endTime = new Date();
         timeline.push({
           id: Date.now().toString() + "go",
@@ -1726,34 +1687,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timeline.push({
           id: Date.now().toString() + "g_end",
           type: "event",
-          message: `Game ${next.currentGame} kết thúc.`,
+          message: `Game ${gameState.currentGame} kết thúc.`,
           timestamp: new Date().toISOString()
         });
-        next.currentGame += 1;
-        next.currentScoreTeam1 = 0;
-        next.currentScoreTeam2 = 0;
-        next.team1Swapped = false;
-        next.team2Swapped = false;
-        next.endsChanged = false;
-        next.servingTeam = rallyWinner;
-        next.servingPlayer = 1;
       }
     } else {
-      // Check end switching in deciding game
-      const gamesNeeded = Math.ceil(next.bestOf / 2);
-      const isDecidingGame = next.currentGame === gamesNeeded * 2 - 1;
-      if (isDecidingGame && !next.endsChanged) {
-        const switchPt = wp === 21 ? 11 : 8;
-        if (Math.max(next.currentScoreTeam1, next.currentScoreTeam2) >= switchPt) {
-          next.team1Side = next.team1Side === "left" ? "right" : "left";
-          next.endsChanged = true;
-          timeline.push({
-            id: Date.now().toString() + "swap",
-            type: "event",
-            message: "Đổi sân",
-            timestamp: new Date().toISOString()
-          });
-        }
+      // Normal point
+      timeline.push({
+        id: Date.now().toString() + Math.random().toString(36).substring(7),
+        type: "score",
+        scorerTeam: winner,
+        score1: next.currentScoreTeam1,
+        score2: next.currentScoreTeam2,
+        timestamp: new Date().toISOString()
+      });
+
+      // Check if ends changed in deciding game
+      if (next.endsChanged && !gameState.endsChanged) {
+        timeline.push({
+          id: Date.now().toString() + "swap",
+          type: "event",
+          message: "Đổi sân",
+          timestamp: new Date().toISOString()
+        });
       }
     }
 
@@ -1771,7 +1727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       endsChanged: next.endsChanged,
       gameScores: next.gameScores,
       status: next.status,
-      winnerTeam: next.winnerTeam ?? null,
+      winnerTeam: next.winnerTeam,
       timeline: timeline,
     });
 

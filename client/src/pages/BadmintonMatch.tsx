@@ -221,19 +221,42 @@ export default function BadmintonMatch() {
   const isCompleted = match.status === "completed";
   const isSingles = match.type === "singles";
 
-  // Compute positions based on swap state
+  // Compute positions based on swap state and BWF rules
   const positions: Record<string, "left" | "right"> = {};
   
   if (isSingles) {
-    const t1Side = match.currentScoreTeam1 % 2 === 0 ? "right" : "left";
-    const t2Side = match.currentScoreTeam2 % 2 === 0 ? "right" : "left";
-    positions["t1p1"] = t1Side;
-    positions["t2p1"] = t2Side;
+    const serverScore = gameState.servingTeam === 1 ? match.currentScoreTeam1 : match.currentScoreTeam2;
+    const side = serverScore % 2 === 0 ? "right" : "left";
+    positions["t1p1"] = side;
+    positions["t2p1"] = side;
   } else {
     positions["t1p1"] = match.team1Swapped ? "left" : "right";
     positions["t1p2"] = match.team1Swapped ? "right" : "left";
     positions["t2p1"] = match.team2Swapped ? "left" : "right";
     positions["t2p2"] = match.team2Swapped ? "right" : "left";
+  }
+
+  // Find server player ID (actual player index 1 or 2) based on BWF court position
+  let serverPlayerId = "";
+  if (isSingles) {
+    serverPlayerId = `t${gameState.servingTeam}p1`;
+  } else {
+    const isSwapped = gameState.servingTeam === 1 ? match.team1Swapped : match.team2Swapped;
+    const serverPlayerIdx = isSwapped
+      ? (gameState.servingPlayer === 1 ? 2 : 1)
+      : gameState.servingPlayer;
+    serverPlayerId = `t${gameState.servingTeam}p${serverPlayerIdx}`;
+  }
+
+  // Determine receiver based on BWF rules (diagonal to the server)
+  let receiverPlayerId = "";
+  if (isSingles) {
+    receiverPlayerId = `t${gameState.servingTeam === 1 ? 2 : 1}p1`;
+  } else {
+    const serverSide = positions[serverPlayerId];
+    const rcvTeam = gameState.servingTeam === 1 ? 2 : 1;
+    const rcvPlayer = positions[`t${rcvTeam}p1`] === serverSide ? 1 : 2;
+    receiverPlayerId = `t${rcvTeam}p${rcvPlayer}`;
   }
 
   // Timeline events specific to badminton (re-mapped if needed, but we can just use timeline data from db)
@@ -248,8 +271,8 @@ export default function BadmintonMatch() {
         <BadmintonCourt
           positions={positions}
           serverTeam={gameState.servingTeam}
-          serverPlayerId={`t${gameState.servingTeam}p${gameState.servingPlayer}`}
-          receiverPlayerId={`t${gameState.servingTeam === 1 ? 2 : 1}p${gameState.servingPlayer}`} // approx receiving pos
+          serverPlayerId={serverPlayerId}
+          receiverPlayerId={receiverPlayerId}
           names={{
             t1p1: match.team1Player1,
             t1p2: match.team1Player2,

@@ -144,8 +144,9 @@ export function BadmintonCourt({
     isCollision: boolean,
     collisionIndex: number,
   ) => {
-    let x = team === 1 ? "25%" : "75%";
-    let y = (team === 1 ? side === "right" : side === "left") ? "72%" : "28%";
+    const targetTeam = courtSwapped ? (team === 1 ? 2 : 1) : team;
+    let x = targetTeam === 1 ? "25%" : "75%";
+    let y = (targetTeam === 1 ? side === "right" : side === "left") ? "72%" : "28%";
 
     if (isSingles) {
        y = "50%";

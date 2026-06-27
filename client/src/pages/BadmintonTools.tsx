@@ -68,9 +68,9 @@ export default function BadmintonTools() {
   const [t1p2, setT1p2] = useState("");
   const [t2p1, setT2p1] = useState("");
   const [t2p2, setT2p2] = useState("");
-  const [bestOf, setBestOf] = useState<1 | 3 | 5>(3);
-  const [isBestOf, setIsBestOf] = useState(true);
-  const [winningPoints, setWinningPoints] = useState<11 | 15 | 21>(21);
+  const [bestOf, setBestOf] = useState<1 | 3 | 5>(1);
+  const [isBestOf, setIsBestOf] = useState(false);
+  const [winningPoints, setWinningPoints] = useState<21 | 31>(21);
   const [firstServer, setFirstServer] = useState<1 | 2>(1);
   const [showCoinToss, setShowCoinToss] = useState(false);
 
@@ -243,66 +243,69 @@ export default function BadmintonTools() {
               </div>
 
               <div className="space-y-4">
-                {/* Match Type */}
-                <div>
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
-                    Loại Trận
-                  </label>
-                  <div className="flex gap-1 bg-muted p-1 rounded-xl">
-                    {(["singles", "doubles", "mixed"] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setMatchType(t)}
-                        className={`flex-1 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${
-                          matchType === t ? "bg-blue-500 text-white" : "text-muted-foreground hover:bg-accent"
-                        }`}
-                      >
-                        {MATCH_TYPE_LABELS[t]}
-                      </button>
-                    ))}
+                {/* Grid 2 cột: Loại Trận và Best Of */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Match Type */}
+                  <div>
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
+                      Loại Trận
+                    </label>
+                    <div className="flex gap-1 bg-muted p-1 rounded-xl">
+                      {(["singles", "doubles", "mixed"] as const).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setMatchType(t)}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${
+                            matchType === t ? "bg-blue-500 text-white" : "text-muted-foreground hover:bg-accent"
+                          }`}
+                        >
+                          {MATCH_TYPE_LABELS[t]}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Best Of */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-[9px] font-bold text-muted-foreground uppercase">
-                      Best Of
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={isBestOf}
-                        onChange={(e) => {
-                          setIsBestOf(e.target.checked);
-                          if (!e.target.checked) {
-                            setBestOf(1);
-                          } else {
-                            setBestOf(3);
-                          }
-                        }}
-                        className="w-3.5 h-3.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer"
-                      />
-                      <span className="text-[8px] font-bold text-muted-foreground uppercase">Chơi nhiều Set</span>
-                    </label>
-                  </div>
-                  <div className="flex gap-1 bg-muted p-1 rounded-xl">
-                    {([3, 5] as const).map((bo) => (
-                      <button
-                        key={bo}
-                        disabled={!isBestOf}
-                        onClick={() => setBestOf(bo)}
-                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
-                          !isBestOf
-                            ? "opacity-30 cursor-not-allowed text-muted-foreground"
-                            : bestOf === bo
-                              ? "bg-blue-500 text-white"
-                              : "text-muted-foreground"
-                        }`}
-                      >
-                        BO{bo}
-                      </button>
-                    ))}
+                  {/* Best Of */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[9px] font-bold text-muted-foreground uppercase">
+                        Best Of
+                      </label>
+                      <label className="flex items-center gap-1 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isBestOf}
+                          onChange={(e) => {
+                            setIsBestOf(e.target.checked);
+                            if (!e.target.checked) {
+                              setBestOf(1);
+                            } else {
+                              setBestOf(3);
+                            }
+                          }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer"
+                        />
+                        <span className="text-[8px] font-bold text-muted-foreground uppercase">Chơi nhiều Set</span>
+                      </label>
+                    </div>
+                    <div className="flex gap-1 bg-muted p-1 rounded-xl">
+                      {([3, 5] as const).map((bo) => (
+                        <button
+                          key={bo}
+                          disabled={!isBestOf}
+                          onClick={() => setBestOf(bo)}
+                          className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
+                            !isBestOf
+                              ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                              : bestOf === bo
+                                ? "bg-blue-500 text-white"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          BO{bo}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -314,7 +317,7 @@ export default function BadmintonTools() {
                       Điểm/Ván
                     </label>
                     <div className="flex gap-1 bg-muted p-1 rounded-xl">
-                      {([11, 15, 21] as const).map((pts) => (
+                      {([21, 31] as const).map((pts) => (
                         <button
                           key={pts}
                           onClick={() => setWinningPoints(pts)}
@@ -352,14 +355,6 @@ export default function BadmintonTools() {
                     </div>
                   </div>
                 </div>
-
-                {/* Coin Toss Button */}
-                <Button
-                  onClick={() => setShowCoinToss(true)}
-                  className="w-full bg-muted border border-border text-blue-500 font-black text-[10px] py-3 rounded-xl gap-4 hover:bg-accent transition-all"
-                >
-                  <Coins className="w-3.5 h-3.5" /> TUNG XU PHÂN ĐỊNH
-                </Button>
               </div>
 
               {/* Summary badge */}
@@ -378,6 +373,14 @@ export default function BadmintonTools() {
                 </span>
               </div>
             </Card>
+
+            {/* Coin Toss Button */}
+            <Button
+              onClick={() => setShowCoinToss(true)}
+              className="w-full py-5 rounded-2xl font-bold bg-card border border-border text-blue-500 hover:bg-accent/50 transition-all flex items-center justify-center gap-2 mt-4 shadow-sm"
+            >
+              <Coins className="w-3.5 h-3.5" /> TUNG XU PHÂN ĐỊNH
+            </Button>
 
             {/* Start Button */}
             {(() => {
