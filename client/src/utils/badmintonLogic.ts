@@ -11,7 +11,7 @@ export type MatchType = "singles" | "doubles" | "mixed";
 export interface BadmintonGameState {
   // Match settings
   type: MatchType;
-  bestOf: 3 | 5;
+  bestOf: 1 | 3 | 5;
   winningPoints: 21 | 15;
 
   // Match state
@@ -233,7 +233,7 @@ export function processRally(
 
 export interface CreateMatchOptions {
   type: MatchType;
-  bestOf: 3 | 5;
+  bestOf: 1 | 3 | 5;
   winningPoints: 21 | 15;
   firstServingTeam: 1 | 2;
 }
@@ -315,7 +315,7 @@ function deepClone<T>(obj: T): T {
 export function dbToGameState(match: any): BadmintonGameState {
   return {
     type: match.type as MatchType,
-    bestOf: match.bestOf as 3 | 5,
+    bestOf: match.bestOf as 1 | 3 | 5,
     winningPoints: match.winningPoints as 21 | 15,
     status: match.status,
     currentGame: match.currentGame,

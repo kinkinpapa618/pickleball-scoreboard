@@ -65,7 +65,8 @@ export default function BadmintonTools() {
   const [t1p2, setT1p2] = useState("");
   const [t2p1, setT2p1] = useState("");
   const [t2p2, setT2p2] = useState("");
-  const [bestOf, setBestOf] = useState<3 | 5>(3);
+  const [bestOf, setBestOf] = useState<1 | 3 | 5>(3);
+  const [isBestOf, setIsBestOf] = useState(true);
   const [winningPoints, setWinningPoints] = useState<21 | 15>(21);
   const [firstServer, setFirstServer] = useState<1 | 2>(1);
 
@@ -119,7 +120,7 @@ export default function BadmintonTools() {
       team2Player1: t2p1.trim(),
       team2Player2: isDoubles ? t2p2.trim() : "",
       type: matchType,
-      bestOf,
+      bestOf: isBestOf ? bestOf : 1,
       winningPoints,
       servingTeam: firstServer,
     });
@@ -280,19 +281,42 @@ export default function BadmintonTools() {
 
                 {/* Best Of */}
                 <div>
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
-                    Best Of
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase">
+                      Best Of
+                    </label>
+                    <label className="flex items-center gap-1 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={isBestOf}
+                        onChange={(e) => {
+                          setIsBestOf(e.target.checked);
+                          if (!e.target.checked) {
+                            setBestOf(1);
+                          } else {
+                            setBestOf(3);
+                          }
+                        }}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer"
+                      />
+                      <span className="text-[8px] font-bold text-muted-foreground uppercase">Chơi nhiều Set</span>
+                    </label>
+                  </div>
                   <div className="flex gap-1 bg-muted p-1 rounded-xl">
                     {([3, 5] as const).map((bo) => (
                       <button
                         key={bo}
+                        disabled={!isBestOf}
                         onClick={() => setBestOf(bo)}
                         className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
-                          bestOf === bo ? "bg-blue-500 text-white" : "text-muted-foreground"
+                          !isBestOf
+                            ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                            : bestOf === bo
+                              ? "bg-blue-500 text-white"
+                              : "text-muted-foreground"
                         }`}
                       >
-                        {bo}
+                        BO{bo}
                       </button>
                     ))}
                   </div>
@@ -332,7 +356,7 @@ export default function BadmintonTools() {
                   {winningPoints} điểm
                 </span>
                 <span className="px-2 py-0.5 bg-muted border border-border rounded-full text-[9px] font-black text-muted-foreground uppercase">
-                  Best of {bestOf}
+                  {isBestOf ? `Best of ${bestOf}` : "Đấu 1 Set (BO1)"}
                 </span>
                 <span className="px-2 py-0.5 bg-muted border border-border rounded-full text-[9px] font-black text-muted-foreground uppercase">
                   Team {firstServer} giao đầu
