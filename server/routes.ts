@@ -455,7 +455,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === TOURNAMENT APIs ===
 
-  // 15. Lấy danh sách giải đấu
+  app.get("/api/init-db", async (req, res) => {
+    try {
+      const { initialSchema } = await import("./schema.sql");
+      await pool.query(initialSchema);
+      res.send("DB Initialized Successfully!");
+    } catch (e: any) {
+      res.status(500).send("Error initializing DB: " + e.message);
+    }
+  });
+
+  // GET /api/tournaments — Lấy danh sách giải đấu
   app.get("/api/tournaments", async (req, res) => {
     const user = req.user as any;
     if (!user) {
