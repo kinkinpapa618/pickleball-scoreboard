@@ -469,12 +469,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await db.execute(sql.raw(statement));
           executed.push(statement.substring(0, 50));
         } catch (err: any) {
-          if (err.message && err.message.includes("already exists")) {
+          const errMsg = err.message || "";
+          const causeMsg = err.cause ? err.cause.message || String(err.cause) : "";
+          const fullMsg = (err.message || "") + " " + (err.cause ? err.cause.message || String(err.cause) : "") + " " + JSON.stringify(err);
+          
+          if (fullMsg.includes("already exists") || (err.code && ['42710', '42P07'].includes(err.code))) {
             skipped.push(statement.substring(0, 50));
           } else {
             return res.status(500).json({ 
               message: "Error initializing DB", 
-              error: err.message || "Unknown error", 
+              error: fullMsg, 
               statement: statement.substring(0, 100) 
             });
           }
