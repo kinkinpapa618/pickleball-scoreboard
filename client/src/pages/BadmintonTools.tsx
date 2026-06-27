@@ -22,8 +22,10 @@ import {
   Users,
   Settings2,
   Feather,
+  Coins,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CoinTossModal } from "@/components/CoinTossModal";
 
 // ─── Types ────────────────────────────────────────────────
 interface BadmintonMatch {
@@ -50,7 +52,7 @@ interface BadmintonMatch {
 const MATCH_TYPE_LABELS = {
   singles: "Đơn",
   doubles: "Đôi",
-  mixed: "Đôi Hỗn Hợp",
+  mixed: "Đôi HH",
 };
 
 // ─── Main Component ───────────────────────────────────────
@@ -69,6 +71,7 @@ export default function BadmintonTools() {
   const [isBestOf, setIsBestOf] = useState(true);
   const [winningPoints, setWinningPoints] = useState<21 | 15>(21);
   const [firstServer, setFirstServer] = useState<1 | 2>(1);
+  const [showCoinToss, setShowCoinToss] = useState(false);
 
   // History pagination
   const [historyPage, setHistoryPage] = useState(1);
@@ -171,7 +174,7 @@ export default function BadmintonTools() {
                 <div className="flex items-center gap-2 text-blue-500">
                   <Users className="w-4 h-4" />
                   <span className="text-[10px] font-black italic uppercase tracking-widest">
-                    THÔNG TIN CẦU THỦ
+                    THÔNG TIN VẬN ĐỘNG VIÊN
                   </span>
                 </div>
               </div>
@@ -187,7 +190,7 @@ export default function BadmintonTools() {
                       type="text"
                       value={t1p1}
                       onChange={(e) => setT1p1(e.target.value)}
-                      placeholder="Cầu thủ 1"
+                      placeholder="Player 1"
                       className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-blue-500 outline-none transition-all w-full"
                     />
                     {matchType !== "singles" && (
@@ -195,7 +198,7 @@ export default function BadmintonTools() {
                         type="text"
                         value={t1p2}
                         onChange={(e) => setT1p2(e.target.value)}
-                        placeholder="Cầu thủ 2"
+                        placeholder="Player 2"
                         className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-blue-500 outline-none transition-all w-full"
                       />
                     )}
@@ -212,7 +215,7 @@ export default function BadmintonTools() {
                       type="text"
                       value={t2p1}
                       onChange={(e) => setT2p1(e.target.value)}
-                      placeholder="Cầu thủ 3"
+                      placeholder="Player 3"
                       className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
                     />
                     {matchType !== "singles" && (
@@ -220,7 +223,7 @@ export default function BadmintonTools() {
                         type="text"
                         value={t2p2}
                         onChange={(e) => setT2p2(e.target.value)}
-                        placeholder="Cầu thủ 4"
+                        placeholder="Player 4"
                         className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
                       />
                     )}
@@ -344,6 +347,12 @@ export default function BadmintonTools() {
                       </button>
                     ))}
                   </div>
+                  <Button
+                    onClick={() => setShowCoinToss(true)}
+                    className="w-full bg-muted border border-border text-blue-500 font-black text-[10px] py-3 rounded-xl gap-4 hover:bg-accent transition-all mt-3"
+                  >
+                    <Coins className="w-3.5 h-3.5" /> TUNG XU PHÂN ĐỊNH
+                  </Button>
                 </div>
               </div>
 
@@ -365,14 +374,21 @@ export default function BadmintonTools() {
             </Card>
 
             {/* Start Button */}
-            <Button
-              onClick={handleCreate}
-              disabled={createMatch.isPending}
-              className="w-full h-14 bg-blue-500 hover:bg-blue-600 text-white font-black text-sm uppercase rounded-2xl gap-3 shadow-[0_4px_20px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_28px_rgba(59,130,246,0.5)] transition-all"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              {createMatch.isPending ? "Đang tạo..." : "Bắt Đầu Trận Đấu"}
-            </Button>
+            {(() => {
+              const isFormValid = matchType === "singles"
+                ? (t1p1.trim().length > 0 && t2p1.trim().length > 0)
+                : (t1p1.trim().length > 0 && t1p2.trim().length > 0 && t2p1.trim().length > 0 && t2p2.trim().length > 0);
+              return isFormValid && (
+                <Button
+                  onClick={handleCreate}
+                  disabled={createMatch.isPending}
+                  className="w-full h-14 bg-blue-500 hover:bg-blue-600 text-white font-black text-sm uppercase rounded-2xl gap-3 shadow-[0_4px_20px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_28px_rgba(59,130,246,0.5)] transition-all"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  {createMatch.isPending ? "Đang tạo..." : "Bắt Đầu Trận Đấu"}
+                </Button>
+              );
+            })()}
           </TabsContent>
 
           {/* ── TAB 2: LỊCH SỬ ── */}
@@ -652,6 +668,16 @@ export default function BadmintonTools() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <CoinTossModal
+        open={showCoinToss}
+        onOpenChange={setShowCoinToss}
+        onComplete={(winner: 1 | 2, choice: "serve" | "side") => {
+          const server = choice === "serve" ? winner : winner === 1 ? 2 : 1;
+          setFirstServer(server);
+        }}
+        compact={true}
+      />
     </div>
   );
 }

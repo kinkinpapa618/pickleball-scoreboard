@@ -61,8 +61,8 @@ export function CoinTossModal({
                 T1
               </div>
               {/* Mặt sau - Đội 2 */}
-              <div className="absolute inset-0 bg-orange-500 rounded-full border-4 border-orange-600 flex items-center justify-center font-black text-xl text-white backface-hidden [transform:rotateY(180deg)]">
-                BMB
+              <div className="absolute inset-0 bg-orange-500 rounded-full border-4 border-orange-600 flex items-center justify-center overflow-hidden backface-hidden [transform:rotateY(180deg)]">
+                <img src="/favicon.png" alt="App Icon" className="w-[85%] h-[85%] object-contain rounded-full" />
               </div>
             </motion.div>
           </div>
