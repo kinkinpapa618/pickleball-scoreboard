@@ -19,6 +19,7 @@ COPY --from=build /usr/src/app/dist ./dist
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/package*.json ./
 
+ENV NODE_ENV=production
 ENV PORT=5000
 EXPOSE 5000
 
