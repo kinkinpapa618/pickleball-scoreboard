@@ -1,7 +1,6 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import pkg from "pg";
-const { Pool } = pkg;
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
 if (!process.env.DATABASE_URL) {
@@ -10,17 +9,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-let sslConfig: any = undefined;
-if (process.env.NODE_ENV === "production") {
-  try {
-    const url = new URL(process.env.DATABASE_URL);
-    if (url.hostname.includes('.')) {
-      sslConfig = { rejectUnauthorized: false };
-    }
-  } catch (e) {
-    sslConfig = { rejectUnauthorized: false };
-  }
-}
+const isProduction = process.env.NODE_ENV === "production";
+const isNeonOrRender = isProduction && (process.env.DATABASE_URL?.includes("render.com") || process.env.DATABASE_URL?.includes("neon.tech"));
+
+const sslConfig = isNeonOrRender ? { rejectUnauthorized: false } : undefined;
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
