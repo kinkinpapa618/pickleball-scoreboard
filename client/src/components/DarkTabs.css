@@ -21,12 +21,6 @@
   background: hsl(var(--secondary));
 }
 
-/* Accent (vàng) cho active ở dark mode để giữ tinh thần thiết kế cũ */
-.dark .dark-tabs .tab-item.active {
-  color: #fbbf24; /* amber-400 */
-  background: hsl(var(--secondary));
-}
-
 .dark-tabs .tab-item:hover {
   color: hsl(var(--foreground));
 }

@@ -51,47 +51,6 @@
   --radius: 0.75rem;
 }
 
-.dark {
-  --background: 224 71% 4%;
-  --foreground: 210 20% 98%;
-  
-  --card: 224 71% 7%;
-  --card-foreground: 210 20% 98%;
-  --card-border: 215 28% 17%;
-
-  --popover: 224 71% 7%;
-  --popover-foreground: 210 20% 98%;
-  --popover-border: 215 28% 17%;
-  
-  --primary: 210 20% 98%;
-  --primary-foreground: 224 71% 4%;
-
-  --secondary: 215 28% 12%;
-  --secondary-foreground: 210 20% 98%;
-  
-  --muted: 215 28% 12%;
-  --muted-foreground: 217 10% 64%;
-
-  --accent: 72 100% 50%;
-  --accent-foreground: 0 0% 0%;
-
-  --destructive: 0 70% 50%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 215 28% 17%;
-  --input: 215 28% 17%;
-  --ring: 72 100% 50%;
-
-  --sidebar: 215 28% 8%;
-  --sidebar-foreground: 210 20% 98%;
-  --sidebar-border: 215 28% 17%;
-  --sidebar-ring: 72 100% 50%;
-  --sidebar-primary: 210 20% 98%;
-  --sidebar-primary-foreground: 224 71% 4%;
-  --sidebar-accent: 215 28% 14%;
-  --sidebar-accent-foreground: 210 20% 98%;
-}
-
 @layer base {
   body {
     @apply bg-background text-foreground font-body antialiased;
@@ -115,7 +74,7 @@
 }
 
 .glass-panel {
-  @apply bg-white/80 dark:bg-black/60 backdrop-blur-md border border-white/20 shadow-xl;
+  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
 }
 
 /* Light mode overrides */
@@ -194,4 +153,8 @@
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+.bg-background {
+  background-color: transparent;
 }

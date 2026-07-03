@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { useTheme } from "@/context/ThemeContext";
 import {
   User,
   Settings,
@@ -15,8 +14,6 @@ import {
   FileText,
   BarChart3,
   ChevronRight,
-  Moon,
-  Sun,
   Link2,
   MessageCircle,
   Plus,
@@ -47,7 +44,6 @@ interface Stats {
 export default function Profile() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
-  const { theme, toggleTheme } = useTheme();
   const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState<UserProfile | null>(null);
@@ -219,38 +215,6 @@ export default function Profile() {
             <div className="text-[10px] text-muted-foreground uppercase">
               Lịch công tác
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Theme Toggle - Visible to ALL roles */}
-      <div
-        onClick={toggleTheme}
-        className="bg-card p-4 rounded-2xl border border-border shadow-sm flex items-center justify-between cursor-pointer hover:bg-muted/50 transition"
-        data-testid="button-theme-toggle"
-      >
-        <div className="flex items-center gap-3">
-          {theme === "dark" ? (
-            <Moon className="w-5 h-5 text-blue-400" />
-          ) : (
-            <Sun className="w-5 h-5 text-yellow-500" />
-          )}
-          <span className="font-medium text-foreground">Giao diện</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground" data-testid="text-theme-label">
-            {theme === "dark" ? "Tối" : "Sáng"}
-          </span>
-          <div
-            className={`w-12 h-7 rounded-full p-0.5 transition-colors ${
-              theme === "dark" ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-600"
-            }`}
-          >
-            <div
-              className={`w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
-                theme === "dark" ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
           </div>
         </div>
       </div>

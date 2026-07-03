@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { BottomNav } from "@/components/BottomNav";
 import { DarkTabs } from "@/components/DarkTabs";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
@@ -134,33 +133,10 @@ function Router() {
 // --- 3. COMPONENT TỔNG ---
 function AppContent() {
   const [location] = useLocation();
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const isOverlayPage = location.includes("/overlay");
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
 
   return (
       <div className={`min-h-screen ${isOverlayPage ? 'bg-transparent' : 'pb-20 bg-background'} text-foreground transition-colors`}>
-        <button
-          id="install-btn"
-          style={{ display: deferredPrompt ? 'block' : 'none' }}
-          className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow-lg z-50"
-          onClick={() => {
-            if (deferredPrompt) {
-              deferredPrompt.prompt();
-              setDeferredPrompt(null);
-            }
-          }}
-        >Install App</button>
-        {/* Theme toggle: nổi top-right, ẩn ở Auth (chưa đăng nhập), Profile (đã có toggle riêng) và Match (toàn màn hình) */}
-        <ConditionalThemeToggle />
         <Router />
         {/* BottomNav thường chỉ hiện khi đã đăng nhập */}
         <ConditionalDarkTabs />
@@ -201,18 +177,6 @@ function ConditionalDarkTabs() {
   // Không hiện Tab khi đang trong trận đấu để tập trung
   if (location.includes("/match") || location.includes("/overlay")) return null;
   return <DarkTabs />;
-}
-
-// Helper để hiện ThemeToggle ở các trang phù hợp.
-// Ẩn ở: /auth (chưa đăng nhập), /profile (đã có toggle riêng), /match (toàn màn hình trận đấu).
-function ConditionalThemeToggle() {
-  const [location] = useLocation();
-  if (location === "/auth") return null;
-  if (location === "/profile" || location.startsWith("/profile/")) return null;
-  if (location.includes("/match") || location.includes("/overlay")) return null;
-  return (
-    <ThemeToggle className="fixed top-3 right-3 z-40 shadow-md backdrop-blur-sm" />
-  );
 }
 
 export default App;
