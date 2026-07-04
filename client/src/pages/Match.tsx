@@ -100,6 +100,7 @@ export default function Match() {
   const [tournamentName, setTournamentName] = useState("");
   const [matchCode, setMatchCode] = useState("");
   const [matchTheme, setMatchTheme] = useState("default");
+  const [isConfigInitialized, setIsConfigInitialized] = useState(false);
 
   const handleSaveConfig = async () => {
     if (currentMatchId > 0) {
@@ -125,14 +126,11 @@ export default function Match() {
   useEffect(() => {
     if (!serverMatch) return;
 
-    if (serverMatch.tournamentName) {
-      setTournamentName(serverMatch.tournamentName);
-    }
-    if (serverMatch.matchCode) {
-      setMatchCode(serverMatch.matchCode);
-    }
-    if (serverMatch.theme) {
-      setMatchTheme(serverMatch.theme);
+    if (!isConfigInitialized) {
+      setTournamentName(serverMatch.tournamentName || "");
+      setMatchCode(serverMatch.matchCode || "");
+      setMatchTheme(serverMatch.theme || "default");
+      setIsConfigInitialized(true);
     }
 
     if (serverMatch.status === "finished" && serverMatch.winnerTeam) {
@@ -438,6 +436,7 @@ export default function Match() {
       // Reset game logic state
       resetState({ score1: 0, score2: 0 });
       matchIdRef.current = currentMatchId;
+      setIsConfigInitialized(false);
     }, [currentMatchId]);
 
   useEffect(() => {
