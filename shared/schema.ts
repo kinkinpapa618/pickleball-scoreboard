@@ -117,6 +117,8 @@ export const matches = pgTable("matches", {
   creatorId: integer("creator_id").references(() => users.id),
 
   date: timestamp("date").defaultNow(),
+  tournamentName: text("tournament_name"),
+  matchCode: text("match_code"),
 });
 
 // === 4. ZOD SCHEMAS (Để Validate Dữ liệu) ===

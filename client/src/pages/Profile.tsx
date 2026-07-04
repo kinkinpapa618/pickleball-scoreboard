@@ -20,9 +20,13 @@ import {
   Search,
   Trash2,
   UserPlus,
+  Sun,
+  Moon,
+  Palette,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useGroups, useUserGroups, useCreateGroup, useDeleteGroup, useGroupMembers, useSearchUsers, useAddGroupMember, useRemoveGroupMember, type Group, type GroupMember } from "@/hooks/use-api";
+import { useTheme } from "@/context/ThemeContext";
 
 interface UserProfile {
   id: number;
@@ -48,8 +52,49 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
+  const { theme: appTheme, toggleTheme: toggleAppTheme } = useTheme();
+  
+  // Cài đặt Scoreboard Overlay
+  const [sbTheme, setSbTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("scoreboard-theme") || "default";
+    }
+    return "default";
+  });
+  const [sbShowTournament, setSbShowTournament] = useState(() => {
+    if (typeof window !== "undefined") {
+      const val = localStorage.getItem("scoreboard-show-tournament");
+      return val === null ? true : val === "true";
+    }
+    return true;
+  });
+  const [sbShowMatchCode, setSbShowMatchCode] = useState(() => {
+    if (typeof window !== "undefined") {
+      const val = localStorage.getItem("scoreboard-show-matchcode");
+      return val === null ? true : val === "true";
+    }
+    return true;
+  });
+
+  const handleSbThemeChange = (val: string) => {
+    setSbTheme(val);
+    localStorage.setItem("scoreboard-theme", val);
+  };
+
+  const handleSbShowTournamentToggle = () => {
+    const nextVal = !sbShowTournament;
+    setSbShowTournament(nextVal);
+    localStorage.setItem("scoreboard-show-tournament", String(nextVal));
+  };
+
+  const handleSbShowMatchCodeToggle = () => {
+    const nextVal = !sbShowMatchCode;
+    setSbShowMatchCode(nextVal);
+    localStorage.setItem("scoreboard-show-matchcode", String(nextVal));
+  };
+
   const [activeTab, setActiveTab] = useState<
-    "stats" | "admin" | "manager" | "info" | "groups"
+    "stats" | "admin" | "manager" | "info" | "groups" | "settings"
   >(() => {
     if (user?.role === "admin") return "admin";
     if (user?.role === "manager") return "manager";
@@ -282,6 +327,17 @@ export default function Profile() {
             Nhóm
           </button>
         )}
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${
+            activeTab === "settings"
+              ? "bg-blue-500 text-white"
+              : "bg-card text-muted-foreground border border-border"
+          }`}
+          data-testid="button-tab-settings"
+        >
+          Cài đặt
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -400,6 +456,123 @@ export default function Profile() {
                   {stats?.completedSchedules || 0}
                 </span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "settings" && (
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-4 space-y-5">
+          <div className="flex items-center gap-2 border-b border-border pb-2">
+            <Settings className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-foreground">Cấu hình giao diện & hiển thị</h3>
+          </div>
+
+          {/* App Theme Setting */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Giao diện ứng dụng
+            </h4>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  if (appTheme !== "light") toggleAppTheme();
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border text-sm font-semibold transition ${
+                  appTheme === "light"
+                    ? "bg-blue-50 border-blue-200 text-blue-600 dark:bg-slate-800 dark:border-slate-700"
+                    : "bg-background border-border text-foreground hover:bg-muted"
+                }`}
+              >
+                <Sun className="w-4 h-4" /> Giao diện Sáng
+              </button>
+              <button
+                onClick={() => {
+                  if (appTheme !== "dark") toggleAppTheme();
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border text-sm font-semibold transition ${
+                  appTheme === "dark"
+                    ? "bg-blue-600 border-blue-700 text-white"
+                    : "bg-background border-border text-foreground hover:bg-muted"
+                }`}
+              >
+                <Moon className="w-4 h-4" /> Giao diện Tối
+              </button>
+            </div>
+          </div>
+
+          {/* Default Scoreboard Theme Setting */}
+          <div className="space-y-2 pt-2 border-t border-border/60">
+            <div className="flex items-center gap-2">
+              <Palette className="w-4 h-4 text-orange-500" />
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                Chủ đề bảng điểm mặc định (Overlay)
+              </h4>
+            </div>
+            <select
+              value={sbTheme}
+              onChange={(e) => handleSbThemeChange(e.target.value)}
+              className="w-full bg-background border border-border rounded-xl p-2.5 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="default">Sáng (Mặc định)</option>
+              <option value="dark">Sleek Tối (Dark)</option>
+              <option value="cyberpunk">Cyberpunk Neon (Cyan/Pink)</option>
+              <option value="retro">Retro Arcade (Monospace/Yellow)</option>
+              <option value="glassmorphism">Glassmorphism (Kính mờ)</option>
+              <option value="minimal">Minimal Bar (Thanh ngang gọn)</option>
+              <option value="dali-sport">Dali Sport (Layout biamanhbeo.top)</option>
+            </select>
+            <p className="text-[10px] text-muted-foreground">
+              Đây là giao diện mặc định được sử dụng khi bạn truy cập trang `/match-overlay/:id` mà không chỉ định tham số `theme` trong URL.
+            </p>
+          </div>
+
+          {/* Scoreboard Overlay Toggles */}
+          <div className="space-y-3 pt-3 border-t border-border/60">
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Thông tin hiển thị trên bảng điểm
+            </h4>
+            
+            <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
+              <div>
+                <span className="text-sm font-semibold text-foreground">Hiển thị tên giải đấu</span>
+                <p className="text-[10px] text-muted-foreground">
+                  Hiện tên giải đấu trên cùng của bảng điểm nếu có
+                </p>
+              </div>
+              <button
+                onClick={handleSbShowTournamentToggle}
+                className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 focus:outline-none ${
+                  sbShowTournament ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-700"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+                    sbShowTournament ? "translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
+              <div>
+                <span className="text-sm font-semibold text-foreground">Hiển thị mã trận đấu</span>
+                <p className="text-[10px] text-muted-foreground">
+                  Hiện Bảng đấu, Vòng đấu và Số thứ tự trận đấu
+                </p>
+              </div>
+              <button
+                onClick={handleSbShowMatchCodeToggle}
+                className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 focus:outline-none ${
+                  sbShowMatchCode ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-700"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+                    sbShowMatchCode ? "translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </div>

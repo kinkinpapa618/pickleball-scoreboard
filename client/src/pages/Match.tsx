@@ -95,8 +95,40 @@ export default function Match() {
   // Guard ref to prevent concurrent match creation (race condition)
   const isCreatingRef = useRef(false);
 
+  // Cấu hình Tournament & Match Code
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [tournamentName, setTournamentName] = useState("");
+  const [matchCode, setMatchCode] = useState("");
+
+  const handleSaveConfig = async () => {
+    if (currentMatchId > 0) {
+      try {
+        await updateMatch.mutateAsync({
+          id: currentMatchId,
+          data: {
+            tournamentName,
+            matchCode,
+          },
+        });
+        setShowConfigModal(false);
+      } catch (e) {
+        console.error("Failed to update tournament info:", e);
+        alert("Lỗi khi cập nhật cấu hình giải đấu");
+      }
+    } else {
+      setShowConfigModal(false);
+    }
+  };
+
   useEffect(() => {
     if (!serverMatch) return;
+
+    if (serverMatch.tournamentName) {
+      setTournamentName(serverMatch.tournamentName);
+    }
+    if (serverMatch.matchCode) {
+      setMatchCode(serverMatch.matchCode);
+    }
 
     if (serverMatch.status === "finished" && serverMatch.winnerTeam) {
       if (state.winner !== serverMatch.winnerTeam) {
@@ -212,6 +244,8 @@ export default function Match() {
             status: "live",
             winningScore,
             type: matchType,
+            tournamentName,
+            matchCode,
           });
           matchId = newMatch.id;
           matchIdRef.current = matchId;
@@ -302,6 +336,8 @@ export default function Match() {
             status: "live",
             winningScore,
             type: matchType,
+            tournamentName,
+            matchCode,
           });
           matchId = newMatch.id;
           matchIdRef.current = matchId;
@@ -743,15 +779,31 @@ export default function Match() {
           />
         </section>
       <header className="px-2 py-1.5 bg-card/90 backdrop-blur-xl border-b border-border flex items-center justify-between sticky top-0 z-50 flex-shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setLocation("/")}
-          className="text-muted-foreground hover:text-foreground h-8 w-8 bg-muted hover:bg-muted/80 rounded-lg"
-          data-testid="button-home"
-        >
-          <Home className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocation("/")}
+            className="text-muted-foreground hover:text-foreground h-8 w-8 bg-muted hover:bg-muted/80 rounded-lg"
+            data-testid="button-home"
+          >
+            <Home className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setTournamentName(serverMatch?.tournamentName || "");
+              setMatchCode(serverMatch?.matchCode || "");
+              setShowConfigModal(true);
+            }}
+            className="text-muted-foreground hover:text-orange-500 h-8 w-8 bg-muted hover:bg-orange-500/10 rounded-lg"
+            title="Cấu hình giải đấu và mã trận"
+            data-testid="button-config-tournament"
+          >
+            <Trophy className="w-4 h-4 text-orange-500" />
+          </Button>
+        </div>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 px-2.5 py-1 bg-muted rounded-md border border-border">
             <button
@@ -1144,6 +1196,58 @@ export default function Match() {
               className="w-full bg-gradient-to-r from-[#FF5722] to-[#FF9800] hover:from-[#FF7043] hover:to-[#FFB74D] text-white font-black italic h-12 rounded-xl shadow-lg shadow-orange-500/30 animate-pulse"
             >
               <Layers className="w-5 h-5 mr-2" /> CHI TIẾT TRẬN ĐẤU
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tournament & Match Code Config Modal */}
+      <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
+        <DialogContent className="max-w-sm rounded-2xl p-5 bg-card border border-border">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-foreground">
+              Cấu hình giải đấu & mã trận
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">
+                Tên giải đấu
+              </label>
+              <input
+                type="text"
+                value={tournamentName}
+                onChange={(e) => setTournamentName(e.target.value)}
+                placeholder="GIẢI PICKLEBALL DALI SPORT 2026"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">
+                Mã trận đấu
+              </label>
+              <input
+                type="text"
+                value={matchCode}
+                onChange={(e) => setMatchCode(e.target.value)}
+                placeholder="Bảng A - Vòng 1 - Trận 2"
+                className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2.5 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfigModal(false)}
+              className="flex-1 py-2.5 rounded-xl border border-border font-bold text-sm"
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleSaveConfig}
+              className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-sm shadow-sm"
+            >
+              Lưu thay đổi
             </Button>
           </div>
         </DialogContent>

@@ -50,10 +50,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!match) {
       return res.status(404).json({ message: "Không tìm thấy trận đấu" });
     }
+
+    // Lấy thông tin giải đấu và mã trận từ database hoặc fallback tính toán
+    let tournamentName = match.tournamentName || "";
+    let matchCode = match.matchCode || "";
+
+    if (!tournamentName || !matchCode) {
+      try {
+        const tMatch = await storage.getTournamentMatchByMatchId(id);
+        if (tMatch) {
+          if (!tournamentName) {
+            const tournament = await storage.getTournament(tMatch.tournamentId);
+            if (tournament) {
+              tournamentName = tournament.name;
+            }
+          }
+
+          if (!matchCode) {
+            const parts = [];
+            if (tMatch.groupName) {
+              parts.push(`Bảng ${tMatch.groupName}`);
+            }
+            if (tMatch.round) {
+              parts.push(`Vòng ${tMatch.round}`);
+            }
+            if (tMatch.matchOrder) {
+              parts.push(`Trận ${tMatch.matchOrder}`);
+            }
+            matchCode = parts.join(" - ");
+          }
+        }
+      } catch (error) {
+        console.error(`[GET /api/matches/${id}] Failed to fetch tournament details fallback:`, error);
+      }
+    }
     
     // Trận đấu công khai được xem (MatchView), nhưng không trả về refereeId cho client
     const { refereeId, ...publicMatch } = match;
-    res.json(publicMatch);
+    res.json({
+      ...publicMatch,
+      tournamentName,
+      matchCode,
+    });
   });
 
   // 4b. Lấy trận đấu bằng token (dành cho trọng tài truy cập qua link)
@@ -112,11 +150,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timeouts,
       stacking,
       penalties,
+      tournamentName,
+      matchCode,
     } = req.body;
 
     const updateData: any = {};
     if (status !== undefined) updateData.status = status;
     if (winnerTeam !== undefined) updateData.winnerTeam = winnerTeam;
+    if (tournamentName !== undefined) updateData.tournamentName = tournamentName;
+    if (matchCode !== undefined) updateData.matchCode = matchCode;
     if (endTime !== undefined) {
       // Convert ISO string to Date object for drizzle
       const dateVal = typeof endTime === 'string' ? new Date(endTime) : endTime;
@@ -988,9 +1030,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const refereeId = isGroupMember ? user.id : (tournamentMatch.refereeId || user.id);
 
+      // Lấy thông tin tournament để điền sẵn vào match
+      const tournament = await storage.getTournament(tournamentMatch.tournamentId);
+      const parts = [];
+      if (tournamentMatch.groupName) parts.push(`Bảng ${tournamentMatch.groupName}`);
+      if (tournamentMatch.round) parts.push(`Vòng ${tournamentMatch.round}`);
+      if (tournamentMatch.matchOrder) parts.push(`Trận ${tournamentMatch.matchOrder}`);
+      const calculatedMatchCode = parts.join(" - ");
+
       const createdMatch = await storage.createMatch({
         ...matchResult.data,
         refereeId,
+        tournamentName: tournament?.name || "",
+        matchCode: calculatedMatchCode,
       });
 
       await storage.updateTournamentMatch(matchId, { 

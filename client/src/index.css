@@ -51,6 +51,72 @@
   --radius: 0.75rem;
 }
 
+.dark {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  
+  --card: 222 47% 12%;
+  --card-foreground: 210 40% 98%;
+  --card-border: 217.2 32.6% 17.5%;
+
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+  --popover-border: 217.2 32.6% 17.5%;
+  
+  --primary: 210 40% 98%;
+  --primary-foreground: 222 47% 11%;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 72 100% 50%;
+  --accent-foreground: 0 0% 0%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 72 100% 50%;
+
+  --sidebar: 222 47% 11%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-border: 217.2 32.6% 17.5%;
+  --sidebar-ring: 72 100% 50%;
+  --sidebar-primary: 210 40% 98%;
+  --sidebar-primary-foreground: 222 47% 11%;
+  --sidebar-accent: 217.2 32.6% 17.5%;
+  --sidebar-accent-foreground: 210 40% 98%;
+}
+
+/* Enforce overlay page background transparency */
+html:has(#overlay-root),
+body:has(#overlay-root),
+#overlay-root,
+.overlay-page-bg {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Prevent application light-mode styles from overriding white text colors on overlay pages */
+#overlay-root .text-white,
+#overlay-root .text-slate-100 {
+  color: rgb(255 255 255) !important;
+}
+#overlay-root .text-white\/40 {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+#overlay-root .text-white\/60 {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+#overlay-root .text-white\/20 {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+
 @layer base {
   body {
     @apply bg-background text-foreground font-body antialiased;
