@@ -99,6 +99,7 @@ export default function Match() {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [tournamentName, setTournamentName] = useState("");
   const [matchCode, setMatchCode] = useState("");
+  const [matchTheme, setMatchTheme] = useState("default");
 
   const handleSaveConfig = async () => {
     if (currentMatchId > 0) {
@@ -108,6 +109,7 @@ export default function Match() {
           data: {
             tournamentName,
             matchCode,
+            theme: matchTheme,
           },
         });
         setShowConfigModal(false);
@@ -128,6 +130,9 @@ export default function Match() {
     }
     if (serverMatch.matchCode) {
       setMatchCode(serverMatch.matchCode);
+    }
+    if (serverMatch.theme) {
+      setMatchTheme(serverMatch.theme);
     }
 
     if (serverMatch.status === "finished" && serverMatch.winnerTeam) {
@@ -246,6 +251,7 @@ export default function Match() {
             type: matchType,
             tournamentName,
             matchCode,
+            theme: matchTheme,
           });
           matchId = newMatch.id;
           matchIdRef.current = matchId;
@@ -338,6 +344,7 @@ export default function Match() {
             type: matchType,
             tournamentName,
             matchCode,
+            theme: matchTheme,
           });
           matchId = newMatch.id;
           matchIdRef.current = matchId;
@@ -1233,6 +1240,24 @@ export default function Match() {
                 placeholder="Bảng A - Vòng 1 - Trận 2"
                 className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">
+                Chủ đề bảng điểm
+              </label>
+              <select
+                value={matchTheme}
+                onChange={(e) => setMatchTheme(e.target.value)}
+                className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="default">Sáng (Mặc định)</option>
+                <option value="dark">Tối (Dark)</option>
+                <option value="cyberpunk">Cyberpunk Neon</option>
+                <option value="retro">Retro Arcade</option>
+                <option value="glassmorphism">Glassmorphism (Kính mờ)</option>
+                <option value="minimal">Minimal Bar (Thanh ngang)</option>
+                <option value="dali-sport">Dali Sport (Biamanhbeo)</option>
+              </select>
             </div>
           </div>
           <div className="flex gap-2.5 mt-4">

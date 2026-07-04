@@ -152,6 +152,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       penalties,
       tournamentName,
       matchCode,
+      theme,
+      showTournament,
+      showMatchCode,
     } = req.body;
 
     const updateData: any = {};
@@ -159,6 +162,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (winnerTeam !== undefined) updateData.winnerTeam = winnerTeam;
     if (tournamentName !== undefined) updateData.tournamentName = tournamentName;
     if (matchCode !== undefined) updateData.matchCode = matchCode;
+    if (theme !== undefined) updateData.theme = theme;
+    if (showTournament !== undefined) updateData.showTournament = showTournament;
+    if (showMatchCode !== undefined) updateData.showMatchCode = showMatchCode;
     if (endTime !== undefined) {
       // Convert ISO string to Date object for drizzle
       const dateVal = typeof endTime === 'string' ? new Date(endTime) : endTime;

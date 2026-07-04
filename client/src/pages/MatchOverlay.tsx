@@ -69,6 +69,21 @@ export default function MatchOverlay() {
     }
   }, [isCompleted]);
 
+  // Live database settings synchronization for real-time overlay updates
+  useEffect(() => {
+    if (!match) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("theme") && match.theme && match.theme !== theme) {
+      setTheme(match.theme);
+    }
+    if (params.get("showTournament") === null && match.showTournament !== undefined && match.showTournament !== showTournament) {
+      setShowTournament(match.showTournament);
+    }
+    if (params.get("showMatch") === null && match.showMatchCode !== undefined && match.showMatchCode !== showMatchCode) {
+      setShowMatchCode(match.showMatchCode);
+    }
+  }, [match?.theme, match?.showTournament, match?.showMatchCode, showTournament, showMatchCode, theme]);
+
   // HUD timer auto-hide
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -130,10 +145,10 @@ export default function MatchOverlay() {
     const showFooterVal = showMatchCode && (match.matchCode || "VÒNG ĐẤU");
 
     return (
-      <div id="overlay-root" className={`h-screen w-full bg-transparent font-sans overflow-hidden select-none transition-opacity duration-1000 flex items-center justify-center ${
+      <div id="overlay-root" className={`h-screen w-full bg-transparent font-sans overflow-hidden select-none transition-opacity duration-1000 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}>
-        <div className="relative w-[580px] h-[140px]">
+        <div className="absolute top-[15px] left-[15px] w-[580px] h-[140px]">
           
           {/* Header Tab */}
           {showHeaderVal && (
