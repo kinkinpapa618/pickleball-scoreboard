@@ -16,6 +16,73 @@ import { processRally } from "../client/src/utils/badmintonLogic";
 
 const startingMatches = new Set<number>();
 
+const sportconnectCache = new Map<string, { data: any[]; timestamp: number }>();
+
+async function getSportconnectMatchScore(
+  tourId: string,
+  matchCode: string
+): Promise<{ score1: number; score2: number } | null> {
+  const now = Date.now();
+  const cacheKey = tourId;
+  const cached = sportconnectCache.get(cacheKey);
+
+  let bracketDataList: any[] = [];
+
+  // Cache for 4 seconds to prevent excessive scraping requests
+  if (cached && now - cached.timestamp < 4000) {
+    bracketDataList = cached.data;
+  } else {
+    try {
+      const url = `https://sportconnect.vn/Tournament/LoadMapData?tourId=${tourId}&includeHtml=true`;
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "application/json",
+        },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const mapData = json.MapData;
+        if (mapData) {
+          const regex = /var bracketData\s*=\s*({[\s\S]*?});/g;
+          let matchResult;
+          while ((matchResult = regex.exec(mapData)) !== null) {
+            bracketDataList.push(JSON.parse(matchResult[1]));
+          }
+          sportconnectCache.set(cacheKey, {
+            data: bracketDataList,
+            timestamp: now,
+          });
+        }
+      }
+    } catch (error) {
+      console.error(
+        `[SportConnect Live Sync] Error fetching tour ${tourId}:`,
+        error
+      );
+      if (cached) bracketDataList = cached.data;
+    }
+  }
+
+  for (const stage of bracketDataList) {
+    const matchesList = stage.match || [];
+    for (const m of matchesList) {
+      const md = m.MatchData || {};
+      if (md.MatchCode === matchCode) {
+        return {
+          score1:
+            md.Team1Score !== undefined ? md.Team1Score : m.opponent1?.score || 0,
+          score2:
+            md.Team2Score !== undefined ? md.Team2Score : m.opponent2?.score || 0,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // 1. Lấy danh sách người chơi
   // Sửa lỗi: Thay 'req' bằng '_' để báo hiệu biến này không dùng đến
@@ -49,6 +116,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const match = await storage.getMatch(id);
     if (!match) {
       return res.status(404).json({ message: "Không tìm thấy trận đấu" });
+    }
+
+    // Nếu trận đấu được liên kết với SportConnect, thực hiện đồng bộ tỉ số thời gian thực (realtime)
+    if (match.sportconnectTourId && match.sportconnectMatchCode) {
+      try {
+        const liveScore = await getSportconnectMatchScore(
+          match.sportconnectTourId,
+          match.sportconnectMatchCode
+        );
+        if (liveScore) {
+          if (
+            match.scoreTeam1 !== liveScore.score1 ||
+            match.scoreTeam2 !== liveScore.score2
+          ) {
+            match.scoreTeam1 = liveScore.score1;
+            match.scoreTeam2 = liveScore.score2;
+
+            // Cập nhật lại trong cơ sở dữ liệu để đồng bộ lâu dài
+            storage
+              .updateMatch(id, {
+                scoreTeam1: liveScore.score1,
+                scoreTeam2: liveScore.score2,
+              })
+              .catch((err) =>
+                console.error("Failed to persist sportconnect scores:", err)
+              );
+          }
+        }
+      } catch (err) {
+        console.error("SportConnect realtime sync failed:", err);
+      }
     }
 
     // Lấy thông tin giải đấu và mã trận từ database hoặc fallback tính toán
@@ -155,6 +253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       theme,
       showTournament,
       showMatchCode,
+      sportconnectTourId,
+      sportconnectMatchCode,
     } = req.body;
 
     const updateData: any = {};
@@ -165,6 +265,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (theme !== undefined) updateData.theme = theme;
     if (showTournament !== undefined) updateData.showTournament = showTournament;
     if (showMatchCode !== undefined) updateData.showMatchCode = showMatchCode;
+    if (sportconnectTourId !== undefined) updateData.sportconnectTourId = sportconnectTourId;
+    if (sportconnectMatchCode !== undefined) updateData.sportconnectMatchCode = sportconnectMatchCode;
     if (endTime !== undefined) {
       // Convert ISO string to Date object for drizzle
       const dateVal = typeof endTime === 'string' ? new Date(endTime) : endTime;

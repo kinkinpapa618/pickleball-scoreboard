@@ -101,6 +101,8 @@ export default function Match() {
   const [matchCode, setMatchCode] = useState("");
   const [matchTheme, setMatchTheme] = useState("default");
   const [isConfigInitialized, setIsConfigInitialized] = useState(false);
+  const [sportconnectTourId, setSportconnectTourId] = useState("");
+  const [sportconnectMatchCode, setSportconnectMatchCode] = useState("");
 
   const handleSaveConfig = async () => {
     if (currentMatchId > 0) {
@@ -111,6 +113,8 @@ export default function Match() {
             tournamentName,
             matchCode,
             theme: matchTheme,
+            sportconnectTourId: sportconnectTourId || null,
+            sportconnectMatchCode: sportconnectMatchCode || null,
           },
         });
         setShowConfigModal(false);
@@ -130,6 +134,8 @@ export default function Match() {
       setTournamentName(serverMatch.tournamentName || "");
       setMatchCode(serverMatch.matchCode || "");
       setMatchTheme(serverMatch.theme || "default");
+      setSportconnectTourId(serverMatch.sportconnectTourId || "");
+      setSportconnectMatchCode(serverMatch.sportconnectMatchCode || "");
       setIsConfigInitialized(true);
     }
 
@@ -1257,6 +1263,37 @@ export default function Match() {
                 <option value="minimal">Minimal Bar (Thanh ngang)</option>
                 <option value="dali-sport">Dali Sport (Biamanhbeo)</option>
               </select>
+            </div>
+            <div className="space-y-1.5 border-t border-border pt-3 mt-1">
+              <span className="text-xs font-black text-amber-500 uppercase tracking-wider block mb-1">
+                🔗 ĐỒNG BỘ REALTIME SPORTCONNECT
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Tour ID (Ví dụ: 3254)
+                  </label>
+                  <input
+                    type="text"
+                    value={sportconnectTourId}
+                    onChange={(e) => setSportconnectTourId(e.target.value)}
+                    placeholder="3254"
+                    className="w-full bg-muted border border-border rounded-xl p-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Mã trận (Ví dụ: V5-B3)
+                  </label>
+                  <input
+                    type="text"
+                    value={sportconnectMatchCode}
+                    onChange={(e) => setSportconnectMatchCode(e.target.value)}
+                    placeholder="V5-B3"
+                    className="w-full bg-muted border border-border rounded-xl p-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex gap-2.5 mt-4">

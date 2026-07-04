@@ -122,6 +122,8 @@ export const matches = pgTable("matches", {
   theme: text("theme").default("default"),
   showTournament: boolean("show_tournament").default(true),
   showMatchCode: boolean("show_match_code").default(true),
+  sportconnectTourId: text("sportconnect_tour_id"),
+  sportconnectMatchCode: text("sportconnect_match_code"),
 });
 
 // === 4. ZOD SCHEMAS (Để Validate Dữ liệu) ===
