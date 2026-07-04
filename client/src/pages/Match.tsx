@@ -100,9 +100,11 @@ export default function Match() {
   const [tournamentName, setTournamentName] = useState("");
   const [matchCode, setMatchCode] = useState("");
   const [matchTheme, setMatchTheme] = useState("default");
-  const [isConfigInitialized, setIsConfigInitialized] = useState(false);
-  const [sportconnectTourId, setSportconnectTourId] = useState("");
-  const [sportconnectMatchCode, setSportconnectMatchCode] = useState("");
+
+  // Temporary edit states inside the config modal to prevent overwrites from background refetches
+  const [editTournamentName, setEditTournamentName] = useState("");
+  const [editMatchCode, setEditMatchCode] = useState("");
+  const [editTheme, setEditTheme] = useState("default");
 
   const handleSaveConfig = async () => {
     if (currentMatchId > 0) {
@@ -110,11 +112,9 @@ export default function Match() {
         await updateMatch.mutateAsync({
           id: currentMatchId,
           data: {
-            tournamentName,
-            matchCode,
-            theme: matchTheme,
-            sportconnectTourId: sportconnectTourId || null,
-            sportconnectMatchCode: sportconnectMatchCode || null,
+            tournamentName: editTournamentName,
+            matchCode: editMatchCode,
+            theme: editTheme,
           },
         });
         setShowConfigModal(false);
@@ -123,6 +123,9 @@ export default function Match() {
         alert("Lỗi khi cập nhật cấu hình giải đấu");
       }
     } else {
+      setTournamentName(editTournamentName);
+      setMatchCode(editMatchCode);
+      setMatchTheme(editTheme);
       setShowConfigModal(false);
     }
   };
@@ -130,13 +133,14 @@ export default function Match() {
   useEffect(() => {
     if (!serverMatch) return;
 
-    if (!isConfigInitialized) {
-      setTournamentName(serverMatch.tournamentName || "");
-      setMatchCode(serverMatch.matchCode || "");
-      setMatchTheme(serverMatch.theme || "default");
-      setSportconnectTourId(serverMatch.sportconnectTourId || "");
-      setSportconnectMatchCode(serverMatch.sportconnectMatchCode || "");
-      setIsConfigInitialized(true);
+    if (serverMatch.tournamentName) {
+      setTournamentName(serverMatch.tournamentName);
+    }
+    if (serverMatch.matchCode) {
+      setMatchCode(serverMatch.matchCode);
+    }
+    if (serverMatch.theme) {
+      setMatchTheme(serverMatch.theme);
     }
 
     if (serverMatch.status === "finished" && serverMatch.winnerTeam) {
@@ -442,7 +446,6 @@ export default function Match() {
       // Reset game logic state
       resetState({ score1: 0, score2: 0 });
       matchIdRef.current = currentMatchId;
-      setIsConfigInitialized(false);
     }, [currentMatchId]);
 
   useEffect(() => {
@@ -805,8 +808,9 @@ export default function Match() {
             variant="ghost"
             size="icon"
             onClick={() => {
-              setTournamentName(serverMatch?.tournamentName || "");
-              setMatchCode(serverMatch?.matchCode || "");
+              setEditTournamentName(serverMatch?.tournamentName || tournamentName || "");
+              setEditMatchCode(serverMatch?.matchCode || matchCode || "");
+              setEditTheme(serverMatch?.theme || matchTheme || "default");
               setShowConfigModal(true);
             }}
             className="text-muted-foreground hover:text-orange-500 h-8 w-8 bg-muted hover:bg-orange-500/10 rounded-lg"
@@ -1228,8 +1232,8 @@ export default function Match() {
               </label>
               <input
                 type="text"
-                value={tournamentName}
-                onChange={(e) => setTournamentName(e.target.value)}
+                value={editTournamentName}
+                onChange={(e) => setEditTournamentName(e.target.value)}
                 placeholder="GIẢI PICKLEBALL DALI SPORT 2026"
                 className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -1240,8 +1244,8 @@ export default function Match() {
               </label>
               <input
                 type="text"
-                value={matchCode}
-                onChange={(e) => setMatchCode(e.target.value)}
+                value={editMatchCode}
+                onChange={(e) => setEditMatchCode(e.target.value)}
                 placeholder="Bảng A - Vòng 1 - Trận 2"
                 className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -1251,8 +1255,8 @@ export default function Match() {
                 Chủ đề bảng điểm
               </label>
               <select
-                value={matchTheme}
-                onChange={(e) => setMatchTheme(e.target.value)}
+                value={editTheme}
+                onChange={(e) => setEditTheme(e.target.value)}
                 className="w-full bg-muted border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="default">Sáng (Mặc định)</option>
@@ -1263,37 +1267,6 @@ export default function Match() {
                 <option value="minimal">Minimal Bar (Thanh ngang)</option>
                 <option value="dali-sport">Dali Sport (Biamanhbeo)</option>
               </select>
-            </div>
-            <div className="space-y-1.5 border-t border-border pt-3 mt-1">
-              <span className="text-xs font-black text-amber-500 uppercase tracking-wider block mb-1">
-                🔗 ĐỒNG BỘ REALTIME SPORTCONNECT
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
-                    Tour ID (Ví dụ: 3254)
-                  </label>
-                  <input
-                    type="text"
-                    value={sportconnectTourId}
-                    onChange={(e) => setSportconnectTourId(e.target.value)}
-                    placeholder="3254"
-                    className="w-full bg-muted border border-border rounded-xl p-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
-                    Mã trận (Ví dụ: V5-B3)
-                  </label>
-                  <input
-                    type="text"
-                    value={sportconnectMatchCode}
-                    onChange={(e) => setSportconnectMatchCode(e.target.value)}
-                    placeholder="V5-B3"
-                    className="w-full bg-muted border border-border rounded-xl p-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
             </div>
           </div>
           <div className="flex gap-2.5 mt-4">
