@@ -8,7 +8,8 @@
     "db:push": "drizzle-kit push",
     "start": "NODE_ENV=production node dist/index.cjs",
     "build:server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.cjs --external:pg --external:pg-native --external:connect-pg-simple --external:@neondatabase/serverless --external:canvas --external:lightningcss --external:esbuild --external:vite --format=cjs",
-    "test": "vitest --environment jsdom"
+    "test": "vitest --environment jsdom",
+    "sync:sportconnect": "tsx server/scripts/sync-sportconnect.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
