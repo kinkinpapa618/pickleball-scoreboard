@@ -148,17 +148,25 @@ export default function MatchOverlay() {
       <div id="overlay-root" className={`h-screen w-full bg-transparent font-sans overflow-hidden select-none transition-opacity duration-1000 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}>
+        <style>{`
+          body {
+            overflow: hidden !important;
+          }
+          ::-webkit-scrollbar {
+            display: none !important;
+          }
+        `}</style>
         <div className="absolute top-[15px] left-[15px] w-[580px] h-[140px]">
           
           {/* Header Tab */}
           {showHeaderVal && (
-            <div className="absolute top-[5px] left-[35px] bg-[#545454] text-[#e2e2e2] text-[12px] font-extrabold px-[20px] pt-[6px] pb-[16px] rounded-t-[10px] z-10 uppercase tracking-[0.5px] whitespace-nowrap">
+            <div className="absolute top-[5px] left-[35px] bg-[#b7b7b7] text-[#414141] text-[12px] font-extrabold px-[20px] pt-[6px] pb-[16px] rounded-t-[10px] z-10 uppercase tracking-[0.5px] whitespace-nowrap">
               {match.tournamentName || "GIẢI PICKLEBALL DALI SPORT 2026"}
             </div>
           )}
 
           {/* Main Board */}
-          <div className="absolute top-[32px] left-0 w-full h-[76px] bg-[#181818] rounded-[12px] flex z-20 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+          <div className="absolute top-[32px] left-0 w-full h-[76px] bg-[#414141] rounded-[12px] flex z-20 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
             
             {/* Logo Area */}
             <div className="w-[120px] flex items-center justify-center p-[5px]">
@@ -194,6 +202,9 @@ export default function MatchOverlay() {
                 </div>
               </div>
 
+              {/* Faint Divider Line */}
+              <div className="h-px bg-white/10 w-full" />
+
               {/* Row Team 2 */}
               <div className="flex justify-between items-center h-[34px]">
                 <div className="text-white text-[16px] font-black uppercase tracking-wide truncate max-w-[280px]">
@@ -217,7 +228,7 @@ export default function MatchOverlay() {
 
             {/* Sets Area (Only for BO3/BO5) */}
             {(match.mode === "bo3" || match.mode === "bo5") && (
-              <div className="w-[30px] bg-amber-600/90 flex flex-col border-r border-black/20">
+              <div className="w-[30px] bg-black/90 flex flex-col border-r border-black/20">
                 <div className="flex-1 flex items-center justify-center text-white text-[16px] font-black border-b border-black/20">
                   {match.gamesWonTeam1}
                 </div>
@@ -229,10 +240,10 @@ export default function MatchOverlay() {
 
             {/* Score Area */}
             <div className="w-[52px] bg-[#009a44] rounded-r-[12px] flex flex-col">
-              <div className="flex-1 flex items-center justify-center text-white text-[26px] font-black border-b border-black/25">
+              <div className="flex-1 flex items-center justify-center text-white text-[25px] font-black border-b border-black/25">
                 {match.scoreTeam1}
               </div>
-              <div className="flex-1 flex items-center justify-center text-white text-[26px] font-black">
+              <div className="flex-1 flex items-center justify-center text-white text-[25px] font-black">
                 {match.scoreTeam2}
               </div>
             </div>
@@ -241,7 +252,7 @@ export default function MatchOverlay() {
 
           {/* Footer Tab */}
           {showFooterVal && (
-            <div className="absolute top-[96px] left-[35px] bg-[#545454] text-[#c0c0c0] text-[12px] font-semibold px-[24px] pt-[14px] pb-[6px] rounded-b-[10px] z-10 uppercase whitespace-nowrap">
+            <div className="absolute top-[96px] left-[35px] bg-[#b7b7b7] text-[#414141] text-[12px] font-semibold px-[24px] pt-[14px] pb-[6px] rounded-b-[10px] z-10 uppercase whitespace-nowrap">
               {match.matchCode || "VÒNG 1 | BẢNG A"}
             </div>
           )}
