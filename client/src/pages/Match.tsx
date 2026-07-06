@@ -83,17 +83,6 @@ export default function Match() {
   const matchTypeFromUrl = search.get("type") as "singles" | "doubles" | null;
 
   const { data: serverMatch } = useMatch(currentMatchId);
-  const isBO3 = serverMatch?.mode === "bo3";
-  const isBO5 = serverMatch?.mode === "bo5";
-  const targetGames = isBO5 ? 3 : isBO3 ? 2 : 1;
-
-  const currentGamesWon1 = serverMatch?.gamesWonTeam1 || 0;
-  const currentGamesWon2 = serverMatch?.gamesWonTeam2 || 0;
-
-  const nextGamesWon1 = currentGamesWon1 + (state.winner === 1 ? 1 : 0);
-  const nextGamesWon2 = currentGamesWon2 + (state.winner === 2 ? 1 : 0);
-  const isSeriesOver = state.winner ? (nextGamesWon1 >= targetGames || nextGamesWon2 >= targetGames) : false;
-
   const matchType = matchTypeFromUrl || (serverMatch?.type as "singles" | "doubles") || "doubles";
 
   const { 
@@ -107,6 +96,17 @@ export default function Match() {
     swapPositions,
     toggleServerHand 
   } = useGameLogic(winningScore, initialServer, names, matchType);
+
+  const isBO3 = serverMatch?.mode === "bo3";
+  const isBO5 = serverMatch?.mode === "bo5";
+  const targetGames = isBO5 ? 3 : isBO3 ? 2 : 1;
+
+  const currentGamesWon1 = serverMatch?.gamesWonTeam1 || 0;
+  const currentGamesWon2 = serverMatch?.gamesWonTeam2 || 0;
+
+  const nextGamesWon1 = currentGamesWon1 + (state.winner === 1 ? 1 : 0);
+  const nextGamesWon2 = currentGamesWon2 + (state.winner === 2 ? 1 : 0);
+  const isSeriesOver = state.winner ? (nextGamesWon1 >= targetGames || nextGamesWon2 >= targetGames) : false;
 
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
