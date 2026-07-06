@@ -882,21 +882,6 @@ export default function Match() {
           >
             <Home className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setEditTournamentName(serverMatch?.tournamentName || tournamentName || "");
-              setEditMatchCode(serverMatch?.matchCode || matchCode || "");
-              setEditTheme(serverMatch?.theme || matchTheme || "default");
-              setShowConfigModal(true);
-            }}
-            className="text-muted-foreground hover:text-orange-500 h-8 w-8 bg-muted hover:bg-orange-500/10 rounded-lg"
-            title="Cấu hình giải đấu và mã trận"
-            data-testid="button-config-tournament"
-          >
-            <Trophy className="w-4 h-4 text-orange-500" />
-          </Button>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 px-2.5 py-1 bg-muted rounded-md border border-border">
