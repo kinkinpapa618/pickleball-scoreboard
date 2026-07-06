@@ -56,14 +56,12 @@ export default function RefereeTools() {
 
   const [showBulkConfigModal, setShowBulkConfigModal] = useState(false);
   const [bulkTournamentName, setBulkTournamentName] = useState("");
-  const [bulkMatchCode, setBulkMatchCode] = useState("");
   const [bulkTheme, setBulkTheme] = useState("dali-sport");
 
   const handleSaveBulkConfig = async () => {
     try {
       await apiRequest("POST", "/api/matches/bulk-update", {
         tournamentName: bulkTournamentName,
-        matchCode: bulkMatchCode,
         theme: bulkTheme,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
@@ -104,6 +102,7 @@ export default function RefereeTools() {
   const [firstServer, setFirstServer] = useState<1 | 2>(1);
   const [matchType, setMatchType] = useState<"singles" | "doubles">("doubles");
   const [showCoinToss, setShowCoinToss] = useState(false);
+  const [matchCodeInput, setMatchCodeInput] = useState("");
 
   const [playerInput, setPlayerInput] = useState<string>("");
 
@@ -262,6 +261,7 @@ export default function RefereeTools() {
         serverNumber: 1,
         type: matchType,
         mode: boMode,
+        matchCode: matchCodeInput,
       });
 
       const params = new URLSearchParams({
@@ -463,6 +463,19 @@ export default function RefereeTools() {
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-1.5 pt-2">
+                <label className="text-[9px] font-bold text-muted-foreground uppercase">
+                  Mã trận đấu / Vòng đấu
+                </label>
+                <textarea
+                  value={matchCodeInput}
+                  onChange={(e) => setMatchCodeInput(e.target.value)}
+                  placeholder="Ví dụ: VÒNG 1 | BẢNG A..."
+                  className="w-full bg-muted border border-border rounded-xl p-2.5 text-xs text-foreground focus:border-orange-500 outline-none transition-all resize-none h-16"
+                />
+              </div>
+
               <Button
                 onClick={() => setShowCoinToss(true)}
                 className="w-full bg-muted border border-border text-blue-500 font-black text-[10px] py-3 rounded-xl gap-4 hover:bg-accent transition-all"
@@ -898,18 +911,6 @@ export default function RefereeTools() {
                 value={bulkTournamentName}
                 onChange={(e) => setBulkTournamentName(e.target.value)}
                 placeholder="Nhập tên giải đấu..."
-                className="bg-muted border-none h-11 rounded-xl focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">
-                Mã trận đấu / Vòng đấu
-              </label>
-              <Input
-                value={bulkMatchCode}
-                onChange={(e) => setBulkMatchCode(e.target.value)}
-                placeholder="Nhập mã trận/vòng đấu..."
                 className="bg-muted border-none h-11 rounded-xl focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground"
               />
             </div>
