@@ -481,6 +481,14 @@ export default function MatchOverlay() {
     <div id="overlay-root" className={`h-screen w-full bg-transparent font-sans overflow-hidden select-none transition-opacity duration-1000 ${
       visible ? "opacity-100" : "opacity-0 pointer-events-none"
     }`}>
+      <style>{`
+        body {
+          overflow: hidden !important;
+        }
+        ::-webkit-scrollbar {
+          display: none !important;
+        }
+      `}</style>
       <div 
         className={`absolute top-[15px] left-[15px] w-[420px] overflow-hidden flex flex-col transition-all duration-300 ${wrapperClass}`}
         style={{ height: hasHeader ? "126px" : "100px" }}

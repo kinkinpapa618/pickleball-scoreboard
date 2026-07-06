@@ -224,3 +224,12 @@ body:has(#overlay-root),
 .bg-background {
   background-color: transparent;
 }
+
+/* Hide scrollbars globally on all pages and components */
+::-webkit-scrollbar {
+  display: none !important;
+}
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
