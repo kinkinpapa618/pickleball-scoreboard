@@ -112,6 +112,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Cập nhật cấu hình hàng loạt cho tất cả trận đấu
+  app.post("/api/matches/bulk-update", async (req, res) => {
+    const { tournamentName, matchCode, theme } = req.body;
+    
+    const updateData: any = {};
+    if (tournamentName !== undefined) updateData.tournamentName = tournamentName;
+    if (matchCode !== undefined) updateData.matchCode = matchCode;
+    if (theme !== undefined) updateData.theme = theme;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
+    }
+
+    try {
+      await storage.bulkUpdateMatches(updateData);
+      res.json({ success: true, message: "Đã cập nhật cấu hình cho toàn bộ trận đấu" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // 5. Cập nhật trận đấu (Dành cho Livestream/Scoreboard)
   app.patch("/api/matches/:id", async (req, res) => {
     const id = parseInt(req.params.id as string);

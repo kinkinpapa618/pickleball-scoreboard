@@ -1,4 +1,12 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,6 +52,27 @@ export default function RefereeTools() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const createMatch = useCreateMatch();
+  const queryClient = useQueryClient();
+
+  const [showBulkConfigModal, setShowBulkConfigModal] = useState(false);
+  const [bulkTournamentName, setBulkTournamentName] = useState("");
+  const [bulkMatchCode, setBulkMatchCode] = useState("");
+  const [bulkTheme, setBulkTheme] = useState("dali-sport");
+
+  const handleSaveBulkConfig = async () => {
+    try {
+      await apiRequest("POST", "/api/matches/bulk-update", {
+        tournamentName: bulkTournamentName,
+        matchCode: bulkMatchCode,
+        theme: bulkTheme,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-matches"] });
+      setShowBulkConfigModal(false);
+    } catch (e) {
+      console.error("Failed to bulk update matches:", e);
+    }
+  };
 
   const isManager = user?.role === "manager" || user?.role === "admin";
   const isAdmin = user?.role === "admin";
@@ -478,9 +507,13 @@ export default function RefereeTools() {
                   {myMatchesData?.pagination.total || 0} trận đã ghi nhận
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <button
+                onClick={() => setShowBulkConfigModal(true)}
+                className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center hover:bg-blue-500/20 active:scale-95 transition"
+                title="Cấu hình tất cả trận đấu"
+              >
                 <Trophy className="w-4 h-4 text-blue-400" />
-              </div>
+              </button>
             </div>
 
             {/* Match List */}
@@ -563,7 +596,7 @@ export default function RefereeTools() {
                         {!hasWinner && isLive && (
                           <button
                             onClick={() => {
-                              window.open(`/match-overlay/${match.id}`, "_blank", "width=650,height=250");
+                              window.open(`/match-overlay/${match.id}?theme=dali-sport`, "_blank", "width=650,height=250");
                             }}
                             className="h-7 w-7 rounded-lg bg-emerald-600/80 text-white hover:bg-emerald-500 transition-all flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.3)]"
                             title="Mở Overlay Livestream"
@@ -848,6 +881,76 @@ export default function RefereeTools() {
         }}
         compact={true}
       />
+
+      <Dialog open={showBulkConfigModal} onOpenChange={setShowBulkConfigModal}>
+        <DialogContent className="max-w-sm rounded-2xl p-5 bg-card border border-border">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-foreground">
+              Cấu hình hàng loạt (Tất cả trận đấu)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">
+                Tên giải đấu
+              </label>
+              <Input
+                value={bulkTournamentName}
+                onChange={(e) => setBulkTournamentName(e.target.value)}
+                placeholder="Nhập tên giải đấu..."
+                className="bg-muted border-none h-11 rounded-xl focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">
+                Mã trận đấu / Vòng đấu
+              </label>
+              <Input
+                value={bulkMatchCode}
+                onChange={(e) => setBulkMatchCode(e.target.value)}
+                placeholder="Nhập mã trận/vòng đấu..."
+                className="bg-muted border-none h-11 rounded-xl focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">
+                Chủ đề bảng điểm mặc định
+              </label>
+              <select
+                value={bulkTheme}
+                onChange={(e) => setBulkTheme(e.target.value)}
+                className="w-full bg-muted border-none h-11 rounded-xl px-3 text-sm focus:outline-none focus:ring-0 text-foreground"
+              >
+                <option value="default">Sáng</option>
+                <option value="dark">Tối</option>
+                <option value="glassmorphism">Kính mờ</option>
+                <option value="cyberpunk">Cyberpunk</option>
+                <option value="retro">Retro</option>
+                <option value="minimal">Thanh ngang</option>
+                <option value="dali-sport">Dali Sport</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowBulkConfigModal(false)}
+                className="flex-1 h-11 rounded-xl font-bold text-muted-foreground"
+              >
+                HỦY
+              </Button>
+              <Button
+                onClick={handleSaveBulkConfig}
+                className="flex-1 h-11 rounded-xl bg-[#FF5722] hover:bg-[#FF7043] text-white font-bold"
+              >
+                LƯU TẤT CẢ
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

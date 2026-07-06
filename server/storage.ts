@@ -84,6 +84,7 @@ export interface IStorage {
   getOldMatchesBeyondPages(userId: number, pageLimit: number, perPage: number): Promise<Match[]>;
   createMatch(match: InsertMatch): Promise<Match>;
   updateMatch(id: number, data: Partial<Match>): Promise<Match>;
+  bulkUpdateMatches(data: Partial<Match>): Promise<void>;
   deleteMatch(id: number): Promise<void>;
 
   // Work Schedule methods
@@ -344,6 +345,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(matches.id, id))
       .returning();
     return updatedMatch;
+  }
+
+  async bulkUpdateMatches(data: Partial<Match>): Promise<void> {
+    await db
+      .update(matches)
+      .set(data);
   }
 
   async deleteMatch(id: number): Promise<void> {
