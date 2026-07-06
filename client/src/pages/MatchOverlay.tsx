@@ -190,12 +190,12 @@ export default function MatchOverlay() {
                 </div>
                 <div className="flex gap-[6px] items-center">
                   <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
-                    match.isServer1 && !isCompleted && match.serverNumber >= 1 
+                    match.isServer1 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch) 
                       ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" 
                       : "bg-[#333333]"
                   }`} />
                   <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
-                    match.isServer1 && !isCompleted && match.serverNumber === 2 
+                    match.isServer1 && !isCompleted && (match.serverNumber === 2 || match.isFirstServeOfMatch) 
                       ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" 
                       : "bg-[#333333]"
                   }`} />
@@ -212,12 +212,12 @@ export default function MatchOverlay() {
                 </div>
                 <div className="flex gap-[6px] items-center">
                   <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
-                    match.isServer2 && !isCompleted && match.serverNumber >= 1 
+                    match.isServer2 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch) 
                       ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" 
                       : "bg-[#333333]"
                   }`} />
                   <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
-                    match.isServer2 && !isCompleted && match.serverNumber === 2 
+                    match.isServer2 && !isCompleted && (match.serverNumber === 2 || match.isFirstServeOfMatch) 
                       ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" 
                       : "bg-[#333333]"
                   }`} />
@@ -306,7 +306,7 @@ export default function MatchOverlay() {
             </span>
             {match.isServer1 && !isCompleted && isDoubles && (
               <span className="text-[10px] font-black opacity-80">
-                {match.serverNumber === 1 ? "¹" : "²"}
+                {match.isFirstServeOfMatch ? "²" : (match.serverNumber === 1 ? "¹" : "²")}
               </span>
             )}
           </div>
@@ -342,7 +342,7 @@ export default function MatchOverlay() {
           }`}>
             {match.isServer2 && !isCompleted && isDoubles && (
               <span className="text-[10px] font-black opacity-80">
-                {match.serverNumber === 1 ? "¹" : "²"}
+                {match.isFirstServeOfMatch ? "²" : (match.serverNumber === 1 ? "¹" : "²")}
               </span>
             )}
             <span className="font-extrabold text-[12px] uppercase tracking-wide truncate">
@@ -518,10 +518,10 @@ export default function MatchOverlay() {
               {match.isServer1 && !isCompleted && isDoubles && (
                 <div className="flex flex-col gap-[3px] justify-center ml-auto mr-1">
                   <div className={`w-[12px] h-[5px] rounded-[2px] transition-all duration-300 ${
-                    match.serverNumber >= 1 ? serverDotActiveT1Class : serverDotInactiveT1Class
+                    (match.serverNumber >= 1 || match.isFirstServeOfMatch) ? serverDotActiveT1Class : serverDotInactiveT1Class
                   }`} />
                   <div className={`w-[12px] h-[5px] rounded-[2px] transition-all duration-300 ${
-                    match.serverNumber === 2 ? serverDotActiveT1Class : serverDotInactiveT1Class
+                    (match.serverNumber === 2 || match.isFirstServeOfMatch) ? serverDotActiveT1Class : serverDotInactiveT1Class
                   }`} />
                 </div>
               )}
@@ -536,10 +536,10 @@ export default function MatchOverlay() {
               {match.isServer2 && !isCompleted && isDoubles && (
                 <div className="flex flex-col gap-[3px] justify-center ml-auto mr-1">
                   <div className={`w-[12px] h-[5px] rounded-[2px] transition-all duration-300 ${
-                    match.serverNumber >= 1 ? serverDotActiveT2Class : serverDotInactiveT2Class
+                    (match.serverNumber >= 1 || match.isFirstServeOfMatch) ? serverDotActiveT2Class : serverDotInactiveT2Class
                   }`} />
                   <div className={`w-[12px] h-[5px] rounded-[2px] transition-all duration-300 ${
-                    match.serverNumber === 2 ? serverDotActiveT2Class : serverDotInactiveT2Class
+                    (match.serverNumber === 2 || match.isFirstServeOfMatch) ? serverDotActiveT2Class : serverDotInactiveT2Class
                   }`} />
                 </div>
               )}

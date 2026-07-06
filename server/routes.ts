@@ -137,6 +137,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/matches/:id", async (req, res) => {
     const id = parseInt(req.params.id as string);
     const user = req.user as any;
+
+    const parseSafe = (val: any) => {
+      if (typeof val === 'string') {
+        try {
+          return JSON.parse(val);
+        } catch (e) {
+          console.error("Failed to parse field from request body:", e);
+          return val;
+        }
+      }
+      return val;
+    };
     
     // Kiểm tra quyền sở hữu - cho phép cập nhật nếu:
     // 1. Là admin
@@ -176,6 +188,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       theme,
       showTournament,
       showMatchCode,
+      mode,
+      sets,
+      gamesWonTeam1,
+      gamesWonTeam2,
     } = req.body;
 
     const updateData: any = {};
@@ -186,6 +202,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (theme !== undefined) updateData.theme = theme;
     if (showTournament !== undefined) updateData.showTournament = showTournament;
     if (showMatchCode !== undefined) updateData.showMatchCode = showMatchCode;
+    if (mode !== undefined) updateData.mode = mode;
+    if (gamesWonTeam1 !== undefined) updateData.gamesWonTeam1 = gamesWonTeam1;
+    if (gamesWonTeam2 !== undefined) updateData.gamesWonTeam2 = gamesWonTeam2;
+    if (sets !== undefined) updateData.sets = parseSafe(sets);
     if (endTime !== undefined) {
       // Convert ISO string to Date object for drizzle
       const dateVal = typeof endTime === 'string' ? new Date(endTime) : endTime;
@@ -201,17 +221,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (isServer2 !== undefined) updateData.isServer2 = isServer2;
     if (serverNumber !== undefined) updateData.serverNumber = serverNumber;
     if (isFirstServeOfMatch !== undefined) updateData.isFirstServeOfMatch = isFirstServeOfMatch;
-    const parseSafe = (val: any) => {
-      if (typeof val === 'string') {
-        try {
-          return JSON.parse(val);
-        } catch (e) {
-          console.error("Failed to parse field from request body:", e);
-          return val;
-        }
-      }
-      return val;
-    };
 
     if (timeline !== undefined) updateData.timeline = parseSafe(timeline);
     if (timeouts !== undefined) updateData.timeouts = parseSafe(timeouts);
