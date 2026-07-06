@@ -70,7 +70,8 @@ export default function RefereeTools() {
   const [t1p2, setT1p2] = useState("");
   const [t2p1, setT2p1] = useState("");
   const [t2p2, setT2p2] = useState("");
-  const [winningScore, setWinningScore] = useState("11");
+  const [winningScore, setWinningScore] = useState("15");
+  const [boMode, setBoMode] = useState<"bo1" | "bo3" | "bo5">("bo1");
   const [firstServer, setFirstServer] = useState<1 | 2>(1);
   const [matchType, setMatchType] = useState<"singles" | "doubles">("doubles");
   const [showCoinToss, setShowCoinToss] = useState(false);
@@ -130,7 +131,7 @@ export default function RefereeTools() {
         level: JSON.stringify(newTournamentLevels),
         content: JSON.stringify(contentMap),
         teamsPerGroup,
-        winningScore: 11,
+        winningScore: 15,
         status: "draft",
       });
       setShowCreateModal(false);
@@ -231,6 +232,7 @@ export default function RefereeTools() {
         isServer2: firstServer === 2,
         serverNumber: 1,
         type: matchType,
+        mode: boMode,
       });
 
       const params = new URLSearchParams({
@@ -241,6 +243,7 @@ export default function RefereeTools() {
         win: winningScore,
         serve: String(firstServer),
         type: matchType,
+        mode: boMode,
       });
       setLocation(`/match/${newMatch.id}?${params.toString()}`);
     } catch (error) {
@@ -377,7 +380,7 @@ export default function RefereeTools() {
                   CÀI ĐẶT TRẬN ĐẤU
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
                     Điểm thắng
@@ -396,7 +399,27 @@ export default function RefereeTools() {
                 </div>
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
-                    Team Phát Bóng Đầu
+                    Thể thức
+                  </label>
+                  <div className="flex gap-1 bg-muted p-1 rounded-xl">
+                    {[
+                      { key: "bo1", label: "BO1" },
+                      { key: "bo3", label: "BO3" },
+                      { key: "bo5", label: "BO5" }
+                    ].map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => setBoMode(item.key as any)}
+                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${boMode === item.key ? "bg-blue-500 text-white" : "text-muted-foreground"}`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
+                    Team Phát Đầu
                   </label>
                   <div className="flex gap-1 bg-muted p-1 rounded-xl">
                     {[1, 2].map((team) => (
@@ -405,7 +428,7 @@ export default function RefereeTools() {
                         onClick={() => setFirstServer(team as 1 | 2)}
                         className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${firstServer === team ? (team === 1 ? "bg-cyan-500" : "bg-rose-500") : "text-muted-foreground"}`}
                       >
-                        Team {team}
+                        T{team}
                       </button>
                     ))}
                   </div>

@@ -215,6 +215,18 @@ export default function MatchOverlay() {
 
             </div>
 
+            {/* Sets Area (Only for BO3/BO5) */}
+            {(match.mode === "bo3" || match.mode === "bo5") && (
+              <div className="w-[30px] bg-amber-600/90 flex flex-col border-r border-black/20">
+                <div className="flex-1 flex items-center justify-center text-white text-[16px] font-black border-b border-black/20">
+                  {match.gamesWonTeam1}
+                </div>
+                <div className="flex-1 flex items-center justify-center text-white text-[16px] font-black">
+                  {match.gamesWonTeam2}
+                </div>
+              </div>
+            )}
+
             {/* Score Area */}
             <div className="w-[52px] bg-[#009a44] rounded-r-[12px] flex flex-col">
               <div className="flex-1 flex items-center justify-center text-white text-[26px] font-black border-b border-black/25">
@@ -294,11 +306,21 @@ export default function MatchOverlay() {
               match.isServer1 && !isCompleted ? "text-[#0086ff]" : "text-slate-200"
             }`}>
               {match.scoreTeam1}
+              {(match.mode === "bo3" || match.mode === "bo5") && (
+                <span className="text-[10px] font-black text-amber-500 ml-1">
+                  ({match.gamesWonTeam1})
+                </span>
+              )}
             </span>
             <span className="text-slate-600 font-bold mx-1.5 text-xs">-</span>
             <span className={`font-black text-[18px] min-w-[20px] text-center ${
               match.isServer2 && !isCompleted ? "text-[#ff6a00]" : "text-slate-200"
             }`}>
+              {(match.mode === "bo3" || match.mode === "bo5") && (
+                <span className="text-[10px] font-black text-amber-500 mr-1">
+                  ({match.gamesWonTeam2})
+                </span>
+              )}
               {match.scoreTeam2}
             </span>
           </div>
@@ -504,6 +526,18 @@ export default function MatchOverlay() {
               )}
             </div>
           </div>
+
+          {/* Sets Area (Only for BO3/BO5) */}
+          {(match.mode === "bo3" || match.mode === "bo5") && (
+            <div className="w-[30px] flex flex-col justify-stretch bg-[#e65100]/90 text-white font-black text-sm border-r border-black/10 border-l border-black/10">
+              <div className="flex-grow flex items-center justify-center h-[50px] border-b border-black/10">
+                {match.gamesWonTeam1}
+              </div>
+              <div className="flex-grow flex items-center justify-center h-[50px]">
+                {match.gamesWonTeam2}
+              </div>
+            </div>
+          )}
 
           {/* Score Area */}
           <div className={scoreAreaClass}>

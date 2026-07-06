@@ -94,7 +94,7 @@ export const matches = pgTable("matches", {
 
   // Quản lý trạng thái
   status: text("status").notNull().default("live"), // 'pending', 'live', 'finished'
-  winningScore: integer("winning_score").notNull().default(11),
+  winningScore: integer("winning_score").notNull().default(15),
   winnerTeam: integer("winner_team"), // 1 hoặc 2
 
   // Timeline events (JSON)
@@ -122,6 +122,10 @@ export const matches = pgTable("matches", {
   theme: text("theme").default("default"),
   showTournament: boolean("show_tournament").default(true),
   showMatchCode: boolean("show_match_code").default(true),
+  mode: text("mode").default("bo1").notNull(),
+  sets: json("sets"),
+  gamesWonTeam1: integer("games_won_team1").default(0).notNull(),
+  gamesWonTeam2: integer("games_won_team2").default(0).notNull(),
 });
 
 // === 4. ZOD SCHEMAS (Để Validate Dữ liệu) ===
@@ -181,7 +185,7 @@ export const tournaments = pgTable("tournaments", {
   name: text("name").notNull(),
   description: text("description"),
   teamsPerGroup: integer("teams_per_group").default(4),
-  winningScore: integer("winning_score").default(11),
+  winningScore: integer("winning_score").default(15),
   status: text("status").notNull().default("draft"), // 'draft', 'active', 'completed', 'cancelled'
   
   // Thông tin giải đấu mới

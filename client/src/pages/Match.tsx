@@ -78,15 +78,35 @@ export default function Match() {
     t2p1: search.get("t2p1") || "P3",
     t2p2: search.get("t2p2") || "P4",
   };
-  const winningScore = parseInt(search.get("win") || "11");
+  const winningScore = parseInt(search.get("win") || "15");
   const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
   const matchTypeFromUrl = search.get("type") as "singles" | "doubles" | null;
 
   const { data: serverMatch } = useMatch(currentMatchId);
+  const isBO3 = serverMatch?.mode === "bo3";
+  const isBO5 = serverMatch?.mode === "bo5";
+  const targetGames = isBO5 ? 3 : isBO3 ? 2 : 1;
+
+  const currentGamesWon1 = serverMatch?.gamesWonTeam1 || 0;
+  const currentGamesWon2 = serverMatch?.gamesWonTeam2 || 0;
+
+  const nextGamesWon1 = currentGamesWon1 + (state.winner === 1 ? 1 : 0);
+  const nextGamesWon2 = currentGamesWon2 + (state.winner === 2 ? 1 : 0);
+  const isSeriesOver = state.winner ? (nextGamesWon1 >= targetGames || nextGamesWon2 >= targetGames) : false;
+
   const matchType = matchTypeFromUrl || (serverMatch?.type as "singles" | "doubles") || "doubles";
 
-  const { state, scorePoint, fault, undo, getMatchData, resetState, setWinner, swapPositions } =
-    useGameLogic(winningScore, initialServer, names, matchType);
+  const { 
+    state, 
+    scorePoint, 
+    fault, 
+    undo, 
+    getMatchData, 
+    resetState, 
+    setWinner, 
+    swapPositions,
+    toggleServerHand 
+  } = useGameLogic(winningScore, initialServer, names, matchType);
 
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
@@ -496,16 +516,22 @@ export default function Match() {
   }, [state.winner]);
 
   useEffect(() => {
-    if (state.winner && currentMatchId > 0) {
+    if (state.winner && currentMatchId > 0 && serverMatch) {
+      if (serverMatch.status === "finished" || serverMatch.status === "completed") return;
       setIsTimerRunning(false);
-      const shouldSave = !serverMatch || serverMatch.winnerTeam !== state.winner;
-      if (shouldSave) {
+
+      const nextSets = [...(serverMatch.sets as any || []), { score1: state.score1, score2: state.score2 }];
+
+      if (isSeriesOver) {
         updateMatch.mutate({
           id: currentMatchId,
           data: {
             winnerTeam: state.winner as number,
             status: "completed" as const,
             endTime: new Date().toISOString() as any,
+            gamesWonTeam1: nextGamesWon1,
+            gamesWonTeam2: nextGamesWon2,
+            sets: nextSets,
           },
         }, {
           onSuccess: (data) => {
@@ -517,7 +543,7 @@ export default function Match() {
         });
       }
     }
-  }, [state.winner, currentMatchId]);
+  }, [state.winner, currentMatchId, serverMatch]);
 
   const formatTimerDisplay = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -632,6 +658,58 @@ export default function Match() {
   const handleSwitchCourt = () => {
     setCourtSwapped(!courtSwapped);
     addTimelineEvent("switch-sides", null);
+  };
+
+  const handleToggleServerHand = async () => {
+    if (matchType !== "doubles" || state.winner) return;
+    
+    const nextServerHand = state.serverHand === 1 ? 2 : 1;
+    toggleServerHand();
+    addTimelineEvent("swap-positions", state.serverTeam, {
+      message: `Đổi người phát bóng sang Server ${nextServerHand}`,
+    });
+
+    if (currentMatchId > 0) {
+      try {
+        await updateMatch.mutateAsync({
+          id: currentMatchId,
+          data: {
+            serverNumber: nextServerHand,
+          },
+        });
+      } catch (e) {
+        console.error("Failed to update server hand in database:", e);
+      }
+    }
+  };
+
+  const handleStartNextSet = async () => {
+    if (currentMatchId > 0 && serverMatch) {
+      const nextSets = [...(serverMatch.sets as any || []), { score1: state.score1, score2: state.score2 }];
+
+      try {
+        await updateMatch.mutateAsync({
+          id: currentMatchId,
+          data: {
+            scoreTeam1: 0,
+            scoreTeam2: 0,
+            gamesWonTeam1: nextGamesWon1,
+            gamesWonTeam2: nextGamesWon2,
+            sets: nextSets,
+            isFirstServeOfMatch: true,
+          },
+        });
+      } catch (e) {
+        console.error("Failed to reset scores for next set:", e);
+      }
+    }
+
+    resetState({
+      score1: 0,
+      score2: 0,
+      isFirstServeOfMatch: true,
+    });
+    setWinner(null);
   };
 
   const displayNames = courtSwapped
@@ -868,8 +946,17 @@ export default function Match() {
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col p-2 gap-6 max-w-lg mx-auto w-full overflow-y-auto">
-        
+      <main className="flex-1 flex flex-col p-2 gap-4 max-w-lg mx-auto w-full overflow-y-auto">
+        {(isBO3 || isBO5) && (
+          <div className="flex items-center justify-between px-4 py-2.5 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0">
+            <span className="text-muted-foreground uppercase text-[9px] tracking-wider font-extrabold">TỶ SỐ SET (GAMES WON)</span>
+            <div className="flex gap-2.5 items-center font-mono text-base">
+              <span className="text-cyan-500 font-extrabold">{currentGamesWon1}</span>
+              <span className="text-muted-foreground font-light">-</span>
+              <span className="text-rose-500 font-extrabold">{currentGamesWon2}</span>
+            </div>
+          </div>
+        )}
 
         <section className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0" data-testid="section-scoreboard">
           <Scoreboard
@@ -920,7 +1007,7 @@ export default function Match() {
           </section>
         )}
 
-        <section className="grid grid-cols-3 gap-3" data-testid="section-quick-actions">
+        <section className="grid grid-cols-4 gap-2" data-testid="section-quick-actions">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => {
@@ -934,13 +1021,13 @@ export default function Match() {
               }
             }}
             disabled={!!state.winner || (timeouts.team1 === 0 && timeouts.team2 === 0) || isTimeoutActive}
-            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-timeout"
           >
-            <div className="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-300">
-              <Timer className="w-6 h-6" />
+            <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
+              <Timer className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-300">Timeout ({timeouts.team1 + timeouts.team2})</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Timeout ({timeouts.team1 + timeouts.team2})</span>
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -949,24 +1036,36 @@ export default function Match() {
               addTimelineEvent("undo", null);
             }}
             disabled={state.gameHistory.length === 0}
-            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-undo"
           >
-            <div className="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-300">
-              <Undo2 className="w-6 h-6" />
+            <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
+              <Undo2 className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-300">Undo</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Undo</span>
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleSwitchCourt}
-            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
             data-testid="button-switch-court"
           >
-            <div className="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-300">
-              <ArrowLeftRight className="w-6 h-6" />
+            <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
+              <ArrowLeftRight className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-300">Đổi sân</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Đổi sân</span>
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleToggleServerHand}
+            disabled={matchType !== "doubles" || !!state.winner}
+            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            title="Đổi người phát bóng trong cùng đội"
+          >
+            <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Đổi Server</span>
           </motion.button>
         </section>
 
@@ -1188,7 +1287,7 @@ export default function Match() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!state.winner}>
+      <Dialog open={!!state.winner && isSeriesOver}>
         <DialogContent className="max-w-xs bg-card border-border rounded-2xl p-6 text-center">
           <DialogTitle className="text-xl font-black italic text-foreground uppercase mb-3">
             Victory!
@@ -1199,12 +1298,17 @@ export default function Match() {
               <Trophy className={`h-16 w-16 ${state.winner === 1 ? "text-cyan-400" : "text-rose-400"}`} />
               <span>
                 {state.winner === 1 
-                  ? `${names.t1p1} & ${names.t1p2}`
-                  : `${names.t2p1} & ${names.t2p2}`
+                  ? (matchType === "singles" ? names.t1p1 : `${names.t1p1} & ${names.t1p2}`)
+                  : (matchType === "singles" ? names.t2p1 : `${names.t2p1} & ${names.t2p2}`)
                 }
               </span>
             </div>
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-2">ĐÃ CHIẾN THẮNG</p>
+            {(isBO3 || isBO5) && (
+              <div className="mt-4 p-2.5 bg-muted rounded-xl text-sm font-bold text-foreground">
+                Tỷ số trận đấu: {nextGamesWon1} - {nextGamesWon2}
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Button
@@ -1212,6 +1316,40 @@ export default function Match() {
               className="w-full bg-gradient-to-r from-[#FF5722] to-[#FF9800] hover:from-[#FF7043] hover:to-[#FFB74D] text-white font-black italic h-12 rounded-xl shadow-lg shadow-orange-500/30 animate-pulse"
             >
               <Layers className="w-5 h-5 mr-2" /> CHI TIẾT TRẬN ĐẤU
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!state.winner && !isSeriesOver}>
+        <DialogContent className="max-w-xs bg-card border-border rounded-2xl p-6 text-center">
+          <DialogTitle className="text-xl font-black italic text-foreground uppercase mb-3">
+            Set Kết Thúc!
+          </DialogTitle>
+          <div className="mb-4 space-y-4">
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">ĐỘI THẮNG SET</p>
+              <div className={`text-xl font-black italic ${state.winner === 1 ? "text-cyan-500" : "text-rose-500"}`}>
+                {state.winner === 1 
+                  ? (matchType === "singles" ? names.t1p1 : `${names.t1p1} & ${names.t1p2}`)
+                  : (matchType === "singles" ? names.t2p1 : `${names.t2p1} & ${names.t2p2}`)
+                }
+              </div>
+            </div>
+            
+            <div className="bg-muted p-3 rounded-xl space-y-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase">Tỷ số Set hiện tại</p>
+              <div className="text-2xl font-black text-foreground">
+                {nextGamesWon1} - {nextGamesWon2}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Button
+              onClick={handleStartNextSet}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black h-12 rounded-xl"
+            >
+              BẮT ĐẦU SET TIẾP THEO
             </Button>
           </div>
         </DialogContent>

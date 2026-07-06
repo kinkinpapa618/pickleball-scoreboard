@@ -387,6 +387,21 @@ export function useGameLogic(
   }, []);
 
   // ==============================================
+  // HÀM ĐỔI NGƯỜI PHÁT BÓNG (TRONG CÙNG TEAM)
+  // ==============================================
+  const toggleServerHand = useCallback(() => {
+    setState((prev) => {
+      if (prev.winner) return prev;
+      const history = [...prev.gameHistory, { ...prev }];
+      return {
+        ...prev,
+        serverHand: prev.serverHand === 1 ? 2 : 1,
+        gameHistory: history,
+      };
+    });
+  }, []);
+
+  // ==============================================
   // TRẢ VỀ
   // ==============================================
   return {
@@ -401,5 +416,6 @@ export function useGameLogic(
     checkDiagonalPositions,
     setWinner,
     swapPositions,
+    toggleServerHand,
   };
 }
