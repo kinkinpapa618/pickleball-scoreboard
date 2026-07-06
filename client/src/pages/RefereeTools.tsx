@@ -409,6 +409,20 @@ export default function RefereeTools() {
                   CÀI ĐẶT TRẬN ĐẤU
                 </span>
               </div>
+              
+              <div className="space-y-1.5 pb-2">
+                <label className="text-[9px] font-bold text-muted-foreground uppercase">
+                  Mã trận đấu / Vòng đấu
+                </label>
+                <input
+                  type="text"
+                  value={matchCodeInput}
+                  onChange={(e) => setMatchCodeInput(e.target.value)}
+                  placeholder="Ví dụ: VÒNG 1 | BẢNG A..."
+                  className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
+                />
+              </div>
+
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-2 block">
@@ -462,18 +476,6 @@ export default function RefereeTools() {
                     ))}
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-1.5 pt-2">
-                <label className="text-[9px] font-bold text-muted-foreground uppercase">
-                  Mã trận đấu / Vòng đấu
-                </label>
-                <textarea
-                  value={matchCodeInput}
-                  onChange={(e) => setMatchCodeInput(e.target.value)}
-                  placeholder="Ví dụ: VÒNG 1 | BẢNG A..."
-                  className="w-full bg-muted border border-border rounded-xl p-2.5 text-xs text-foreground focus:border-orange-500 outline-none transition-all resize-none h-16"
-                />
               </div>
 
               <Button
