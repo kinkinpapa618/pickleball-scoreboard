@@ -41,11 +41,11 @@ export default function ScoreboardOverlay({
     return (
       <div className="relative min-w-[580px] h-[140px] flex-shrink-0">
         {showHeaderVal && (
-          <div className="absolute top-[5px] left-[35px] bg-[#b7b7b7] text-[#414141] text-[12px] font-extrabold px-[20px] pt-[6px] pb-[16px] rounded-t-[10px] z-10 uppercase tracking-[0.5px] whitespace-nowrap">
+          <div className="absolute top-[5px] left-[35px] bg-[#0c1c39] text-white text-[12px] font-extrabold px-[20px] pt-[6px] pb-[16px] rounded-t-[10px] z-10 uppercase tracking-[0.5px] whitespace-nowrap">
             {match.tournamentName || "GIẢI PICKLEBALL DALI SPORT 2026"}
           </div>
         )}
-        <div className="absolute top-[32px] left-0 w-full h-[76px] bg-[#414141] rounded-[12px] flex z-20 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+        <div className="absolute top-[32px] left-0 w-full h-[76px] rounded-[12px] flex z-20 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)]" style={{ backgroundColor: "#0c1c39" }}>
           <div className="w-[120px] flex items-center justify-center p-[5px]">
             <img
               src="/logo-tron.png"
@@ -62,11 +62,11 @@ export default function ScoreboardOverlay({
               <div className="flex gap-[6px] items-center">
                 <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
                   match.isServer1 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
+                    ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
                 }`} />
                 <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
                   match.isServer1 && !isCompleted && (match.serverNumber === 2 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
+                    ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
                 }`} />
               </div>
             </div>
@@ -76,11 +76,11 @@ export default function ScoreboardOverlay({
               <div className="flex gap-[6px] items-center">
                 <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
                   match.isServer2 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
+                    ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
                 }`} />
                 <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
                   match.isServer2 && !isCompleted && (match.serverNumber === 2 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
+                    ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
                 }`} />
               </div>
             </div>
@@ -91,13 +91,13 @@ export default function ScoreboardOverlay({
               <div className="flex-1 flex items-center justify-center text-white text-[16px] font-black">{match.gamesWonTeam2}</div>
             </div>
           )}
-          <div className="w-[52px] bg-[#009a44] rounded-r-[12px] flex flex-col">
+          <div className="w-[52px] bg-[#f97316] rounded-r-[12px] flex flex-col">
             <div className="flex-1 flex items-center justify-center text-white text-[25px] font-black border-b border-black/25">{match.scoreTeam1}</div>
             <div className="flex-1 flex items-center justify-center text-white text-[25px] font-black">{match.scoreTeam2}</div>
           </div>
         </div>
         {showFooterVal && (
-          <div className="absolute top-[96px] left-[35px] bg-[#b7b7b7] text-[#414141] text-[12px] font-semibold px-[24px] pt-[14px] pb-[6px] rounded-b-[10px] z-10 uppercase whitespace-nowrap">
+          <div className="absolute top-[96px] left-[35px] bg-[#0c1c39] text-white text-[12px] font-semibold px-[24px] pt-[14px] pb-[6px] rounded-b-[10px] z-10 uppercase whitespace-nowrap">
             {match.matchCode || "VÒNG 1 | BẢNG A"}
             {startTime && <span className="ml-3 text-[#555]">| {timeDisplay}</span>}
           </div>
