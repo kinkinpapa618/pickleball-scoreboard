@@ -1,4 +1,6 @@
 import type { Match } from "@shared/schema";
+import { useState, useEffect } from "react";
+import { Clock } from "lucide-react";
 
 interface ScoreboardOverlayProps {
   match: Match;
@@ -28,7 +30,16 @@ export default function ScoreboardOverlay({
   const { team1Name, team2Name, isDoubles } = makeTeamNames(match);
 
   const startTime = match.startTime ? (typeof match.startTime === 'string' ? new Date(match.startTime).getTime() : new Date(match.startTime).getTime()) : null;
-  const elapsedSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+  const [elapsedSeconds, setElapsedSeconds] = useState(startTime ? Math.floor((Date.now() - startTime) / 1000) : 0);
+
+  useEffect(() => {
+    if (!startTime) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
+    }, 200);
+    return () => clearInterval(interval);
+  }, [startTime]);
+
   const mins = Math.floor(elapsedSeconds / 60);
   const secs = elapsedSeconds % 60;
   const timeDisplay = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -39,67 +50,75 @@ export default function ScoreboardOverlay({
     const showFooterVal = showMatchCode && (match.matchCode || "VÒNG ĐẤU");
 
     return (
-      <div className="relative min-w-[580px] h-[140px] flex-shrink-0">
+      <div className="relative min-w-[580px] h-[146px] flex-shrink-0">
         {showHeaderVal && (
-          <div className="absolute top-[5px] left-[35px] bg-[#b7b7b7] text-[#414141] text-[12px] font-extrabold px-[20px] pt-[6px] pb-[16px] rounded-t-[10px] z-10 uppercase tracking-[0.5px] whitespace-nowrap">
+          <div className="absolute top-[5px] left-[35px] bg-white text-[#333] shadow-lg text-[12px] font-extrabold px-[20px] pt-[6px] pb-[16px] rounded-t-[10px] z-10 uppercase tracking-[0.5px] whitespace-nowrap">
             {match.tournamentName || "GIẢI PICKLEBALL DALI SPORT 2026"}
           </div>
         )}
-        <div className="absolute top-[32px] left-0 w-full h-[76px] bg-[#414141] rounded-[12px] flex z-20 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-          <div className="w-[120px] flex items-center justify-center p-[5px]">
-            <img
-              src="/logo-tron.png"
-              className="max-w-[90%] max-h-[90%] object-contain"
-              alt="Logo"
-              onError={(e) => {
-                e.currentTarget.src = "https://biamanhbeo.top/test/uploads/logo-dali.png";
-              }}
-            />
+        <div className="absolute top-[32px] left-0 w-full h-[82px] rounded-[12px] flex z-20" style={{ backgroundColor: "#0c1c39" }}>
+          <div className="relative flex-shrink-0" style={{ width: 76 }}>
+            <div className="absolute -top-2 -bottom-2 left-0 w-[76px] flex items-center justify-center border-r border-white/10">
+              <img
+                src="/logo-tron.png"
+                className="max-w-full max-h-full object-contain"
+                alt="Logo"
+                onError={(e) => {
+                  e.currentTarget.src = "https://biamanhbeo.top/test/uploads/logo-dali.png";
+                }}
+              />
+            </div>
           </div>
-          <div className="flex-1 flex flex-col justify-center pl-[5px] pr-[15px]">
-            <div className="flex justify-between items-center h-[34px]">
-              <div className="text-white text-[16px] font-black uppercase tracking-wide whitespace-nowrap">{team1Name}</div>
-              <div className="flex gap-[6px] items-center">
-                <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
-                  match.isServer1 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
-                }`} />
-                <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
-                  match.isServer1 && !isCompleted && (match.serverNumber === 2 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
-                }`} />
+          <div className="flex-1 flex flex-col justify-center pl-[14px] pr-[15px] min-w-0">
+            <div className="relative flex items-center h-[38px]">
+              <div className={`absolute left-[-9px] top-[8px] bottom-[8px] w-[4px] rounded-full transition-all duration-300 ${match.isServer1 && !isCompleted ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-transparent"}`} />
+              <div className="flex justify-between items-center w-full">
+                <div className="text-white text-[16px] font-black uppercase tracking-wide truncate">{team1Name}</div>
+                <div className="flex gap-[6px] items-center ml-2 flex-shrink-0">
+                  <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
+                    match.isServer1 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch)
+                      ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
+                  }`} />
+                  <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
+                    match.isServer1 && !isCompleted && (match.serverNumber === 2 || match.isFirstServeOfMatch)
+                      ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
+                  }`} />
+                </div>
               </div>
             </div>
             <div className="h-px bg-white/10 w-full" />
-            <div className="flex justify-between items-center h-[34px]">
-              <div className="text-white text-[16px] font-black uppercase tracking-wide whitespace-nowrap">{team2Name}</div>
-              <div className="flex gap-[6px] items-center">
-                <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
-                  match.isServer2 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
-                }`} />
-                <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
+            <div className="relative flex items-center h-[38px]">
+              <div className={`absolute left-[-9px] top-[8px] bottom-[8px] w-[4px] rounded-full transition-all duration-300 ${match.isServer2 && !isCompleted ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-transparent"}`} />
+              <div className="flex justify-between items-center w-full">
+                <div className="text-white text-[16px] font-black uppercase tracking-wide truncate">{team2Name}</div>
+                <div className="flex gap-[6px] items-center ml-2 flex-shrink-0">
+                  <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
+                    match.isServer2 && !isCompleted && (match.serverNumber >= 1 || match.isFirstServeOfMatch)
+                      ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
+                  }`} />
+                  <div className={`w-[13px] h-[13px] rounded-full transition-all duration-200 ${
                   match.isServer2 && !isCompleted && (match.serverNumber === 2 || match.isFirstServeOfMatch)
-                    ? "bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-[#333333]"
+                    ? "bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-[#333333]"
                 }`} />
               </div>
             </div>
+            </div>
           </div>
           {(match.mode === "bo3" || match.mode === "bo5") && (
-            <div className="w-[30px] bg-black/90 flex flex-col border-r border-black/20">
+            <div className="w-[30px] bg-black/90 flex flex-col flex-shrink-0">
               <div className="flex-1 flex items-center justify-center text-white text-[16px] font-black border-b border-black/20">{match.gamesWonTeam1}</div>
               <div className="flex-1 flex items-center justify-center text-white text-[16px] font-black">{match.gamesWonTeam2}</div>
             </div>
           )}
-          <div className="w-[52px] bg-[#009a44] rounded-r-[12px] flex flex-col">
+          <div className="w-[52px] bg-[#f97316] rounded-r-[12px] flex flex-col flex-shrink-0">
             <div className="flex-1 flex items-center justify-center text-white text-[25px] font-black border-b border-black/25">{match.scoreTeam1}</div>
             <div className="flex-1 flex items-center justify-center text-white text-[25px] font-black">{match.scoreTeam2}</div>
           </div>
         </div>
         {showFooterVal && (
-          <div className="absolute top-[96px] left-[35px] bg-[#b7b7b7] text-[#414141] text-[12px] font-semibold px-[24px] pt-[14px] pb-[6px] rounded-b-[10px] z-10 uppercase whitespace-nowrap">
+          <div className="absolute top-[104px] left-[35px] bg-white text-[#333] shadow-lg text-[12px] font-semibold px-[24px] pt-[14px] pb-[6px] rounded-b-[10px] z-10 uppercase whitespace-nowrap">
             {match.matchCode || "VÒNG 1 | BẢNG A"}
-            {startTime && <span className="ml-3 text-[#555]">| {timeDisplay}</span>}
+            {startTime && <span className="ml-3 text-[#555]">| <Clock className="w-3 h-3 inline -mt-0.5" /> {timeDisplay}</span>}
           </div>
         )}
       </div>
@@ -290,7 +309,7 @@ export default function ScoreboardOverlay({
       {hasHeader && (
         <div className={headerClass}>
           <span className="whitespace-nowrap">{showTournament ? (match.tournamentName || "Giải đấu") : ""}</span>
-           <span className="flex-shrink-0 text-right">{showMatchCode ? match.matchCode : ""}{startTime ? ` | ${timeDisplay}` : ""}</span>
+           <span className="flex-shrink-0 text-right">{showMatchCode ? match.matchCode : ""}{startTime ? <><span className="mx-1">|</span><Clock className="w-3 h-3 inline -mt-0.5" /> {timeDisplay}</> : ""}</span>
         </div>
       )}
       <div className="flex flex-1 min-h-0">

@@ -23,6 +23,7 @@ import {
   ArrowLeftRight,
   Pencil,
   Check,
+  Settings,
 } from "lucide-react";
 import {
   Dialog,
@@ -178,6 +179,24 @@ export default function Match() {
   const [matchTheme, setMatchTheme] = useState("default");
   const [livestream, setLivestream] = useState(false);
 
+  // vMix integration
+  const [vmixEnabled, setVmixEnabled] = useState(false);
+  const [vmixIp, setVmixIp] = useState("127.0.0.1");
+  const [vmixPort, setVmixPort] = useState("8088");
+  const [vmixGTKey, setVmixGTKey] = useState("");
+
+  // Sdeck buttons config
+  const [sdeckBtns, setSdeckBtns] = useState([
+    { label: "S1", fn: "PreviewInput", input: "1", hotkey: "", duration: "", value: "" },
+    { label: "S2", fn: "Cut", input: "", hotkey: "", duration: "", value: "" },
+    { label: "S3", fn: "OverlayInput1", input: "", hotkey: "", duration: "", value: "" },
+    { label: "S4", fn: "OverlayInput2", input: "", hotkey: "", duration: "", value: "" },
+    { label: "S5", fn: "Stinger1", input: "", hotkey: "", duration: "", value: "" },
+    { label: "S6", fn: "FadeToBlack", input: "", hotkey: "", duration: "", value: "" },
+  ]);
+  const [sdeckEditIdx, setSdeckEditIdx] = useState<number | null>(null);
+  const [sdeckEditDraft, setSdeckEditDraft] = useState<{ label: string; fn: string; input: string; hotkey: string; duration: string; value: string } | null>(null);
+
   // Temporary edit states inside the config modal to prevent overwrites from background refetches
   const [editTournamentName, setEditTournamentName] = useState("");
   const [editMatchCode, setEditMatchCode] = useState("");
@@ -186,6 +205,54 @@ export default function Match() {
   // Inline editing states for tournament/match code
   const [editingField, setEditingField] = useState<"tournament" | "match" | null>(null);
   const [editFieldValue, setEditFieldValue] = useState("");
+
+  const pushToVmix = async () => {
+    if (!vmixEnabled || !vmixIp || !vmixPort || !vmixGTKey || !serverMatch) return;
+    try {
+      await fetch("/api/vmix/push-scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vmixIp,
+          vmixPort,
+          gtKey: vmixGTKey,
+          match: {
+            scoreTeam1: state.score1,
+            scoreTeam2: state.score2,
+            isServer1: state.serverTeam === 1,
+            isServer2: state.serverTeam === 2,
+            team1Player1: serverMatch.team1Player1,
+            team1Player2: serverMatch.team1Player2,
+            team2Player1: serverMatch.team2Player1,
+            team2Player2: serverMatch.team2Player2,
+            tournamentName,
+            matchCode,
+            gamesWonTeam1: serverMatch.gamesWonTeam1,
+            gamesWonTeam2: serverMatch.gamesWonTeam2,
+          },
+        }),
+      });
+    } catch (e) {
+      console.warn("[vMix] Push failed:", e);
+    }
+  };
+
+  const sendVmixCommand = async (func: string, input?: string, value?: string, duration?: string) => {
+    if (!vmixEnabled || !vmixIp || !vmixPort) return;
+    try {
+      await fetch("/api/vmix/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vmixIp, vmixPort, func, input, value, duration }),
+      });
+    } catch (e) {
+      console.warn("[vMix] Command failed:", e);
+    }
+  };
+
+  const handleFade = () => {
+    sendVmixCommand("Fade", undefined, undefined, "500");
+  };
 
   const handleSaveFieldEdit = () => {
     if (!editingField || !editFieldValue.trim()) return;
@@ -209,6 +276,13 @@ export default function Match() {
             tournamentName: editTournamentName,
             matchCode: editMatchCode,
             theme: editTheme,
+            vmixConfig: vmixEnabled ? {
+              enabled: vmixEnabled,
+              ip: vmixIp,
+              port: vmixPort,
+              gtKey: vmixGTKey,
+              sdeckBtns,
+            } : undefined,
           },
         });
         setShowConfigModal(false);
@@ -238,6 +312,14 @@ export default function Match() {
     }
     if (serverMatch.livestream !== undefined) {
       setLivestream(serverMatch.livestream ?? false);
+    }
+    if (serverMatch.vmixConfig) {
+      const vc = serverMatch.vmixConfig as any;
+      if (vc.enabled !== undefined) setVmixEnabled(vc.enabled);
+      if (vc.ip) setVmixIp(vc.ip);
+      if (vc.port) setVmixPort(vc.port);
+      if (vc.gtKey) setVmixGTKey(vc.gtKey);
+      if (vc.sdeckBtns && Array.isArray(vc.sdeckBtns)) setSdeckBtns(vc.sdeckBtns);
     }
 
     setEditableNames({
@@ -397,6 +479,8 @@ export default function Match() {
         data: updateData,
       });
 
+      pushToVmix();
+
       addTimelineEvent("score", pendingScoreUpdate.scoringTeam, {
         serverPlayer: pendingScoreUpdate.serverPlayer,
         serverTeam: pendingScoreUpdate.serverTeam,
@@ -489,6 +573,8 @@ export default function Match() {
         id: matchId,
         data: updateData,
       });
+
+      pushToVmix();
 
       addTimelineEvent("fault", state.serverTeam, {
         serverPlayer: pendingFaultUpdate.serverPlayer,
@@ -694,11 +780,32 @@ export default function Match() {
         [`team${team}`]: prev[`team${team}`] - 1,
       }));
       addTimelineEvent("timeout", team);
+      if (currentMatchId > 0) {
+        const endTime = new Date(Date.now() + 180 * 1000);
+        updateMatch.mutate({
+          id: currentMatchId,
+          data: {
+            timeoutActive: true,
+            timeoutTeam: team,
+            timeoutEndTime: endTime.toISOString() as any,
+          },
+        });
+      }
     }
   };
 
   const stopTimeout = () => {
     setIsTimeoutActive(false);
+    if (currentMatchId > 0) {
+      updateMatch.mutate({
+        id: currentMatchId,
+        data: {
+          timeoutActive: false,
+          timeoutTeam: null as any,
+          timeoutEndTime: null as any,
+        },
+      });
+    }
   };
 
   const addTimelineEvent = (
@@ -971,6 +1078,18 @@ export default function Match() {
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
         handleFault();
+      } else if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        handleFade();
+      } else {
+        // Sdeck hotkeys
+        for (const btn of sdeckBtns) {
+          if (btn.hotkey && e.key === btn.hotkey) {
+            e.preventDefault();
+            sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined);
+            break;
+          }
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1076,6 +1195,21 @@ export default function Match() {
           data-testid="button-undo"
         >
           <Undo2 className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setEditTournamentName(tournamentName);
+            setEditMatchCode(matchCode);
+            setEditTheme(matchTheme);
+            setShowConfigModal(true);
+          }}
+          className="text-muted-foreground hover:text-foreground h-8 w-8 bg-muted hover:bg-muted/80 rounded-lg"
+          data-testid="button-settings"
+          title="Cấu hình"
+        >
+          <Settings className="w-4 h-4" />
         </Button>
       </header>
 
@@ -1251,6 +1385,164 @@ export default function Match() {
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Đổi người giao</span>
           </motion.button>
         </section>
+
+        {/* vMix Quick Controls */}
+        <section className="grid grid-cols-4 gap-2" data-testid="section-vmix-actions">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleFade}
+            className="bg-red-950/40 border border-red-800/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-red-900/60 transition text-red-300 relative"
+            title="Fade (Space)"
+          >
+            <span className="text-[9px] font-bold text-red-400 text-center leading-none">FADE</span>
+            <span className="text-[7px] text-red-400/50 text-center leading-none">Space</span>
+          </motion.button>
+          {sdeckBtns.slice(0, 3).map((btn, i) => (
+            <motion.button
+              key={i}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined)}
+              className="bg-card border border-border rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
+              title={`${btn.label}${btn.hotkey ? ` [${btn.hotkey}]` : ""}`}
+            >
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">{btn.label}</span>
+              {btn.hotkey && <span className="text-[7px] text-slate-500 text-center leading-none">{btn.hotkey}</span>}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSdeckEditIdx(i);
+                  setSdeckEditDraft({ ...sdeckBtns[i] });
+                }}
+                className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition text-muted-foreground"
+              >
+                <Settings className="w-2.5 h-2.5" />
+              </button>
+            </motion.button>
+          ))}
+        </section>
+        <section className="grid grid-cols-3 gap-2" data-testid="section-vmix-actions-2">
+          {sdeckBtns.slice(3, 6).map((btn, i) => (
+            <motion.button
+              key={i + 3}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined)}
+              className="bg-card border border-border rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
+              title={`${btn.label}${btn.hotkey ? ` [${btn.hotkey}]` : ""}`}
+            >
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">{btn.label}</span>
+              {btn.hotkey && <span className="text-[7px] text-slate-500 text-center leading-none">{btn.hotkey}</span>}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSdeckEditIdx(i + 3);
+                  setSdeckEditDraft({ ...sdeckBtns[i + 3] });
+                }}
+                className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition text-muted-foreground"
+              >
+                <Settings className="w-2.5 h-2.5" />
+              </button>
+            </motion.button>
+          ))}
+        </section>
+
+        <Dialog open={sdeckEditIdx !== null} onOpenChange={(o) => { if (!o) { setSdeckEditIdx(null); setSdeckEditDraft(null); } }}>
+          <DialogContent className="max-w-[220px] rounded-2xl p-4 bg-card border border-border">
+            <DialogHeader>
+              <DialogTitle className="text-xs font-bold text-foreground">Cấu hình nút</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={sdeckEditDraft?.label || ""}
+                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, label: e.target.value } : null)}
+                placeholder="Label"
+                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <select
+                value={sdeckEditDraft?.fn || "Cut"}
+                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, fn: e.target.value } : null)}
+                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="Cut">Cut</option>
+                <option value="Fade">Fade</option>
+                <option value="PreviewInput">Preview</option>
+                <option value="OverlayInput1">Overlay1</option>
+                <option value="OverlayInput2">Overlay2</option>
+                <option value="OverlayInput3">Overlay3</option>
+                <option value="OverlayInput4">Overlay4</option>
+                <option value="OverlayInput1Off">Overlay1Off</option>
+                <option value="OverlayInput2Off">Overlay2Off</option>
+                <option value="Stinger1">Stinger1</option>
+                <option value="Stinger2">Stinger2</option>
+                <option value="FadeToBlack">FTB</option>
+                <option value="StartRecording">StartRec</option>
+                <option value="StopRecording">StopRec</option>
+                <option value="StartStreaming">StartStream</option>
+                <option value="StopStreaming">StopStream</option>
+                <option value="SetVolume">SetVolume</option>
+                <option value="SetText">SetText</option>
+                <option value="ReplayMarkInOut">ReplayInOut</option>
+                <option value="ReplayPlayLastEventToOutput">ReplayPlay</option>
+                <option value="ReplayLive">ReplayLive</option>
+              </select>
+              <input
+                type="text"
+                value={sdeckEditDraft?.input || ""}
+                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, input: e.target.value } : null)}
+                placeholder="Input #"
+                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                value={sdeckEditDraft?.hotkey || ""}
+                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, hotkey: e.target.value } : null)}
+                placeholder="Phím tắt"
+                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div className="grid grid-cols-2 gap-1">
+                <input
+                  type="text"
+                  value={sdeckEditDraft?.duration || ""}
+                  onChange={(e) => setSdeckEditDraft(d => d ? { ...d, duration: e.target.value } : null)}
+                  placeholder="Duration (ms)"
+                  className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <input
+                  type="text"
+                  value={sdeckEditDraft?.value || ""}
+                  onChange={(e) => setSdeckEditDraft(d => d ? { ...d, value: e.target.value } : null)}
+                  placeholder="Value"
+                  className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex gap-1.5 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setSdeckEditIdx(null); setSdeckEditDraft(null); }}
+                  className="flex-1 text-[10px]"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (sdeckEditIdx !== null && sdeckEditDraft) {
+                      const next = [...sdeckBtns];
+                      next[sdeckEditIdx] = { ...sdeckEditDraft };
+                      setSdeckBtns(next);
+                    }
+                    setSdeckEditIdx(null);
+                    setSdeckEditDraft(null);
+                  }}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-[10px]"
+                >
+                  Lưu
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <footer className="mt-auto p-2 sticky bottom-0 bg-background border-t border-border">
           <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
@@ -1624,6 +1916,147 @@ export default function Match() {
                 <option value="minimal">Minimal Bar (Thanh ngang)</option>
                 <option value="dali-sport">Dali Sport (Biamanhbeo)</option>
               </select>
+            </div>
+            <hr className="border-border" />
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
+                <span>vMix Integration</span>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vmixEnabled}
+                    onChange={(e) => setVmixEnabled(e.target.checked)}
+                    className="w-3 h-3 accent-blue-500"
+                  />
+                  <span className="text-[10px] text-muted-foreground">Enable</span>
+                </label>
+              </label>
+              {vmixEnabled && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={vmixIp}
+                      onChange={(e) => setVmixIp(e.target.value)}
+                      placeholder="vMix IP"
+                      className="bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <input
+                      type="text"
+                      value={vmixPort}
+                      onChange={(e) => setVmixPort(e.target.value)}
+                      placeholder="Port (8088)"
+                      className="bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={vmixGTKey}
+                    onChange={(e) => setVmixGTKey(e.target.value)}
+                    placeholder="GT Title Input Key (vd: 588ae5a6...)"
+                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  {vmixEnabled && (
+                    <div className="space-y-1.5 mt-2">
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase">Sdeck Buttons</span>
+                      {sdeckBtns.map((btn, i) => (
+                        <div key={i} className="space-y-1">
+                          <div className="grid grid-cols-4 gap-1">
+                            <input
+                              type="text"
+                              value={btn.label}
+                              onChange={(e) => {
+                                const next = [...sdeckBtns];
+                                next[i] = { ...next[i], label: e.target.value };
+                                setSdeckBtns(next);
+                              }}
+                              placeholder="Label"
+                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                            <select
+                              value={btn.fn}
+                              onChange={(e) => {
+                                const next = [...sdeckBtns];
+                                next[i] = { ...next[i], fn: e.target.value };
+                                setSdeckBtns(next);
+                              }}
+                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="Cut">Cut</option>
+                              <option value="Fade">Fade</option>
+                              <option value="PreviewInput">Preview</option>
+                              <option value="OverlayInput1">Overlay1</option>
+                              <option value="OverlayInput2">Overlay2</option>
+                              <option value="OverlayInput3">Overlay3</option>
+                              <option value="OverlayInput4">Overlay4</option>
+                              <option value="OverlayInput1Off">Overlay1Off</option>
+                              <option value="OverlayInput2Off">Overlay2Off</option>
+                              <option value="Stinger1">Stinger1</option>
+                              <option value="Stinger2">Stinger2</option>
+                              <option value="FadeToBlack">FTB</option>
+                              <option value="StartRecording">StartRec</option>
+                              <option value="StopRecording">StopRec</option>
+                              <option value="StartStreaming">StartStream</option>
+                              <option value="StopStreaming">StopStream</option>
+                              <option value="SetVolume">SetVolume</option>
+                              <option value="SetText">SetText</option>
+                              <option value="ReplayMarkInOut">ReplayInOut</option>
+                              <option value="ReplayPlayLastEventToOutput">ReplayPlay</option>
+                              <option value="ReplayLive">ReplayLive</option>
+                            </select>
+                            <input
+                              type="text"
+                              value={btn.input}
+                              onChange={(e) => {
+                                const next = [...sdeckBtns];
+                                next[i] = { ...next[i], input: e.target.value };
+                                setSdeckBtns(next);
+                              }}
+                              placeholder="Input #"
+                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              value={btn.hotkey}
+                              onChange={(e) => {
+                                const next = [...sdeckBtns];
+                                next[i] = { ...next[i], hotkey: e.target.value };
+                                setSdeckBtns(next);
+                              }}
+                              placeholder="Key"
+                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <input
+                              type="text"
+                              value={btn.duration}
+                              onChange={(e) => {
+                                const next = [...sdeckBtns];
+                                next[i] = { ...next[i], duration: e.target.value };
+                                setSdeckBtns(next);
+                              }}
+                              placeholder="Duration (ms)"
+                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              value={btn.value}
+                              onChange={(e) => {
+                                const next = [...sdeckBtns];
+                                next[i] = { ...next[i], value: e.target.value };
+                                setSdeckBtns(next);
+                              }}
+                              placeholder="Value"
+                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
           <div className="flex gap-2.5 mt-4">

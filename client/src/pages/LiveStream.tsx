@@ -97,6 +97,31 @@ export default function LiveStream() {
   const liveMatches = matches?.filter(m => m.status === "live") || [];
   const finishedMatches = matches?.filter(m => m.status !== "live") || [];
 
+  // Timeout detection
+  const timeoutMatch = matches?.find(m => m.timeoutActive && m.timeoutEndTime);
+  const [timeoutDisplay, setTimeoutDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!timeoutMatch?.timeoutEndTime) { setTimeoutDisplay(0); return; }
+    const endTime = typeof timeoutMatch.timeoutEndTime === 'string'
+      ? new Date(timeoutMatch.timeoutEndTime).getTime()
+      : new Date(timeoutMatch.timeoutEndTime).getTime();
+
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      setTimeoutDisplay(remaining);
+    };
+    update();
+    const interval = setInterval(update, 200);
+    return () => clearInterval(interval);
+  }, [timeoutMatch?.timeoutEndTime, timeoutMatch?.id]);
+
+  const fmtTimeout = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }; 
+
   return (
     <div className="h-screen w-full bg-transparent font-sans overflow-hidden select-none">
       <style>{`body { overflow: hidden !important; } ::-webkit-scrollbar { display: none !important; }`}</style>
@@ -124,6 +149,20 @@ export default function LiveStream() {
           )
         ))}
       </div>
+
+      {/* Timeout Overlay */}
+      {timeoutMatch && timeoutDisplay > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900/95 border border-slate-700 rounded-2xl p-5 text-center shadow-2xl">
+            <div className={`text-4xl font-black mb-2 tabular-nums ${timeoutDisplay <= 15 ? "text-red-500 animate-pulse" : "text-white"}`}>
+              {fmtTimeout(timeoutDisplay)}
+            </div>
+            <p className={`text-sm font-black italic ${timeoutMatch.timeoutTeam === 1 ? "text-blue-400" : "text-orange-400"}`}>
+              TIMEOUT — TEAM {timeoutMatch.timeoutTeam}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* HUD Settings Panel */}
       <div className={`fixed top-4 right-4 z-50 flex flex-col items-end gap-2 transition-opacity duration-300 ${hudVisible || hudOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
