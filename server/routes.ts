@@ -203,6 +203,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       gamesWonTeam1,
       gamesWonTeam2,
       livestream,
+      timeoutActive,
+      timeoutTeam,
+      timeoutEndTime,
     } = req.body;
 
     const updateData: any = {};
@@ -217,6 +220,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (gamesWonTeam1 !== undefined) updateData.gamesWonTeam1 = gamesWonTeam1;
     if (gamesWonTeam2 !== undefined) updateData.gamesWonTeam2 = gamesWonTeam2;
     if (livestream !== undefined) updateData.livestream = livestream;
+    if (timeoutActive !== undefined) updateData.timeoutActive = timeoutActive;
+    if (timeoutTeam !== undefined) updateData.timeoutTeam = timeoutTeam;
+    if (timeoutEndTime !== undefined) {
+      updateData.timeoutEndTime = typeof timeoutEndTime === 'string' ? new Date(timeoutEndTime) : timeoutEndTime;
+    }
     if (team1Player1 !== undefined) updateData.team1Player1 = team1Player1;
     if (team1Player2 !== undefined) updateData.team1Player2 = team1Player2;
     if (team2Player1 !== undefined) updateData.team2Player1 = team2Player1;

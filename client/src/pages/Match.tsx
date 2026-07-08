@@ -736,11 +736,32 @@ export default function Match() {
         [`team${team}`]: prev[`team${team}`] - 1,
       }));
       addTimelineEvent("timeout", team);
+      if (currentMatchId > 0) {
+        const endTime = new Date(Date.now() + 180 * 1000);
+        updateMatch.mutate({
+          id: currentMatchId,
+          data: {
+            timeoutActive: true,
+            timeoutTeam: team,
+            timeoutEndTime: endTime.toISOString() as any,
+          },
+        });
+      }
     }
   };
 
   const stopTimeout = () => {
     setIsTimeoutActive(false);
+    if (currentMatchId > 0) {
+      updateMatch.mutate({
+        id: currentMatchId,
+        data: {
+          timeoutActive: false,
+          timeoutTeam: null as any,
+          timeoutEndTime: null as any,
+        },
+      });
+    }
   };
 
   const addTimelineEvent = (
