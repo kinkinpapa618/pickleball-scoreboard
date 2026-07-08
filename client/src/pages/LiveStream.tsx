@@ -153,11 +153,11 @@ export default function LiveStream() {
       {/* Timeout Overlay */}
       {timeoutMatch && timeoutDisplay > 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900/95 border border-slate-700 rounded-3xl p-8 text-center shadow-2xl">
-            <div className={`text-8xl font-black mb-4 tabular-nums ${timeoutDisplay <= 15 ? "text-red-500 animate-pulse" : "text-white"}`}>
+          <div className="bg-slate-900/95 border border-slate-700 rounded-2xl p-5 text-center shadow-2xl">
+            <div className={`text-4xl font-black mb-2 tabular-nums ${timeoutDisplay <= 15 ? "text-red-500 animate-pulse" : "text-white"}`}>
               {fmtTimeout(timeoutDisplay)}
             </div>
-            <p className={`text-2xl font-black italic ${timeoutMatch.timeoutTeam === 1 ? "text-blue-400" : "text-orange-400"}`}>
+            <p className={`text-sm font-black italic ${timeoutMatch.timeoutTeam === 1 ? "text-blue-400" : "text-orange-400"}`}>
               TIMEOUT — TEAM {timeoutMatch.timeoutTeam}
             </p>
           </div>

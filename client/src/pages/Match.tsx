@@ -185,6 +185,13 @@ export default function Match() {
   const [vmixPort, setVmixPort] = useState("8088");
   const [vmixGTKey, setVmixGTKey] = useState("");
 
+  // Sdeck buttons config
+  const [sdeckBtns, setSdeckBtns] = useState([
+    { label: "S1", fn: "PreviewInput", input: "1" },
+    { label: "S2", fn: "Cut", input: "" },
+    { label: "S3", fn: "OverlayInput1", input: "" },
+  ]);
+
   // Temporary edit states inside the config modal to prevent overwrites from background refetches
   const [editTournamentName, setEditTournamentName] = useState("");
   const [editMatchCode, setEditMatchCode] = useState("");
@@ -223,6 +230,23 @@ export default function Match() {
     } catch (e) {
       console.warn("[vMix] Push failed:", e);
     }
+  };
+
+  const sendVmixCommand = async (func: string, input?: string, value?: string) => {
+    if (!vmixEnabled || !vmixIp || !vmixPort) return;
+    try {
+      await fetch("/api/vmix/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vmixIp, vmixPort, func, input, value }),
+      });
+    } catch (e) {
+      console.warn("[vMix] Command failed:", e);
+    }
+  };
+
+  const handleFadeToBlack = () => {
+    sendVmixCommand("FadeToBlack");
   };
 
   const handleSaveFieldEdit = () => {
@@ -1034,6 +1058,9 @@ export default function Match() {
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
         handleFault();
+      } else if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        handleFadeToBlack();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1328,6 +1355,35 @@ export default function Match() {
             </div>
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Đổi người giao</span>
           </motion.button>
+        </section>
+
+        {/* vMix Quick Controls */}
+        <section className="grid grid-cols-4 gap-2" data-testid="section-vmix-actions">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleFadeToBlack}
+            className="bg-red-950/40 border border-red-800/30 rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-red-900/60 transition text-red-300"
+            title="Fade To Black (Space)"
+          >
+            <div className="w-6 h-6 flex items-center justify-center text-red-400">
+              <StopCircle className="w-5 h-5" />
+            </div>
+            <span className="text-[9px] font-bold text-red-400 text-center leading-none">FADE</span>
+          </motion.button>
+          {sdeckBtns.map((btn, i) => (
+            <motion.button
+              key={i}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => sendVmixCommand(btn.fn, btn.input || undefined)}
+              className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
+              title={btn.label}
+            >
+              <div className="w-6 h-6 flex items-center justify-center text-blue-400 dark:text-blue-300">
+                <Settings className="w-5 h-5" />
+              </div>
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">{btn.label}</span>
+            </motion.button>
+          ))}
         </section>
 
         <footer className="mt-auto p-2 sticky bottom-0 bg-background border-t border-border">
@@ -1742,6 +1798,58 @@ export default function Match() {
                     placeholder="GT Title Input Key (vd: 588ae5a6...)"
                     className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                  {vmixEnabled && (
+                    <div className="space-y-1.5 mt-2">
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase">Sdeck Buttons</span>
+                      {sdeckBtns.map((btn, i) => (
+                        <div key={i} className="grid grid-cols-3 gap-1">
+                          <input
+                            type="text"
+                            value={btn.label}
+                            onChange={(e) => {
+                              const next = [...sdeckBtns];
+                              next[i] = { ...next[i], label: e.target.value };
+                              setSdeckBtns(next);
+                            }}
+                            placeholder="Label"
+                            className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <select
+                            value={btn.fn}
+                            onChange={(e) => {
+                              const next = [...sdeckBtns];
+                              next[i] = { ...next[i], fn: e.target.value };
+                              setSdeckBtns(next);
+                            }}
+                            className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="Cut">Cut</option>
+                            <option value="Fade">Fade</option>
+                            <option value="PreviewInput">Preview</option>
+                            <option value="OverlayInput1">Overlay1</option>
+                            <option value="OverlayInput2">Overlay2</option>
+                            <option value="OverlayInput3">Overlay3</option>
+                            <option value="OverlayInput4">Overlay4</option>
+                            <option value="Stinger1">Stinger1</option>
+                            <option value="FadeToBlack">FTB</option>
+                            <option value="StartRecording">Rec</option>
+                            <option value="StartStreaming">Stream</option>
+                          </select>
+                          <input
+                            type="text"
+                            value={btn.input}
+                            onChange={(e) => {
+                              const next = [...sdeckBtns];
+                              next[i] = { ...next[i], input: e.target.value };
+                              setSdeckBtns(next);
+                            }}
+                            placeholder="Input #"
+                            className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
             </div>
