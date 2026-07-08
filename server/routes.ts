@@ -203,6 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       gamesWonTeam1,
       gamesWonTeam2,
       livestream,
+      vmixConfig,
       timeoutActive,
       timeoutTeam,
       timeoutEndTime,
@@ -220,6 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (gamesWonTeam1 !== undefined) updateData.gamesWonTeam1 = gamesWonTeam1;
     if (gamesWonTeam2 !== undefined) updateData.gamesWonTeam2 = gamesWonTeam2;
     if (livestream !== undefined) updateData.livestream = livestream;
+    if (vmixConfig !== undefined) updateData.vmixConfig = parseSafe(vmixConfig);
     if (timeoutActive !== undefined) updateData.timeoutActive = timeoutActive;
     if (timeoutTeam !== undefined) updateData.timeoutTeam = timeoutTeam;
     if (timeoutEndTime !== undefined) {
@@ -1916,7 +1918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== vMix Integration =====
   app.post("/api/vmix/command", async (req, res) => {
-    const { vmixIp, vmixPort, func, input, value, selectedName } = req.body;
+    const { vmixIp, vmixPort, func, input, value, duration, selectedName } = req.body;
 
     if (!vmixIp || !vmixPort || !func) {
       return res.status(400).json({ message: "Thiếu thông tin kết nối vMix" });
@@ -1927,6 +1929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       params.append("Function", func);
       if (input) params.append("Input", input);
       if (value !== undefined) params.append("Value", String(value));
+      if (duration) params.append("Duration", String(duration));
       if (selectedName) params.append("SelectedName", selectedName);
 
       const vmixUrl = `http://${vmixIp}:${vmixPort}/api/?${params.toString()}`;

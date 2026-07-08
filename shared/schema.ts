@@ -127,6 +127,7 @@ export const matches = pgTable("matches", {
   gamesWonTeam1: integer("games_won_team1").default(0).notNull(),
   gamesWonTeam2: integer("games_won_team2").default(0).notNull(),
   livestream: boolean("livestream").default(false).notNull(),
+  vmixConfig: json("vmix_config"),
   timeoutActive: boolean("timeout_active").default(false).notNull(),
   timeoutTeam: integer("timeout_team"),
   timeoutEndTime: timestamp("timeout_end_time"),
