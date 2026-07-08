@@ -21,6 +21,8 @@ import {
   Timer,
   StopCircle,
   ArrowLeftRight,
+  Pencil,
+  Check,
 } from "lucide-react";
 import {
   Dialog,
@@ -54,6 +56,59 @@ interface TimelineEvent {
   scorerTeam?: 1 | 2;
 }
 
+function InlineEditableField({
+  label,
+  value,
+  placeholder,
+  isEditing,
+  editValue,
+  onEdit,
+  onSave,
+  onCancel,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  isEditing: boolean;
+  editValue: string;
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 min-w-0 flex-1">
+      <span className="text-[8px] font-extrabold text-muted-foreground uppercase tracking-wider flex-shrink-0">{label}</span>
+      {isEditing ? (
+        <div className="flex items-center gap-0.5 flex-1 min-w-0">
+          <input
+            autoFocus
+            value={editValue}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
+            placeholder={placeholder}
+            className="flex-1 min-w-0 text-[10px] font-bold bg-muted border border-border rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-500 text-foreground"
+          />
+          <button onClick={onSave} className="p-0.5 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-500 flex-shrink-0">
+            <Check className="w-3 h-3" />
+          </button>
+          <button onClick={onCancel} className="p-0.5 rounded hover:bg-muted text-muted-foreground flex-shrink-0">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-0.5 flex-1 min-w-0">
+          <span className="text-[10px] font-bold truncate min-w-0 text-foreground">{value || placeholder}</span>
+          <button onClick={onEdit} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0">
+            <Pencil className="w-2.5 h-2.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Match() {
   const [, setLocation] = useLocation();
   const { id } = useParams();
@@ -78,6 +133,7 @@ export default function Match() {
     t2p1: search.get("t2p1") || "P3",
     t2p2: search.get("t2p2") || "P4",
   };
+  const [editableNames, setEditableNames] = useState(names);
   const winningScore = parseInt(search.get("win") || "15");
   const initialServer = parseInt(search.get("serve") || "1") as 1 | 2;
   const matchTypeFromUrl = search.get("type") as "singles" | "doubles" | null;
@@ -120,11 +176,29 @@ export default function Match() {
   const [tournamentName, setTournamentName] = useState("");
   const [matchCode, setMatchCode] = useState("");
   const [matchTheme, setMatchTheme] = useState("default");
+  const [livestream, setLivestream] = useState(false);
 
   // Temporary edit states inside the config modal to prevent overwrites from background refetches
   const [editTournamentName, setEditTournamentName] = useState("");
   const [editMatchCode, setEditMatchCode] = useState("");
   const [editTheme, setEditTheme] = useState("default");
+
+  // Inline editing states for tournament/match code
+  const [editingField, setEditingField] = useState<"tournament" | "match" | null>(null);
+  const [editFieldValue, setEditFieldValue] = useState("");
+
+  const handleSaveFieldEdit = () => {
+    if (!editingField || !editFieldValue.trim()) return;
+    if (editingField === "tournament") {
+      setTournamentName(editFieldValue.trim());
+      if (currentMatchId > 0) updateMatch.mutate({ id: currentMatchId, data: { tournamentName: editFieldValue.trim() } });
+    } else {
+      setMatchCode(editFieldValue.trim());
+      if (currentMatchId > 0) updateMatch.mutate({ id: currentMatchId, data: { matchCode: editFieldValue.trim() } });
+    }
+    setEditingField(null);
+    setEditFieldValue("");
+  };
 
   const handleSaveConfig = async () => {
     if (currentMatchId > 0) {
@@ -162,6 +236,16 @@ export default function Match() {
     if (serverMatch.theme) {
       setMatchTheme(serverMatch.theme);
     }
+    if (serverMatch.livestream !== undefined) {
+      setLivestream(serverMatch.livestream ?? false);
+    }
+
+    setEditableNames({
+      t1p1: serverMatch.team1Player1 || names.t1p1,
+      t1p2: serverMatch.team1Player2 || names.t1p2,
+      t2p1: serverMatch.team2Player1 || names.t2p1,
+      t2p2: serverMatch.team2Player2 || names.t2p2,
+    });
 
     if (serverMatch.status === "finished" && serverMatch.winnerTeam) {
       if (state.winner !== serverMatch.winnerTeam) {
@@ -532,10 +616,12 @@ export default function Match() {
             gamesWonTeam1: nextGamesWon1,
             gamesWonTeam2: nextGamesWon2,
             sets: nextSets,
+            livestream: false,
           },
         }, {
           onSuccess: (data) => {
             console.log("Match status updated to completed:", data);
+            setLivestream(false);
           },
           onError: (error: any) => {
             console.error("Failed to update match status:", error);
@@ -713,8 +799,8 @@ export default function Match() {
   };
 
   const displayNames = courtSwapped
-    ? { t1p1: names.t2p1, t1p2: names.t2p2, t2p1: names.t1p1, t2p2: names.t1p2 }
-    : names;
+    ? { t1p1: editableNames.t2p1, t1p2: editableNames.t2p2, t2p1: editableNames.t1p1, t2p2: editableNames.t1p2 }
+    : editableNames;
 
   const displayServerTeam = courtSwapped ? (state.serverTeam === 1 ? 2 : 1) : state.serverTeam;
 
@@ -726,6 +812,31 @@ export default function Match() {
     name: string;
     currentSide: "left" | "right";
   } | null>(null);
+
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editNameValue, setEditNameValue] = useState("");
+
+  const handleSavePlayerName = () => {
+    if (!editingPlayerId || !editNameValue.trim()) return;
+    const fieldMap: Record<string, string> = {
+      t1p1: "team1Player1",
+      t1p2: "team1Player2",
+      t2p1: "team2Player1",
+      t2p2: "team2Player2",
+    };
+    const dbField = fieldMap[editingPlayerId];
+    if (!dbField) return;
+
+    setEditableNames(prev => ({ ...prev, [editingPlayerId]: editNameValue.trim() }));
+    if (currentMatchId > 0) {
+      updateMatch.mutate({
+        id: currentMatchId,
+        data: { [dbField]: editNameValue.trim() } as any,
+      });
+    }
+    setEditingPlayerId(null);
+    setEditNameValue("");
+  };
 
   const togglePlayerStacking = () => {
     if (!selectedPlayer) return;
@@ -849,6 +960,23 @@ export default function Match() {
     setPrevHistoryLength(state.gameHistory.length);
   }, [state.gameHistory.length, prevHistoryLength]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedPlayer || selectedEvent || isTimeoutActive || state.winner || showConfigModal) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        handleScorePoint();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleFault();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPlayer, selectedEvent, isTimeoutActive, state.winner, showConfigModal, handleScorePoint, handleFault]);
+
   const isFirstServeActive = state.isFirstServeOfMatch;
 
   return (
@@ -882,6 +1010,26 @@ export default function Match() {
           >
             <Home className="w-4 h-4" />
           </Button>
+          <label className="flex items-center gap-1 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={livestream}
+              onChange={(e) => {
+                const val = e.target.checked;
+                setLivestream(val);
+                if (currentMatchId > 0) {
+                  updateMatch.mutate({
+                    id: currentMatchId,
+                    data: { livestream: val },
+                  });
+                }
+              }}
+              className="w-3.5 h-3.5 rounded border-border accent-red-500 cursor-pointer"
+            />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 whitespace-nowrap">
+              LIVESTREAM
+            </span>
+          </label>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 px-2.5 py-1 bg-muted rounded-md border border-border">
@@ -932,14 +1080,64 @@ export default function Match() {
       </header>
 
       <main className="flex-1 flex flex-col p-2 gap-4 max-w-lg mx-auto w-full overflow-y-auto">
-        {(isBO3 || isBO5) && (
-          <div className="flex items-center justify-between px-4 py-2.5 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0">
-            <span className="text-muted-foreground uppercase text-[9px] tracking-wider font-extrabold">TỶ SỐ SET (GAMES WON)</span>
-            <div className="flex gap-2.5 items-center font-mono text-base">
-              <span className="text-cyan-500 font-extrabold">{currentGamesWon1}</span>
-              <span className="text-muted-foreground font-light">-</span>
-              <span className="text-rose-500 font-extrabold">{currentGamesWon2}</span>
+        {(isBO3 || isBO5) ? (
+          <div className="flex items-center px-3 py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <span className="text-muted-foreground uppercase text-[8px] tracking-wider font-extrabold">SET</span>
+              <span className="text-cyan-500 font-extrabold text-sm font-mono">{currentGamesWon1}</span>
+              <span className="text-muted-foreground font-light text-xs">-</span>
+              <span className="text-rose-500 font-extrabold text-sm font-mono">{currentGamesWon2}</span>
             </div>
+            <div className="w-px h-4 bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <InlineEditableField
+                label="GIẢI"
+                value={tournamentName}
+                placeholder="Tên giải"
+                isEditing={editingField === "tournament"}
+                editValue={editFieldValue}
+                onEdit={() => { setEditingField("tournament"); setEditFieldValue(tournamentName); }}
+                onSave={handleSaveFieldEdit}
+                onCancel={() => { setEditingField(null); setEditFieldValue(""); }}
+                onChange={setEditFieldValue}
+              />
+              <InlineEditableField
+                label="TRẬN"
+                value={matchCode}
+                placeholder="Mã trận"
+                isEditing={editingField === "match"}
+                editValue={editFieldValue}
+                onEdit={() => { setEditingField("match"); setEditFieldValue(matchCode); }}
+                onSave={handleSaveFieldEdit}
+                onCancel={() => { setEditingField(null); setEditFieldValue(""); }}
+                onChange={setEditFieldValue}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center px-3 py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
+            <InlineEditableField
+              label="GIẢI"
+              value={tournamentName}
+              placeholder="Tên giải"
+              isEditing={editingField === "tournament"}
+              editValue={editFieldValue}
+              onEdit={() => { setEditingField("tournament"); setEditFieldValue(tournamentName); }}
+              onSave={handleSaveFieldEdit}
+              onCancel={() => { setEditingField(null); setEditFieldValue(""); }}
+              onChange={setEditFieldValue}
+            />
+            <InlineEditableField
+              label="TRẬN"
+              value={matchCode}
+              placeholder="Mã trận"
+              isEditing={editingField === "match"}
+              editValue={editFieldValue}
+              onEdit={() => { setEditingField("match"); setEditFieldValue(matchCode); }}
+              onSave={handleSaveFieldEdit}
+              onCancel={() => { setEditingField(null); setEditFieldValue(""); }}
+              onChange={setEditFieldValue}
+            />
           </div>
         )}
 
@@ -1021,13 +1219,13 @@ export default function Match() {
               addTimelineEvent("undo", null);
             }}
             disabled={state.gameHistory.length === 0}
-            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-slate-100 dark:bg-slate-800/60 border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-undo"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
               <Undo2 className="w-5 h-5" />
             </div>
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Undo</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">HOÀN TÁC</span>
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -1050,7 +1248,7 @@ export default function Match() {
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
               <RotateCcw className="w-5 h-5" />
             </div>
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Đổi Server</span>
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">Đổi người giao</span>
           </motion.button>
         </section>
 
@@ -1104,9 +1302,45 @@ export default function Match() {
                     <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
                       Cài đặt VĐV
                     </div>
-                    <div className="text-lg font-black italic">
-                      {selectedPlayer.name}
-                    </div>
+                    {editingPlayerId === selectedPlayer.id ? (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <input
+                          autoFocus
+                          value={editNameValue}
+                          onChange={(e) => setEditNameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSavePlayerName();
+                            if (e.key === "Escape") {
+                              setEditingPlayerId(null);
+                              setEditNameValue("");
+                            }
+                          }}
+                          className="text-lg font-black italic bg-transparent border-b border-border outline-none w-full max-w-[160px] text-foreground"
+                        />
+                        <button
+                          onClick={handleSavePlayerName}
+                          className="p-0.5 rounded hover:bg-muted text-emerald-500"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <div className="text-lg font-black italic">
+                          {editableNames[selectedPlayer.id as keyof typeof editableNames] || selectedPlayer.name}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingPlayerId(selectedPlayer.id);
+                            setEditNameValue(editableNames[selectedPlayer.id as keyof typeof editableNames] || selectedPlayer.name);
+                          }}
+                          className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                          title="Sửa tên"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </DialogTitle>
               </DialogHeader>

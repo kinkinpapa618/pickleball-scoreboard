@@ -17,6 +17,7 @@ const RefereeTools = lazy(() => import("@/pages/RefereeTools"));
 const Match = lazy(() => import("@/pages/Match"));
 const MatchView = lazy(() => import("@/pages/MatchView"));
 const MatchOverlay = lazy(() => import("@/pages/MatchOverlay"));
+const LiveStream = lazy(() => import("@/pages/LiveStream"));
 const MatchDetail = lazy(() => import("@/pages/MatchDetail"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const Users = lazy(() => import("@/pages/Users"));
@@ -89,6 +90,9 @@ function Router() {
       </Route>
       <Route path="/match-overlay/:id">
         {() => <Suspense fallback={<PageLoader />}><MatchOverlay /></Suspense>}
+      </Route>
+      <Route path="/livestream">
+        {() => <Suspense fallback={<PageLoader />}><LiveStream /></Suspense>}
       </Route>
       <Route path="/match-detail/:id">
         {() => <ProtectedRoute component={MatchDetail} />}
@@ -166,7 +170,7 @@ function ConditionalBottomNav() {
   const [location] = useLocation();
   if (location === "/auth") return null;
   // Không hiện Nav khi đang trong trận đấu để tập trung
-  if (location.includes("/match") || location.includes("/overlay")) return null;
+  if (location.includes("/match") || location.includes("/overlay") || location.includes("/livestream")) return null;
   return <BottomNav />;
 }
 
@@ -175,7 +179,7 @@ function ConditionalDarkTabs() {
   const [location] = useLocation();
   if (location === "/auth") return null;
   // Không hiện Tab khi đang trong trận đấu để tập trung
-  if (location.includes("/match") || location.includes("/overlay")) return null;
+  if (location.includes("/match") || location.includes("/overlay") || location.includes("/livestream")) return null;
   return <DarkTabs />;
 }
 

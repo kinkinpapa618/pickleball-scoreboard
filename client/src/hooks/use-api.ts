@@ -170,6 +170,18 @@ export function useMyMatches(page: number = 1) {
   });
 }
 
+export function useLiveStreamMatches(refetchInterval: number | false = false) {
+  return useQuery<schema.Match[]>({
+    queryKey: ["/api/livestream-matches"],
+    queryFn: async () => {
+      const res = await fetch("/api/livestream-matches", { credentials: "same-origin" });
+      if (!res.ok) throw new Error("Failed to fetch livestream matches");
+      return res.json();
+    },
+    refetchInterval,
+  });
+}
+
 export function useGenerateTournament() {
   const queryClient = useQueryClient();
   return useMutation({

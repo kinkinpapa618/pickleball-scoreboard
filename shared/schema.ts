@@ -126,6 +126,7 @@ export const matches = pgTable("matches", {
   sets: json("sets"),
   gamesWonTeam1: integer("games_won_team1").default(0).notNull(),
   gamesWonTeam2: integer("games_won_team2").default(0).notNull(),
+  livestream: boolean("livestream").default(false).notNull(),
 });
 
 // === 4. ZOD SCHEMAS (Để Validate Dữ liệu) ===

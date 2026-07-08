@@ -86,6 +86,7 @@ export interface IStorage {
   updateMatch(id: number, data: Partial<Match>): Promise<Match>;
   bulkUpdateMatches(data: Partial<Match>): Promise<void>;
   deleteMatch(id: number): Promise<void>;
+  getLiveStreamMatches(): Promise<Match[]>;
 
   // Work Schedule methods
   getWorkSchedules(refereeId?: number): Promise<WorkSchedule[]>;
@@ -355,6 +356,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMatch(id: number): Promise<void> {
     await db.delete(matches).where(eq(matches.id, id));
+  }
+
+  async getLiveStreamMatches(): Promise<Match[]> {
+    return db
+      .select()
+      .from(matches)
+      .where(eq(matches.livestream, true))
+      .orderBy(desc(matches.id));
   }
 
   async getUserMatches(userId: number, limit: number, offset: number): Promise<Match[]> {

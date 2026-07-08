@@ -103,6 +103,7 @@ export default function RefereeTools() {
   const [matchType, setMatchType] = useState<"singles" | "doubles">("doubles");
   const [showCoinToss, setShowCoinToss] = useState(false);
   const [matchCodeInput, setMatchCodeInput] = useState("");
+  const [tournamentNameInput, setTournamentNameInput] = useState("");
 
   const [playerInput, setPlayerInput] = useState<string>("");
 
@@ -262,6 +263,7 @@ export default function RefereeTools() {
         type: matchType,
         mode: boMode,
         matchCode: matchCodeInput,
+        tournamentName: tournamentNameInput,
       });
 
       const params = new URLSearchParams({
@@ -411,16 +413,32 @@ export default function RefereeTools() {
               </div>
               
               <div className="space-y-1.5 pb-2">
-                <label className="text-[9px] font-bold text-muted-foreground uppercase">
-                  Mã trận đấu / Vòng đấu
-                </label>
-                <input
-                  type="text"
-                  value={matchCodeInput}
-                  onChange={(e) => setMatchCodeInput(e.target.value)}
-                  placeholder="Ví dụ: VÒNG 1 | BẢNG A..."
-                  className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase">
+                      Tên giải đấu
+                    </label>
+                    <input
+                      type="text"
+                      value={tournamentNameInput}
+                      onChange={(e) => setTournamentNameInput(e.target.value)}
+                      placeholder="Ví dụ: GIẢI PICKLEBALL..."
+                      className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase">
+                      Mã trận đấu / Vòng đấu
+                    </label>
+                    <input
+                      type="text"
+                      value={matchCodeInput}
+                      onChange={(e) => setMatchCodeInput(e.target.value)}
+                      placeholder="Ví dụ: VÒNG 1 | BẢNG A..."
+                      className="bg-muted border border-border rounded-xl h-10 px-3 text-sm text-foreground focus:border-orange-500 outline-none transition-all w-full"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">

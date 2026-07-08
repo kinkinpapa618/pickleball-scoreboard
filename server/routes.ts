@@ -42,6 +42,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(matches);
   });
 
+  // 3b. Lấy danh sách trận đấu đang livestream
+  app.get("/api/livestream-matches", async (_req, res) => {
+    const matches = await storage.getLiveStreamMatches();
+    res.json(matches);
+  });
+
   // 4. Lấy chi tiết 1 trận đấu (Dành cho MatchView)
   app.get("/api/matches/:id", async (req, res) => {
     // Sửa lỗi ép kiểu: Đảm bảo id là string trước khi parseInt
@@ -173,6 +179,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       winnerTeam, 
       endTime,
       startTime,
+      team1Player1,
+      team1Player2,
+      team2Player1,
+      team2Player2,
       scoreTeam1, 
       scoreTeam2,
       isServer1,
@@ -192,6 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sets,
       gamesWonTeam1,
       gamesWonTeam2,
+      livestream,
     } = req.body;
 
     const updateData: any = {};
@@ -205,6 +216,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (mode !== undefined) updateData.mode = mode;
     if (gamesWonTeam1 !== undefined) updateData.gamesWonTeam1 = gamesWonTeam1;
     if (gamesWonTeam2 !== undefined) updateData.gamesWonTeam2 = gamesWonTeam2;
+    if (livestream !== undefined) updateData.livestream = livestream;
+    if (team1Player1 !== undefined) updateData.team1Player1 = team1Player1;
+    if (team1Player2 !== undefined) updateData.team1Player2 = team1Player2;
+    if (team2Player1 !== undefined) updateData.team2Player1 = team2Player1;
+    if (team2Player2 !== undefined) updateData.team2Player2 = team2Player2;
     if (sets !== undefined) updateData.sets = parseSafe(sets);
     if (endTime !== undefined) {
       // Convert ISO string to Date object for drizzle
@@ -230,7 +246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`[PATCH /api/matches/${id}] Update data:`, JSON.stringify(updateData));
 
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
+      console.log(`[PATCH /api/matches/${id}] No valid fields to update, returning current match`);
+      return res.json(match);
     }
 
     try {
