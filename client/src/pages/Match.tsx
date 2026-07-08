@@ -23,6 +23,7 @@ import {
   ArrowLeftRight,
   Pencil,
   Check,
+  Settings,
 } from "lucide-react";
 import {
   Dialog,
@@ -178,6 +179,12 @@ export default function Match() {
   const [matchTheme, setMatchTheme] = useState("default");
   const [livestream, setLivestream] = useState(false);
 
+  // vMix integration
+  const [vmixEnabled, setVmixEnabled] = useState(false);
+  const [vmixIp, setVmixIp] = useState("127.0.0.1");
+  const [vmixPort, setVmixPort] = useState("8088");
+  const [vmixGTKey, setVmixGTKey] = useState("");
+
   // Temporary edit states inside the config modal to prevent overwrites from background refetches
   const [editTournamentName, setEditTournamentName] = useState("");
   const [editMatchCode, setEditMatchCode] = useState("");
@@ -186,6 +193,37 @@ export default function Match() {
   // Inline editing states for tournament/match code
   const [editingField, setEditingField] = useState<"tournament" | "match" | null>(null);
   const [editFieldValue, setEditFieldValue] = useState("");
+
+  const pushToVmix = async () => {
+    if (!vmixEnabled || !vmixIp || !vmixPort || !vmixGTKey || !serverMatch) return;
+    try {
+      await fetch("/api/vmix/push-scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vmixIp,
+          vmixPort,
+          gtKey: vmixGTKey,
+          match: {
+            scoreTeam1: state.score1,
+            scoreTeam2: state.score2,
+            isServer1: state.serverTeam === 1,
+            isServer2: state.serverTeam === 2,
+            team1Player1: serverMatch.team1Player1,
+            team1Player2: serverMatch.team1Player2,
+            team2Player1: serverMatch.team2Player1,
+            team2Player2: serverMatch.team2Player2,
+            tournamentName,
+            matchCode,
+            gamesWonTeam1: serverMatch.gamesWonTeam1,
+            gamesWonTeam2: serverMatch.gamesWonTeam2,
+          },
+        }),
+      });
+    } catch (e) {
+      console.warn("[vMix] Push failed:", e);
+    }
+  };
 
   const handleSaveFieldEdit = () => {
     if (!editingField || !editFieldValue.trim()) return;
@@ -397,6 +435,8 @@ export default function Match() {
         data: updateData,
       });
 
+      pushToVmix();
+
       addTimelineEvent("score", pendingScoreUpdate.scoringTeam, {
         serverPlayer: pendingScoreUpdate.serverPlayer,
         serverTeam: pendingScoreUpdate.serverTeam,
@@ -489,6 +529,8 @@ export default function Match() {
         id: matchId,
         data: updateData,
       });
+
+      pushToVmix();
 
       addTimelineEvent("fault", state.serverTeam, {
         serverPlayer: pendingFaultUpdate.serverPlayer,
@@ -1077,6 +1119,21 @@ export default function Match() {
         >
           <Undo2 className="w-4 h-4" />
         </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setEditTournamentName(tournamentName);
+            setEditMatchCode(matchCode);
+            setEditTheme(matchTheme);
+            setShowConfigModal(true);
+          }}
+          className="text-muted-foreground hover:text-foreground h-8 w-8 bg-muted hover:bg-muted/80 rounded-lg"
+          data-testid="button-settings"
+          title="Cấu hình"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
       </header>
 
       <main className="flex-1 flex flex-col p-2 gap-4 max-w-lg mx-auto w-full overflow-y-auto">
@@ -1624,6 +1681,48 @@ export default function Match() {
                 <option value="minimal">Minimal Bar (Thanh ngang)</option>
                 <option value="dali-sport">Dali Sport (Biamanhbeo)</option>
               </select>
+            </div>
+            <hr className="border-border" />
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
+                <span>vMix Integration</span>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vmixEnabled}
+                    onChange={(e) => setVmixEnabled(e.target.checked)}
+                    className="w-3 h-3 accent-blue-500"
+                  />
+                  <span className="text-[10px] text-muted-foreground">Enable</span>
+                </label>
+              </label>
+              {vmixEnabled && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={vmixIp}
+                      onChange={(e) => setVmixIp(e.target.value)}
+                      placeholder="vMix IP"
+                      className="bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <input
+                      type="text"
+                      value={vmixPort}
+                      onChange={(e) => setVmixPort(e.target.value)}
+                      placeholder="Port (8088)"
+                      className="bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={vmixGTKey}
+                    onChange={(e) => setVmixGTKey(e.target.value)}
+                    placeholder="GT Title Input Key (vd: 588ae5a6...)"
+                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </>
+              )}
             </div>
           </div>
           <div className="flex gap-2.5 mt-4">

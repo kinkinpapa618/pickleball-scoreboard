@@ -1906,6 +1906,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Xóa thành công" });
   });
 
+  // ===== vMix Integration =====
+  app.post("/api/vmix/command", async (req, res) => {
+    const { vmixIp, vmixPort, func, input, value, selectedName } = req.body;
+
+    if (!vmixIp || !vmixPort || !func) {
+      return res.status(400).json({ message: "Thiếu thông tin kết nối vMix" });
+    }
+
+    try {
+      const params = new URLSearchParams();
+      params.append("Function", func);
+      if (input) params.append("Input", input);
+      if (value !== undefined) params.append("Value", String(value));
+      if (selectedName) params.append("SelectedName", selectedName);
+
+      const vmixUrl = `http://${vmixIp}:${vmixPort}/api/?${params.toString()}`;
+      console.log(`[vMix] Command: ${vmixUrl}`);
+
+      const vmixRes = await fetch(vmixUrl);
+      if (!vmixRes.ok) throw new Error(`vMix responded with ${vmixRes.status}`);
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[vMix] Command error:", err.message);
+      res.status(502).json({ message: "Không thể kết nối đến vMix", error: err.message });
+    }
+  });
+
+  app.post("/api/vmix/push-scores", async (req, res) => {
+    const { vmixIp, vmixPort, gtKey, match } = req.body;
+
+    if (!vmixIp || !vmixPort || !gtKey || !match) {
+      return res.status(400).json({ message: "Thiếu thông tin" });
+    }
+
+    const fields: Record<string, string> = {
+      "Team1Score.Text": String(match.scoreTeam1 || 0),
+      "Team2Score.Text": String(match.scoreTeam2 || 0),
+      "Team1Name.Text": match.team1Player1 || "",
+      "Team2Name.Text": match.team2Player1 || "",
+      "PlayerA1.Text": match.team1Player1 || "",
+      "PlayerA2.Text": match.team1Player2 || "",
+      "PlayerB1.Text": match.team2Player1 || "",
+      "PlayerB2.Text": match.team2Player2 || "",
+      "ServerIndicator1.Text": match.isServer1 ? "●" : "",
+      "ServerIndicator2.Text": match.isServer2 ? "●" : "",
+      "TournamentName.Text": match.tournamentName || "",
+      "MatchCode.Text": match.matchCode || "",
+      "GamesWon1.Text": String(match.gamesWonTeam1 || 0),
+      "GamesWon2.Text": String(match.gamesWonTeam2 || 0),
+    };
+
+    try {
+      const results = [];
+      for (const [name, value] of Object.entries(fields)) {
+        const params = new URLSearchParams();
+        params.append("Function", "SetText");
+        params.append("Input", gtKey);
+        params.append("SelectedName", name);
+        params.append("Value", value);
+
+        const vmixUrl = `http://${vmixIp}:${vmixPort}/api/?${params.toString()}`;
+        await fetch(vmixUrl);
+        results.push(name);
+      }
+
+      console.log(`[vMix] Pushed ${results.length} fields to GT:${gtKey}`);
+      res.json({ success: true, fieldsPushed: results.length });
+    } catch (err: any) {
+      console.error("[vMix] Push scores error:", err.message);
+      res.status(502).json({ message: "Không thể đẩy điểm đến vMix", error: err.message });
+    }
+  });
+
+  app.post("/api/vmix/test", async (req, res) => {
+    const { vmixIp, vmixPort } = req.body;
+    if (!vmixIp || !vmixPort) {
+      return res.status(400).json({ message: "Thiếu thông tin kết nối" });
+    }
+
+    try {
+      const vmixUrl = `http://${vmixIp}:${vmixPort}/api/`;
+      const vmixRes = await fetch(vmixUrl);
+      const text = await vmixRes.text();
+      const connected = text.includes("<vmix>");
+      res.json({ connected });
+    } catch (err: any) {
+      res.json({ connected: false, error: err.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
