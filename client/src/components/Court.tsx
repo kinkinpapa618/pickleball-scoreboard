@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Zap, Shield, Lock, ArrowLeftRight } from "lucide-react";
 
 type Position = "left" | "right";
@@ -23,41 +23,6 @@ interface CourtProps {
   ) => void;
   onSwitchCourt?: () => void;
   courtSwapped?: boolean;
-}
-
-function Ball({
-  fromX,
-  fromY,
-  toX,
-  toY,
-  serverId,
-}: {
-  fromX: string;
-  fromY: string;
-  toX: string;
-  toY: string;
-  serverId: string;
-}) {
-  return (
-    <motion.div
-      key={serverId}
-      initial={{ left: fromX, top: fromY, scale: 0, opacity: 0 }}
-      animate={{
-        left: [fromX, "50%", toX],
-        top: [fromY, "30%", toY],
-        scale: [1, 1.5, 1],
-        opacity: [1, 1, 1],
-      }}
-      transition={{
-        duration: 1.2,
-        ease: "circOut",
-        repeat: Infinity,
-        repeatDelay: 1,
-      }}
-      className="absolute z-50 w-4 h-4 bg-[#ccff00] rounded-full shadow-[0_0_12px_rgba(204,255,0,0.6)] border border-white/60"
-      style={{ x: "-50%", y: "-50%" }}
-    />
-  );
 }
 
 function CourtMarker({
@@ -270,16 +235,6 @@ export function Court({
           </button>
         )}
         </div>
-
-        {activeSrv && activeRcv && (
-          <Ball
-            fromX={activeSrv.x}
-            fromY={activeSrv.y}
-            toX={activeRcv.x}
-            toY={activeRcv.y}
-            serverId={`${activeSrv.id}-${activeSrv.x}-${activeSrv.y}-${activeRcv.x}-${activeRcv.y}`}
-          />
-        )}
 
         {players.map((p) => (
           <CourtMarker
