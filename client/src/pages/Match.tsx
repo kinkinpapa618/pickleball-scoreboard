@@ -23,7 +23,6 @@ import {
   ArrowLeftRight,
   Pencil,
   Check,
-  Settings,
 } from "lucide-react";
 import {
   Dialog,
@@ -33,22 +32,6 @@ import {
 } from "@/components/ui/dialog";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
-
-const VMIX_CONFIG_KEY = "vmix-global-config";
-
-function saveGlobalVmixConfig(cfg: {
-  enabled: boolean;
-  ip: string;
-  port: string;
-  gtKey: string;
-  sdeckBtns: any[];
-}) {
-  try {
-    localStorage.setItem(VMIX_CONFIG_KEY, JSON.stringify(cfg));
-  } catch (e) {
-    console.warn("Failed to save vMix config:", e);
-  }
-}
 
 type TimelineEventType =
   | "score"
@@ -195,96 +178,12 @@ export default function Match() {
   const [matchTheme, setMatchTheme] = useState("default");
   const [livestream, setLivestream] = useState(false);
 
-  // vMix integration
-  const [vmixEnabled, setVmixEnabled] = useState(false);
-  const [vmixIp, setVmixIp] = useState("127.0.0.1");
-  const [vmixPort, setVmixPort] = useState("8088");
-  const [vmixGTKey, setVmixGTKey] = useState("");
-
-  // Sdeck buttons config
-  const [sdeckBtns, setSdeckBtns] = useState([
-    { label: "S1", fn: "PreviewInput", input: "1", hotkey: "", duration: "", value: "" },
-    { label: "S2", fn: "Cut", input: "", hotkey: "", duration: "", value: "" },
-    { label: "S3", fn: "OverlayInput1", input: "", hotkey: "", duration: "", value: "" },
-    { label: "S4", fn: "OverlayInput2", input: "", hotkey: "", duration: "", value: "" },
-    { label: "S5", fn: "Stinger1", input: "", hotkey: "", duration: "", value: "" },
-    { label: "S6", fn: "FadeToBlack", input: "", hotkey: "", duration: "", value: "" },
-  ]);
-  const [sdeckEditIdx, setSdeckEditIdx] = useState<number | null>(null);
-  const [sdeckEditDraft, setSdeckEditDraft] = useState<{ label: string; fn: string; input: string; hotkey: string; duration: string; value: string } | null>(null);
-
-  // Temporary edit states inside the config modal to prevent overwrites from background refetches
-  const [editTournamentName, setEditTournamentName] = useState("");
-  const [editMatchCode, setEditMatchCode] = useState("");
-  const [editTheme, setEditTheme] = useState("default");
-
-  // Inline editing states for tournament/match code
   const [editingField, setEditingField] = useState<"tournament" | "match" | null>(null);
   const [editFieldValue, setEditFieldValue] = useState("");
 
-  // Load GLOBAL vMix config (shared across all matches) from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(VMIX_CONFIG_KEY);
-      if (!raw) return;
-      const vc = JSON.parse(raw);
-      if (vc.enabled !== undefined) setVmixEnabled(vc.enabled);
-      if (vc.ip) setVmixIp(vc.ip);
-      if (vc.port) setVmixPort(vc.port);
-      if (vc.gtKey) setVmixGTKey(vc.gtKey);
-      if (vc.sdeckBtns && Array.isArray(vc.sdeckBtns)) setSdeckBtns(vc.sdeckBtns);
-    } catch (e) {
-      console.warn("Failed to load vMix config:", e);
-    }
-  }, []);
-
-  const pushToVmix = async () => {
-    if (!vmixEnabled || !vmixIp || !vmixPort || !vmixGTKey || !serverMatch) return;
-    try {
-      await fetch("/api/vmix/push-scores", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vmixIp,
-          vmixPort,
-          gtKey: vmixGTKey,
-          match: {
-            scoreTeam1: state.score1,
-            scoreTeam2: state.score2,
-            isServer1: state.serverTeam === 1,
-            isServer2: state.serverTeam === 2,
-            team1Player1: serverMatch.team1Player1,
-            team1Player2: serverMatch.team1Player2,
-            team2Player1: serverMatch.team2Player1,
-            team2Player2: serverMatch.team2Player2,
-            tournamentName,
-            matchCode,
-            gamesWonTeam1: serverMatch.gamesWonTeam1,
-            gamesWonTeam2: serverMatch.gamesWonTeam2,
-          },
-        }),
-      });
-    } catch (e) {
-      console.warn("[vMix] Push failed:", e);
-    }
-  };
-
-  const sendVmixCommand = async (func: string, input?: string, value?: string, duration?: string) => {
-    if (!vmixEnabled || !vmixIp || !vmixPort) return;
-    try {
-      await fetch("/api/vmix/command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vmixIp, vmixPort, func, input, value, duration }),
-      });
-    } catch (e) {
-      console.warn("[vMix] Command failed:", e);
-    }
-  };
-
-  const handleFade = () => {
-    sendVmixCommand("Fade", undefined, undefined, "500");
-  };
+  const [editTournamentName, setEditTournamentName] = useState("");
+  const [editMatchCode, setEditMatchCode] = useState("");
+  const [editTheme, setEditTheme] = useState("default");
 
   const handleSaveFieldEdit = () => {
     if (!editingField || !editFieldValue.trim()) return;
@@ -300,14 +199,6 @@ export default function Match() {
   };
 
   const handleSaveConfig = async () => {
-    // vMix config is GLOBAL (shared across all matches) -> save to localStorage
-    saveGlobalVmixConfig({
-      enabled: vmixEnabled,
-      ip: vmixIp,
-      port: vmixPort,
-      gtKey: vmixGTKey,
-      sdeckBtns,
-    });
     if (currentMatchId > 0) {
       try {
         await updateMatch.mutateAsync({
@@ -504,8 +395,6 @@ export default function Match() {
         data: updateData,
       });
 
-      pushToVmix();
-
       addTimelineEvent("score", pendingScoreUpdate.scoringTeam, {
         serverPlayer: pendingScoreUpdate.serverPlayer,
         serverTeam: pendingScoreUpdate.serverTeam,
@@ -598,8 +487,6 @@ export default function Match() {
         id: matchId,
         data: updateData,
       });
-
-      pushToVmix();
 
       addTimelineEvent("fault", state.serverTeam, {
         serverPlayer: pendingFaultUpdate.serverPlayer,
@@ -1101,18 +988,6 @@ export default function Match() {
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
         handleFault();
-      } else if (e.key === " " || e.code === "Space") {
-        e.preventDefault();
-        handleFade();
-      } else {
-        // Sdeck hotkeys
-        for (const btn of sdeckBtns) {
-          if (btn.hotkey && e.key === btn.hotkey) {
-            e.preventDefault();
-            sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined);
-            break;
-          }
-        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1210,22 +1085,20 @@ export default function Match() {
           variant="ghost"
           size="icon"
           onClick={() => {
-            setEditTournamentName(tournamentName);
-            setEditMatchCode(matchCode);
-            setEditTheme(matchTheme);
-            setShowConfigModal(true);
+            undo();
+            addTimelineEvent("undo", null);
           }}
-          className="text-muted-foreground hover:text-foreground h-8 w-8 bg-muted hover:bg-muted/80 rounded-lg"
-          data-testid="button-settings"
-          title="Cấu hình"
+          disabled={state.gameHistory.length === 0}
+          className="text-muted-foreground hover:text-blue-500 h-8 w-8 bg-muted hover:bg-blue-500/10 rounded-lg"
+          data-testid="button-undo"
         >
-          <Settings className="w-4 h-4" />
+          <Undo2 className="w-4 h-4" />
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col p-1.5 sm:p-2 gap-1.5 sm:gap-3 max-w-lg mx-auto w-full overflow-y-auto">
+      <main className="flex-1 flex flex-col p-2 gap-4 max-w-lg mx-auto w-full overflow-y-auto">
         {(isBO3 || isBO5) ? (
-          <div className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
+          <div className="flex items-center px-3 py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="text-muted-foreground uppercase text-[8px] tracking-wider font-extrabold">SET</span>
               <span className="text-cyan-500 font-extrabold text-sm font-mono">{currentGamesWon1}</span>
@@ -1259,7 +1132,7 @@ export default function Match() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
+          <div className="flex items-center px-3 py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
             <InlineEditableField
               label="GIẢI"
               value={tournamentName}
@@ -1285,7 +1158,7 @@ export default function Match() {
           </div>
         )}
 
-        <section className="bg-card border border-border rounded-xl p-2 sm:p-3 shadow-sm flex-shrink-0" data-testid="section-scoreboard">
+        <section className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0" data-testid="section-scoreboard">
           <Scoreboard
             score1={state.score1}
             score2={state.score2}
@@ -1334,7 +1207,7 @@ export default function Match() {
           </section>
         )}
 
-        <section className="grid grid-cols-4 gap-1.5 sm:gap-2" data-testid="section-quick-actions">
+        <section className="grid grid-cols-4 gap-2" data-testid="section-quick-actions">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => {
@@ -1348,7 +1221,7 @@ export default function Match() {
               }
             }}
             disabled={!!state.winner || (timeouts.team1 === 0 && timeouts.team2 === 0) || isTimeoutActive}
-            className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-timeout"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1363,7 +1236,7 @@ export default function Match() {
               addTimelineEvent("undo", null);
             }}
             disabled={state.gameHistory.length === 0}
-            className="bg-slate-100 dark:bg-slate-800/60 border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-slate-100 dark:bg-slate-800/60 border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-undo"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1374,7 +1247,7 @@ export default function Match() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleSwitchCourt}
-            className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
             data-testid="button-switch-court"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1386,7 +1259,7 @@ export default function Match() {
             whileTap={{ scale: 0.95 }}
             onClick={handleToggleServerHand}
             disabled={matchType !== "doubles" || !!state.winner}
-            className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             title="Đổi người phát bóng trong cùng đội"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1396,182 +1269,17 @@ export default function Match() {
           </motion.button>
         </section>
 
-        {/* vMix Quick Controls */}
-        <section className="grid grid-cols-4 gap-1.5 sm:gap-2" data-testid="section-vmix-actions">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleFade}
-            className="bg-red-600 border border-red-700 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-red-800 transition text-white relative"
-            title="Fade (Space)"
-          >
-            <span className="text-[9px] font-bold text-white text-center leading-none">FADE</span>
-            <span className="text-[7px] text-white/70 text-center leading-none">Space</span>
-          </motion.button>
-          {sdeckBtns.slice(0, 3).map((btn, i) => (
-            <motion.button
-              key={i}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined)}
-              className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
-              title={`${btn.label}${btn.hotkey ? ` [${btn.hotkey}]` : ""}`}
-            >
-              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">{btn.label}</span>
-              {btn.hotkey && <span className="text-[7px] text-slate-500 text-center leading-none">{btn.hotkey}</span>}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSdeckEditIdx(i);
-                  setSdeckEditDraft({ ...sdeckBtns[i] });
-                }}
-                className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition text-muted-foreground"
-              >
-                <Settings className="w-2.5 h-2.5" />
-              </button>
-            </motion.button>
-          ))}
-        </section>
-        <section className="grid grid-cols-3 gap-1.5 sm:gap-2" data-testid="section-vmix-actions-2">
-          {sdeckBtns.slice(3, 6).map((btn, i) => (
-            <motion.button
-              key={i + 3}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined)}
-              className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
-              title={`${btn.label}${btn.hotkey ? ` [${btn.hotkey}]` : ""}`}
-            >
-              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">{btn.label}</span>
-              {btn.hotkey && <span className="text-[7px] text-slate-500 text-center leading-none">{btn.hotkey}</span>}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSdeckEditIdx(i + 3);
-                  setSdeckEditDraft({ ...sdeckBtns[i + 3] });
-                }}
-                className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition text-muted-foreground"
-              >
-                <Settings className="w-2.5 h-2.5" />
-              </button>
-            </motion.button>
-          ))}
-        </section>
-
-        <Dialog open={sdeckEditIdx !== null} onOpenChange={(o) => { if (!o) { setSdeckEditIdx(null); setSdeckEditDraft(null); } }}>
-          <DialogContent className="max-w-[220px] rounded-2xl p-4 bg-card border border-border">
-            <DialogHeader>
-              <DialogTitle className="text-xs font-bold text-foreground">Cấu hình nút</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={sdeckEditDraft?.label || ""}
-                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, label: e.target.value } : null)}
-                placeholder="Label"
-                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <select
-                value={sdeckEditDraft?.fn || "Cut"}
-                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, fn: e.target.value } : null)}
-                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="Cut">Cut</option>
-                <option value="Fade">Fade</option>
-                <option value="PreviewInput">Preview</option>
-                <option value="OverlayInput1">Overlay1</option>
-                <option value="OverlayInput2">Overlay2</option>
-                <option value="OverlayInput3">Overlay3</option>
-                <option value="OverlayInput4">Overlay4</option>
-                <option value="OverlayInput1Off">Overlay1Off</option>
-                <option value="OverlayInput2Off">Overlay2Off</option>
-                <option value="Stinger1">Stinger1</option>
-                <option value="Stinger2">Stinger2</option>
-                <option value="FadeToBlack">FTB</option>
-                <option value="StartRecording">StartRec</option>
-                <option value="StopRecording">StopRec</option>
-                <option value="StartStreaming">StartStream</option>
-                <option value="StopStreaming">StopStream</option>
-                <option value="SetVolume">SetVolume</option>
-                <option value="SetText">SetText</option>
-                <option value="ReplayMarkInOut">ReplayInOut</option>
-                <option value="ReplayPlayLastEventToOutput">ReplayPlay</option>
-                <option value="ReplayLive">ReplayLive</option>
-              </select>
-              <input
-                type="text"
-                value={sdeckEditDraft?.input || ""}
-                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, input: e.target.value } : null)}
-                placeholder="Input #"
-                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={sdeckEditDraft?.hotkey || ""}
-                onChange={(e) => setSdeckEditDraft(d => d ? { ...d, hotkey: e.target.value } : null)}
-                placeholder="Phím tắt"
-                className="w-full bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <div className="grid grid-cols-2 gap-1">
-                <input
-                  type="text"
-                  value={sdeckEditDraft?.duration || ""}
-                  onChange={(e) => setSdeckEditDraft(d => d ? { ...d, duration: e.target.value } : null)}
-                  placeholder="Duration (ms)"
-                  className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  value={sdeckEditDraft?.value || ""}
-                  onChange={(e) => setSdeckEditDraft(d => d ? { ...d, value: e.target.value } : null)}
-                  placeholder="Value"
-                  className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex gap-1.5 pt-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => { setSdeckEditIdx(null); setSdeckEditDraft(null); }}
-                  className="flex-1 text-[10px]"
-                >
-                  Hủy
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (sdeckEditIdx !== null && sdeckEditDraft) {
-                      const next = [...sdeckBtns];
-                      next[sdeckEditIdx] = { ...sdeckEditDraft };
-                      setSdeckBtns(next);
-                      saveGlobalVmixConfig({
-                        enabled: vmixEnabled,
-                        ip: vmixIp,
-                        port: vmixPort,
-                        gtKey: vmixGTKey,
-                        sdeckBtns: next,
-                      });
-                    }
-                    setSdeckEditIdx(null);
-                    setSdeckEditDraft(null);
-                  }}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-[10px]"
-                >
-                  Lưu
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <footer className="mt-auto p-1.5 sm:p-2 sticky bottom-0 bg-background border-t border-border">
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 max-w-lg mx-auto">
+        <footer className="mt-auto p-2 sticky bottom-0 bg-background border-t border-border">
+          <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleScorePoint}
               disabled={!!state.winner}
               style={{ color: 'white' }}
-              className="h-16 sm:h-20 rounded-2xl bg-green-600 hover:bg-green-500 font-black py-3 sm:py-4 px-4 sm:px-5 flex items-center justify-center gap-2 active:scale-95 transition text-base sm:text-lg"
+              className="h-20 rounded-2xl bg-green-600 hover:bg-green-500 font-black py-4 px-5 flex items-center justify-center gap-2 active:scale-95 transition text-lg"
               data-testid="button-score"
             >
-              <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" style={{ color: 'white' }} />
+              <CheckCircle2 className="w-7 h-7" style={{ color: 'white' }} />
               GHI ĐIỂM
             </motion.button>
             <motion.button
@@ -1579,10 +1287,10 @@ export default function Match() {
               onClick={handleFault}
               disabled={!!state.winner}
               style={{ color: 'white' }}
-              className="h-16 sm:h-20 rounded-2xl bg-rose-600 hover:bg-rose-500 font-black py-3 sm:py-4 px-4 sm:px-5 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition text-base sm:text-lg"
+              className="h-20 rounded-2xl bg-rose-600 hover:bg-rose-500 font-black py-4 px-5 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition text-lg"
               data-testid="button-fault"
             >
-              <AlertOctagon className="w-6 h-6 sm:w-7 sm:h-7" style={{ color: 'white' }} />
+              <AlertOctagon className="w-7 h-7" style={{ color: 'white' }} />
               ĐỔI GIAO
             </motion.button>
           </div>
@@ -1933,48 +1641,6 @@ export default function Match() {
                 <option value="minimal">Minimal Bar (Thanh ngang)</option>
                 <option value="dali-sport">Dali Sport (Biamanhbeo)</option>
               </select>
-            </div>
-            <hr className="border-border" />
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
-                <span>vMix Integration</span>
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={vmixEnabled}
-                    onChange={(e) => setVmixEnabled(e.target.checked)}
-                    className="w-3 h-3 accent-blue-500"
-                  />
-                  <span className="text-[10px] text-muted-foreground">Enable</span>
-                </label>
-              </label>
-              {vmixEnabled && (
-                <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={vmixIp}
-                      onChange={(e) => setVmixIp(e.target.value)}
-                      placeholder="vMix IP"
-                      className="bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <input
-                      type="text"
-                      value={vmixPort}
-                      onChange={(e) => setVmixPort(e.target.value)}
-                      placeholder="Port (8088)"
-                      className="bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={vmixGTKey}
-                    onChange={(e) => setVmixGTKey(e.target.value)}
-                    placeholder="GT Title Input Key (vd: 588ae5a6...)"
-                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </>
-              )}
             </div>
           </div>
           <div className="flex gap-2.5 mt-4">
