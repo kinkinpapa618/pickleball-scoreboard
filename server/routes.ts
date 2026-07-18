@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import {
   insertMatchSchema,
   updateMatchSchema,
@@ -1073,6 +1074,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     startingMatches.add(matchId);
     try {
+      // Lấy thông tin tournament để điền sẵn vào match
+      const tournament = await storage.getTournament(tournamentMatch.tournamentId);
       const matchResult = matchSchema.safeParse({
         team1Player1: tournamentMatch.team1Player1,
         team1Player2: tournamentMatch.team1Player2,
@@ -1080,7 +1083,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         team2Player2: tournamentMatch.team2Player2,
         scoreTeam1: 0,
         scoreTeam2: 0,
-        winningScore: tournament.winningScore,
+        winningScore: tournament?.winningScore ?? 15,
         status: "live",
         isServer1: false,
         isServer2: false,
@@ -1093,8 +1096,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const refereeId = isGroupMember ? user.id : (tournamentMatch.refereeId || user.id);
 
-      // Lấy thông tin tournament để điền sẵn vào match
-      const tournament = await storage.getTournament(tournamentMatch.tournamentId);
       const parts = [];
       if (tournamentMatch.groupName) parts.push(`Bảng ${tournamentMatch.groupName}`);
       if (tournamentMatch.round) parts.push(`Vòng ${tournamentMatch.round}`);
@@ -1759,7 +1760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       currentGame: match.currentGame,
       gamesWonTeam1: match.gamesWonTeam1,
       gamesWonTeam2: match.gamesWonTeam2,
-      winnerTeam: match.winnerTeam ?? null,
+      winnerTeam: (match.winnerTeam ?? null) as 1 | 2 | null,
       gameScores: (match.gameScores as Array<[number, number]>) ?? [],
       currentScoreTeam1: match.currentScoreTeam1,
       currentScoreTeam2: match.currentScoreTeam2,

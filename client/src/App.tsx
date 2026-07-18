@@ -8,8 +8,8 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { Loader2 } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { Loader2, Download } from "lucide-react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useLocation, Redirect, Switch, Route } from "wouter";
 
 const Home = lazy(() => import("@/pages/Home"));
@@ -92,7 +92,7 @@ function Router() {
         {() => <Suspense fallback={<PageLoader />}><MatchOverlay /></Suspense>}
       </Route>
       <Route path="/livestream">
-        {() => <Suspense fallback={<PageLoader />}><LiveStream /></Suspense>}
+        {() => <Suspense fallback={null}><LiveStream /></Suspense>}
       </Route>
       <Route path="/match-detail/:id">
         {() => <ProtectedRoute component={MatchDetail} />}
@@ -145,7 +145,45 @@ function AppContent() {
         {/* BottomNav thường chỉ hiện khi đã đăng nhập */}
         <ConditionalDarkTabs />
         <ConditionalBottomNav />
+        <PWAInstallPrompt />
       </div>
+  );
+}
+
+// Nút cài đặt PWA khi trình duyệt phát sự kiện beforeinstallprompt
+function PWAInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  if (!deferredPrompt) return null;
+
+  const handleInstall = async () => {
+    deferredPrompt.prompt();
+    try {
+      await deferredPrompt.userChoice;
+    } catch {
+      // ignore
+    }
+    setDeferredPrompt(null);
+  };
+
+  return (
+    <button
+      onClick={handleInstall}
+      className="fixed bottom-24 right-4 z-50 flex items-center gap-2 rounded-full bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-orange-600 transition-colors"
+      aria-label="Install App"
+    >
+      <Download className="h-4 w-4" />
+      Install App
+    </button>
   );
 }
 

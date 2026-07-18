@@ -34,6 +34,22 @@ import {
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
 
+const VMIX_CONFIG_KEY = "vmix-global-config";
+
+function saveGlobalVmixConfig(cfg: {
+  enabled: boolean;
+  ip: string;
+  port: string;
+  gtKey: string;
+  sdeckBtns: any[];
+}) {
+  try {
+    localStorage.setItem(VMIX_CONFIG_KEY, JSON.stringify(cfg));
+  } catch (e) {
+    console.warn("Failed to save vMix config:", e);
+  }
+}
+
 type TimelineEventType =
   | "score"
   | "fault"
@@ -206,6 +222,22 @@ export default function Match() {
   const [editingField, setEditingField] = useState<"tournament" | "match" | null>(null);
   const [editFieldValue, setEditFieldValue] = useState("");
 
+  // Load GLOBAL vMix config (shared across all matches) from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(VMIX_CONFIG_KEY);
+      if (!raw) return;
+      const vc = JSON.parse(raw);
+      if (vc.enabled !== undefined) setVmixEnabled(vc.enabled);
+      if (vc.ip) setVmixIp(vc.ip);
+      if (vc.port) setVmixPort(vc.port);
+      if (vc.gtKey) setVmixGTKey(vc.gtKey);
+      if (vc.sdeckBtns && Array.isArray(vc.sdeckBtns)) setSdeckBtns(vc.sdeckBtns);
+    } catch (e) {
+      console.warn("Failed to load vMix config:", e);
+    }
+  }, []);
+
   const pushToVmix = async () => {
     if (!vmixEnabled || !vmixIp || !vmixPort || !vmixGTKey || !serverMatch) return;
     try {
@@ -268,6 +300,14 @@ export default function Match() {
   };
 
   const handleSaveConfig = async () => {
+    // vMix config is GLOBAL (shared across all matches) -> save to localStorage
+    saveGlobalVmixConfig({
+      enabled: vmixEnabled,
+      ip: vmixIp,
+      port: vmixPort,
+      gtKey: vmixGTKey,
+      sdeckBtns,
+    });
     if (currentMatchId > 0) {
       try {
         await updateMatch.mutateAsync({
@@ -276,13 +316,6 @@ export default function Match() {
             tournamentName: editTournamentName,
             matchCode: editMatchCode,
             theme: editTheme,
-            vmixConfig: vmixEnabled ? {
-              enabled: vmixEnabled,
-              ip: vmixIp,
-              port: vmixPort,
-              gtKey: vmixGTKey,
-              sdeckBtns,
-            } : undefined,
           },
         });
         setShowConfigModal(false);
@@ -312,14 +345,6 @@ export default function Match() {
     }
     if (serverMatch.livestream !== undefined) {
       setLivestream(serverMatch.livestream ?? false);
-    }
-    if (serverMatch.vmixConfig) {
-      const vc = serverMatch.vmixConfig as any;
-      if (vc.enabled !== undefined) setVmixEnabled(vc.enabled);
-      if (vc.ip) setVmixIp(vc.ip);
-      if (vc.port) setVmixPort(vc.port);
-      if (vc.gtKey) setVmixGTKey(vc.gtKey);
-      if (vc.sdeckBtns && Array.isArray(vc.sdeckBtns)) setSdeckBtns(vc.sdeckBtns);
     }
 
     setEditableNames({
@@ -858,9 +883,7 @@ export default function Match() {
     
     const nextServerHand = state.serverHand === 1 ? 2 : 1;
     toggleServerHand();
-    addTimelineEvent("swap-positions", state.serverTeam, {
-      message: `Đổi người phát bóng sang Server ${nextServerHand}`,
-    });
+    addTimelineEvent("swap-positions", state.serverTeam);
 
     if (currentMatchId > 0) {
       try {
@@ -1187,19 +1210,6 @@ export default function Match() {
           variant="ghost"
           size="icon"
           onClick={() => {
-            undo();
-            addTimelineEvent("undo", null);
-          }}
-          disabled={state.gameHistory.length === 0}
-          className="text-muted-foreground hover:text-blue-500 h-8 w-8 bg-muted hover:bg-blue-500/10 rounded-lg"
-          data-testid="button-undo"
-        >
-          <Undo2 className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
             setEditTournamentName(tournamentName);
             setEditMatchCode(matchCode);
             setEditTheme(matchTheme);
@@ -1213,9 +1223,9 @@ export default function Match() {
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col p-2 gap-4 max-w-lg mx-auto w-full overflow-y-auto">
+      <main className="flex-1 flex flex-col p-1.5 sm:p-2 gap-1.5 sm:gap-3 max-w-lg mx-auto w-full overflow-y-auto">
         {(isBO3 || isBO5) ? (
-          <div className="flex items-center px-3 py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
+          <div className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="text-muted-foreground uppercase text-[8px] tracking-wider font-extrabold">SET</span>
               <span className="text-cyan-500 font-extrabold text-sm font-mono">{currentGamesWon1}</span>
@@ -1249,7 +1259,7 @@ export default function Match() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center px-3 py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
+          <div className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-card border border-border rounded-xl shadow-sm text-xs font-black text-foreground flex-shrink-0 gap-1.5">
             <InlineEditableField
               label="GIẢI"
               value={tournamentName}
@@ -1275,7 +1285,7 @@ export default function Match() {
           </div>
         )}
 
-        <section className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0" data-testid="section-scoreboard">
+        <section className="bg-card border border-border rounded-xl p-2 sm:p-3 shadow-sm flex-shrink-0" data-testid="section-scoreboard">
           <Scoreboard
             score1={state.score1}
             score2={state.score2}
@@ -1324,7 +1334,7 @@ export default function Match() {
           </section>
         )}
 
-        <section className="grid grid-cols-4 gap-2" data-testid="section-quick-actions">
+        <section className="grid grid-cols-4 gap-1.5 sm:gap-2" data-testid="section-quick-actions">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => {
@@ -1338,7 +1348,7 @@ export default function Match() {
               }
             }}
             disabled={!!state.winner || (timeouts.team1 === 0 && timeouts.team2 === 0) || isTimeoutActive}
-            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-timeout"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1353,7 +1363,7 @@ export default function Match() {
               addTimelineEvent("undo", null);
             }}
             disabled={state.gameHistory.length === 0}
-            className="bg-slate-100 dark:bg-slate-800/60 border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-slate-100 dark:bg-slate-800/60 border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             data-testid="button-undo"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1364,7 +1374,7 @@ export default function Match() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleSwitchCourt}
-            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200"
             data-testid="button-switch-court"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1376,7 +1386,7 @@ export default function Match() {
             whileTap={{ scale: 0.95 }}
             onClick={handleToggleServerHand}
             disabled={matchType !== "doubles" || !!state.winner}
-            className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
+            className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center gap-1 sm:gap-2 shadow-sm active:bg-slate-900 transition disabled:opacity-40 text-slate-300 dark:text-slate-200"
             title="Đổi người phát bóng trong cùng đội"
           >
             <div className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-300">
@@ -1387,22 +1397,22 @@ export default function Match() {
         </section>
 
         {/* vMix Quick Controls */}
-        <section className="grid grid-cols-4 gap-2" data-testid="section-vmix-actions">
+        <section className="grid grid-cols-4 gap-1.5 sm:gap-2" data-testid="section-vmix-actions">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleFade}
-            className="bg-red-950/40 border border-red-800/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-red-900/60 transition text-red-300 relative"
+            className="bg-red-600 border border-red-700 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-red-800 transition text-white relative"
             title="Fade (Space)"
           >
-            <span className="text-[9px] font-bold text-red-400 text-center leading-none">FADE</span>
-            <span className="text-[7px] text-red-400/50 text-center leading-none">Space</span>
+            <span className="text-[9px] font-bold text-white text-center leading-none">FADE</span>
+            <span className="text-[7px] text-white/70 text-center leading-none">Space</span>
           </motion.button>
           {sdeckBtns.slice(0, 3).map((btn, i) => (
             <motion.button
               key={i}
               whileTap={{ scale: 0.95 }}
               onClick={() => sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined)}
-              className="bg-card border border-border rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
+              className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
               title={`${btn.label}${btn.hotkey ? ` [${btn.hotkey}]` : ""}`}
             >
               <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">{btn.label}</span>
@@ -1420,13 +1430,13 @@ export default function Match() {
             </motion.button>
           ))}
         </section>
-        <section className="grid grid-cols-3 gap-2" data-testid="section-vmix-actions-2">
+        <section className="grid grid-cols-3 gap-1.5 sm:gap-2" data-testid="section-vmix-actions-2">
           {sdeckBtns.slice(3, 6).map((btn, i) => (
             <motion.button
               key={i + 3}
               whileTap={{ scale: 0.95 }}
               onClick={() => sendVmixCommand(btn.fn, btn.input || undefined, btn.value || undefined, btn.duration || undefined)}
-              className="bg-card border border-border rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
+              className="bg-card border border-border rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center gap-1 shadow-sm active:bg-slate-900 transition text-slate-300 dark:text-slate-200 relative group"
               title={`${btn.label}${btn.hotkey ? ` [${btn.hotkey}]` : ""}`}
             >
               <span className="text-[9px] font-bold text-slate-400 dark:text-slate-300 text-center leading-none">{btn.label}</span>
@@ -1531,6 +1541,13 @@ export default function Match() {
                       const next = [...sdeckBtns];
                       next[sdeckEditIdx] = { ...sdeckEditDraft };
                       setSdeckBtns(next);
+                      saveGlobalVmixConfig({
+                        enabled: vmixEnabled,
+                        ip: vmixIp,
+                        port: vmixPort,
+                        gtKey: vmixGTKey,
+                        sdeckBtns: next,
+                      });
                     }
                     setSdeckEditIdx(null);
                     setSdeckEditDraft(null);
@@ -1544,17 +1561,17 @@ export default function Match() {
           </DialogContent>
         </Dialog>
 
-        <footer className="mt-auto p-2 sticky bottom-0 bg-background border-t border-border">
-          <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
+        <footer className="mt-auto p-1.5 sm:p-2 sticky bottom-0 bg-background border-t border-border">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 max-w-lg mx-auto">
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleScorePoint}
               disabled={!!state.winner}
               style={{ color: 'white' }}
-              className="h-20 rounded-2xl bg-green-600 hover:bg-green-500 font-black py-4 px-5 flex items-center justify-center gap-2 active:scale-95 transition text-lg"
+              className="h-16 sm:h-20 rounded-2xl bg-green-600 hover:bg-green-500 font-black py-3 sm:py-4 px-4 sm:px-5 flex items-center justify-center gap-2 active:scale-95 transition text-base sm:text-lg"
               data-testid="button-score"
             >
-              <CheckCircle2 className="w-7 h-7" style={{ color: 'white' }} />
+              <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" style={{ color: 'white' }} />
               GHI ĐIỂM
             </motion.button>
             <motion.button
@@ -1562,10 +1579,10 @@ export default function Match() {
               onClick={handleFault}
               disabled={!!state.winner}
               style={{ color: 'white' }}
-              className="h-20 rounded-2xl bg-rose-600 hover:bg-rose-500 font-black py-4 px-5 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition text-lg"
+              className="h-16 sm:h-20 rounded-2xl bg-rose-600 hover:bg-rose-500 font-black py-3 sm:py-4 px-4 sm:px-5 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition text-base sm:text-lg"
               data-testid="button-fault"
             >
-              <AlertOctagon className="w-7 h-7" style={{ color: 'white' }} />
+              <AlertOctagon className="w-6 h-6 sm:w-7 sm:h-7" style={{ color: 'white' }} />
               ĐỔI GIAO
             </motion.button>
           </div>
@@ -1956,105 +1973,6 @@ export default function Match() {
                     placeholder="GT Title Input Key (vd: 588ae5a6...)"
                     className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                  {vmixEnabled && (
-                    <div className="space-y-1.5 mt-2">
-                      <span className="text-[9px] font-bold text-muted-foreground uppercase">Sdeck Buttons</span>
-                      {sdeckBtns.map((btn, i) => (
-                        <div key={i} className="space-y-1">
-                          <div className="grid grid-cols-4 gap-1">
-                            <input
-                              type="text"
-                              value={btn.label}
-                              onChange={(e) => {
-                                const next = [...sdeckBtns];
-                                next[i] = { ...next[i], label: e.target.value };
-                                setSdeckBtns(next);
-                              }}
-                              placeholder="Label"
-                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <select
-                              value={btn.fn}
-                              onChange={(e) => {
-                                const next = [...sdeckBtns];
-                                next[i] = { ...next[i], fn: e.target.value };
-                                setSdeckBtns(next);
-                              }}
-                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                            >
-                              <option value="Cut">Cut</option>
-                              <option value="Fade">Fade</option>
-                              <option value="PreviewInput">Preview</option>
-                              <option value="OverlayInput1">Overlay1</option>
-                              <option value="OverlayInput2">Overlay2</option>
-                              <option value="OverlayInput3">Overlay3</option>
-                              <option value="OverlayInput4">Overlay4</option>
-                              <option value="OverlayInput1Off">Overlay1Off</option>
-                              <option value="OverlayInput2Off">Overlay2Off</option>
-                              <option value="Stinger1">Stinger1</option>
-                              <option value="Stinger2">Stinger2</option>
-                              <option value="FadeToBlack">FTB</option>
-                              <option value="StartRecording">StartRec</option>
-                              <option value="StopRecording">StopRec</option>
-                              <option value="StartStreaming">StartStream</option>
-                              <option value="StopStreaming">StopStream</option>
-                              <option value="SetVolume">SetVolume</option>
-                              <option value="SetText">SetText</option>
-                              <option value="ReplayMarkInOut">ReplayInOut</option>
-                              <option value="ReplayPlayLastEventToOutput">ReplayPlay</option>
-                              <option value="ReplayLive">ReplayLive</option>
-                            </select>
-                            <input
-                              type="text"
-                              value={btn.input}
-                              onChange={(e) => {
-                                const next = [...sdeckBtns];
-                                next[i] = { ...next[i], input: e.target.value };
-                                setSdeckBtns(next);
-                              }}
-                              placeholder="Input #"
-                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <input
-                              type="text"
-                              value={btn.hotkey}
-                              onChange={(e) => {
-                                const next = [...sdeckBtns];
-                                next[i] = { ...next[i], hotkey: e.target.value };
-                                setSdeckBtns(next);
-                              }}
-                              placeholder="Key"
-                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-1">
-                            <input
-                              type="text"
-                              value={btn.duration}
-                              onChange={(e) => {
-                                const next = [...sdeckBtns];
-                                next[i] = { ...next[i], duration: e.target.value };
-                                setSdeckBtns(next);
-                              }}
-                              placeholder="Duration (ms)"
-                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <input
-                              type="text"
-                              value={btn.value}
-                              onChange={(e) => {
-                                const next = [...sdeckBtns];
-                                next[i] = { ...next[i], value: e.target.value };
-                                setSdeckBtns(next);
-                              }}
-                              placeholder="Value"
-                              className="bg-muted border border-border rounded-lg px-2 py-1.5 text-[10px] text-foreground outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </>
               )}
             </div>
