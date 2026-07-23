@@ -47,7 +47,7 @@ export default function ScoreboardOverlay({
   // PPA Broadcast theme
   if (theme === "ppa") {
     return (
-      <div className="relative min-w-[560px] flex flex-col gap-[6px] select-none py-1 px-1 flex-shrink-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.65)]">
+      <div className="relative min-w-[560px] flex flex-col gap-[6px] select-none py-1 pl-0 pr-1 flex-shrink-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.65)]">
         {/* Team 1 Row */}
         <div className="relative">
           {/* Yellow Serve Layer underneath active server */}
@@ -62,12 +62,12 @@ export default function ScoreboardOverlay({
             style={{ borderRadius: "0px 22px 38px 0px" }}
           >
             {/* Player / Team Name */}
-            <div className="flex-1 flex items-center pl-4 pr-2 truncate">
-              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] truncate">
+            <div className="flex-1 flex items-center pl-4 pr-3 min-w-0">
+              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] pr-3 truncate block">
                 {team1Name}
               </span>
               {isDoubles && match.isServer1 && !isCompleted && (
-                <span className="ml-2 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
                   S{match.isFirstServeOfMatch ? "2" : match.serverNumber}
                 </span>
               )}
@@ -103,12 +103,12 @@ export default function ScoreboardOverlay({
             style={{ borderRadius: "0px 22px 38px 0px" }}
           >
             {/* Player / Team Name */}
-            <div className="flex-1 flex items-center pl-4 pr-2 truncate">
-              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] truncate">
+            <div className="flex-1 flex items-center pl-4 pr-3 min-w-0">
+              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] pr-3 truncate block">
                 {team2Name}
               </span>
               {isDoubles && match.isServer2 && !isCompleted && (
-                <span className="ml-2 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
                   S{match.isFirstServeOfMatch ? "2" : match.serverNumber}
                 </span>
               )}
@@ -130,16 +130,16 @@ export default function ScoreboardOverlay({
           </div>
         </div>
 
-        {/* Tournament & Match Info Footer (2 lines: Tournament Name <br> Match Code | Time) */}
+        {/* Tournament & Match Info Footer (2 lines align-right, white tournament name) */}
         {(showTournament || showMatchCode) && (
-          <div className="flex flex-col items-center justify-center font-black italic uppercase text-center text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pt-1 leading-tight">
+          <div className="w-full flex flex-col items-end pr-10 font-black italic uppercase text-right text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pt-1 leading-tight">
             {showTournament && (
               <div className="text-[14px] tracking-widest text-white">
                 {match.tournamentName || "MEN'S DOUBLES"}
               </div>
             )}
             {(showMatchCode || startTime) && (
-              <div className="text-[12px] tracking-wider text-[#dfff00] flex items-center gap-1.5 justify-center mt-0.5">
+              <div className="text-[12px] tracking-wider text-[#dfff00] flex items-center gap-1.5 justify-end mt-0.5">
                 {showMatchCode && (
                   <span>{match.matchCode || "ROUND OF 16"}</span>
                 )}
