@@ -46,48 +46,43 @@ export default function ScoreboardOverlay({
 
   // PPA Broadcast theme
   if (theme === "ppa") {
-    const infoText = [
-      showTournament ? (match.tournamentName || "MEN'S DOUBLES") : null,
-      showMatchCode ? (match.matchCode || "ROUND OF 16") : null
-    ].filter(Boolean).join(" | ");
-
     return (
-      <div className="relative min-w-[560px] flex flex-col gap-[5px] select-none py-1 px-1 flex-shrink-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+      <div className="relative min-w-[560px] flex flex-col gap-[6px] select-none py-1 px-1 flex-shrink-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.65)]">
         {/* Team 1 Row */}
         <div className="relative">
           {/* Yellow Serve Layer underneath active server */}
           {match.isServer1 && !isCompleted && (
             <div
-              className="absolute -bottom-[4px] left-0 w-full h-[9px] bg-[#dfff00] shadow-[0_0_12px_rgba(223,255,0,0.9)] z-0 rounded-b-sm"
-              style={{ clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%)" }}
+              className="absolute -bottom-[4px] left-0 w-full h-[10px] bg-[#dfff00] shadow-[0_0_14px_rgba(223,255,0,0.95)] z-0"
+              style={{ borderRadius: "0px 0px 38px 0px" }}
             />
           )}
           <div
-            className="relative z-10 h-[46px] bg-gradient-to-r from-[#3bb8f6] via-[#0284c7] to-[#026aa7] text-[#031d38] flex items-center justify-between border-t border-white/50 shadow-inner overflow-hidden"
-            style={{ clipPath: "polygon(0 0, calc(100% - 14px) 0, 100% 100%, 0 100%)" }}
+            className="relative z-10 h-[48px] bg-gradient-to-r from-[#3bb8f6] via-[#0284c7] to-[#026aa7] text-[#031d38] flex items-center justify-between border-t border-white/50 shadow-inner overflow-hidden"
+            style={{ borderRadius: "0px 22px 38px 0px" }}
           >
             {/* Player / Team Name */}
             <div className="flex-1 flex items-center pl-4 pr-2 truncate">
-              <span className="font-black italic uppercase text-[17px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] truncate">
+              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] truncate">
                 {team1Name}
               </span>
               {isDoubles && match.isServer1 && !isCompleted && (
-                <span className="ml-2 px-1.5 py-0.5 rounded bg-black/25 text-white font-black text-[11px] italic flex-shrink-0">
+                <span className="ml-2 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
                   S{match.isFirstServeOfMatch ? "2" : match.serverNumber}
                 </span>
               )}
             </div>
 
             {/* Set Wins box (BO3 / BO5) */}
-            <div className="w-[44px] h-full bg-white/30 backdrop-blur-sm border-x border-white/20 flex items-center justify-center flex-shrink-0">
-              <span className="font-black italic text-white text-[22px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
+            <div className="w-[46px] h-full bg-white/30 backdrop-blur-sm border-x border-white/20 flex items-center justify-center flex-shrink-0">
+              <span className="font-black italic text-white text-[23px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
                 {match.gamesWonTeam1 ?? 0}
               </span>
             </div>
 
             {/* Game Points */}
-            <div className="w-[52px] h-full flex items-center justify-center flex-shrink-0 pr-2">
-              <span className="font-black italic text-[26px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
+            <div className="w-[56px] h-full flex items-center justify-center flex-shrink-0 pr-4">
+              <span className="font-black italic text-[28px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
                 {match.scoreTeam1}
               </span>
             </div>
@@ -99,53 +94,66 @@ export default function ScoreboardOverlay({
           {/* Yellow Serve Layer underneath active server */}
           {match.isServer2 && !isCompleted && (
             <div
-              className="absolute -bottom-[4px] left-0 w-full h-[9px] bg-[#dfff00] shadow-[0_0_12px_rgba(223,255,0,0.9)] z-0 rounded-b-sm"
-              style={{ clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%)" }}
+              className="absolute -bottom-[4px] left-0 w-full h-[10px] bg-[#dfff00] shadow-[0_0_14px_rgba(223,255,0,0.95)] z-0"
+              style={{ borderRadius: "0px 0px 38px 0px" }}
             />
           )}
           <div
-            className="relative z-10 h-[46px] bg-gradient-to-r from-[#3bb8f6] via-[#0284c7] to-[#026aa7] text-[#031d38] flex items-center justify-between border-t border-white/50 shadow-inner overflow-hidden"
-            style={{ clipPath: "polygon(0 0, calc(100% - 14px) 0, 100% 100%, 0 100%)" }}
+            className="relative z-10 h-[48px] bg-gradient-to-r from-[#3bb8f6] via-[#0284c7] to-[#026aa7] text-[#031d38] flex items-center justify-between border-t border-white/50 shadow-inner overflow-hidden"
+            style={{ borderRadius: "0px 22px 38px 0px" }}
           >
             {/* Player / Team Name */}
             <div className="flex-1 flex items-center pl-4 pr-2 truncate">
-              <span className="font-black italic uppercase text-[17px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] truncate">
+              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] truncate">
                 {team2Name}
               </span>
               {isDoubles && match.isServer2 && !isCompleted && (
-                <span className="ml-2 px-1.5 py-0.5 rounded bg-black/25 text-white font-black text-[11px] italic flex-shrink-0">
+                <span className="ml-2 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
                   S{match.isFirstServeOfMatch ? "2" : match.serverNumber}
                 </span>
               )}
             </div>
 
             {/* Set Wins box (BO3 / BO5) */}
-            <div className="w-[44px] h-full bg-white/30 backdrop-blur-sm border-x border-white/20 flex items-center justify-center flex-shrink-0">
-              <span className="font-black italic text-white text-[22px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
+            <div className="w-[46px] h-full bg-white/30 backdrop-blur-sm border-x border-white/20 flex items-center justify-center flex-shrink-0">
+              <span className="font-black italic text-white text-[23px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
                 {match.gamesWonTeam2 ?? 0}
               </span>
             </div>
 
             {/* Game Points */}
-            <div className="w-[52px] h-full flex items-center justify-center flex-shrink-0 pr-2">
-              <span className="font-black italic text-[26px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
+            <div className="w-[56px] h-full flex items-center justify-center flex-shrink-0 pr-4">
+              <span className="font-black italic text-[28px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
                 {match.scoreTeam2}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Tournament & Match Info Footer */}
-        {infoText && (
-          <div className="text-center font-black italic uppercase text-[13px] tracking-widest text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pt-0.5">
-            {infoText.includes(" | ") ? (
-              <>
-                {infoText.split(" | ")[0]} <span className="text-[#dfff00] font-normal mx-1">|</span> {infoText.split(" | ")[1]}
-              </>
-            ) : (
-              infoText
+        {/* Tournament & Match Info Footer (2 lines: Tournament Name <br> Match Code | Time) */}
+        {(showTournament || showMatchCode) && (
+          <div className="flex flex-col items-center justify-center font-black italic uppercase text-center text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pt-1 leading-tight">
+            {showTournament && (
+              <div className="text-[14px] tracking-widest text-white">
+                {match.tournamentName || "MEN'S DOUBLES"}
+              </div>
             )}
-            {startTime && <span className="ml-2 text-[#dfff00] font-normal">| <Clock className="w-3.5 h-3.5 inline -mt-0.5" /> {timeDisplay}</span>}
+            {(showMatchCode || startTime) && (
+              <div className="text-[12px] tracking-wider text-[#dfff00] flex items-center gap-1.5 justify-center mt-0.5">
+                {showMatchCode && (
+                  <span>{match.matchCode || "ROUND OF 16"}</span>
+                )}
+                {showMatchCode && startTime && (
+                  <span className="font-normal opacity-80">|</span>
+                )}
+                {startTime && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 inline -mt-0.5" />
+                    {timeDisplay}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
