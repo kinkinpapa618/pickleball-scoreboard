@@ -47,99 +47,115 @@ export default function ScoreboardOverlay({
   // PPA Broadcast theme
   if (theme === "ppa") {
     return (
-      <div className="relative min-w-[560px] flex flex-col gap-[6px] select-none py-1 pl-0 pr-1 flex-shrink-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.65)]">
+      <div className="relative w-fit flex flex-col gap-[6px] select-none py-1 pl-0 ml-0 pr-1 flex-shrink-0 drop-shadow-[0_5px_10px_rgba(0,0,0,0.38)]">
         {/* Team 1 Row */}
-        <div className="relative">
-          {/* Yellow Serve Layer underneath active server */}
+        <div className="relative left-0 w-full">
+          {/* Yellow Serve Layer underneath active server (Sticks out 8px to the right and 4px to the bottom) */}
           {match.isServer1 && !isCompleted && (
             <div
-              className="absolute -bottom-[4px] left-0 w-full h-[10px] bg-[#dfff00] shadow-[0_0_14px_rgba(223,255,0,0.95)] z-0"
-              style={{ borderRadius: "0px 0px 38px 0px" }}
+              className="absolute -bottom-[4px] -left-[2px] w-[calc(100%+32px)] h-[48px] bg-[#dfff00] z-0 transition-all duration-300"
+              style={{ borderRadius: "0px 26px 42px 0px" }}
             />
           )}
           <div
-            className="relative z-10 h-[48px] bg-gradient-to-r from-[#3bb8f6] via-[#0284c7] to-[#026aa7] text-[#031d38] flex items-center justify-between border-t border-white/50 shadow-inner overflow-hidden"
+            className={`relative z-10 h-[48px] bg-gradient-to-r from-[#3bb8f6] via-[#0dadff] to-[#5ec3ff] text-[#031d38] flex items-center justify-between border-t border-white/60 shadow-inner overflow-hidden transition-all duration-300 ${
+              match.isServer1 && !isCompleted ? "w-[calc(100%+20px)]" : "w-full"
+            }`}
             style={{ borderRadius: "0px 22px 38px 0px" }}
           >
-            {/* Player / Team Name */}
-            <div className="flex-1 flex items-center pl-4 pr-3 min-w-0">
-              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] pr-3 truncate block">
+            {/* Player / Team Name (S1/S2 badge right aligned) */}
+            <div className="w-[440px] flex items-center justify-between pl-4 pr-3 flex-shrink-0 min-w-0">
+              <span 
+                className="font-black italic uppercase text-[18px] tracking-[0.3px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] pr-2 truncate block flex-1 min-w-0"
+                style={{ WebkitTextStroke: "0.5px #031d38" }}
+              >
                 {team1Name}
               </span>
               {isDoubles && match.isServer1 && !isCompleted && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
+                <span className="ml-auto px-2 py-0.5 rounded-full bg-[#072440]/80 text-[#dfff00] font-black text-[11px] italic border border-white/20 shadow-sm flex-shrink-0">
                   S{match.isFirstServeOfMatch ? "2" : match.serverNumber}
                 </span>
               )}
             </div>
 
-            {/* Set Wins box (BO3 / BO5) */}
-            <div className="w-[46px] h-full bg-white/30 backdrop-blur-sm border-x border-white/20 flex items-center justify-center flex-shrink-0">
-              <span className="font-black italic text-white text-[23px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
+            {/* Set Wins box (BO3 / BO5) - Dark translucent black background */}
+            <div className="w-[48px] h-full bg-[#06182a]/75 backdrop-blur-md border-x border-black/30 flex items-center justify-center flex-shrink-0">
+              <span className="font-black italic text-[#ffffff] text-[24px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                 {match.gamesWonTeam1 ?? 0}
               </span>
             </div>
 
             {/* Game Points */}
-            <div className="w-[56px] h-full flex items-center justify-center flex-shrink-0 pr-4">
-              <span className="font-black italic text-[28px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
+            <div className="w-[58px] h-full flex items-center justify-center flex-shrink-0">
+              <span className="font-black italic text-[29px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">
                 {match.scoreTeam1}
               </span>
             </div>
+
+            {/* Compact tail end */}
+            <div className="w-[18px] h-full flex-shrink-0" />
           </div>
         </div>
 
         {/* Team 2 Row */}
-        <div className="relative">
-          {/* Yellow Serve Layer underneath active server */}
+        <div className="relative left-0 w-full">
+          {/* Yellow Serve Layer underneath active server (Sticks out 8px to the right and 4px to the bottom) */}
           {match.isServer2 && !isCompleted && (
             <div
-              className="absolute -bottom-[4px] left-0 w-full h-[10px] bg-[#dfff00] shadow-[0_0_14px_rgba(223,255,0,0.95)] z-0"
-              style={{ borderRadius: "0px 0px 38px 0px" }}
+              className="absolute -bottom-[4px] -left-[2px] w-[calc(100%+32px)] h-[48px] bg-[#dfff00] z-0 transition-all duration-300"
+              style={{ borderRadius: "0px 26px 42px 0px" }}
             />
           )}
           <div
-            className="relative z-10 h-[48px] bg-gradient-to-r from-[#3bb8f6] via-[#0284c7] to-[#026aa7] text-[#031d38] flex items-center justify-between border-t border-white/50 shadow-inner overflow-hidden"
+            className={`relative z-10 h-[48px] bg-gradient-to-r from-[#3bb8f6] via-[#0dadff] to-[#5ec3ff] text-[#031d38] flex items-center justify-between border-t border-white/60 shadow-inner overflow-hidden transition-all duration-300 ${
+              match.isServer2 && !isCompleted ? "w-[calc(100%+20px)]" : "w-full"
+            }`}
             style={{ borderRadius: "0px 22px 38px 0px" }}
           >
-            {/* Player / Team Name */}
-            <div className="flex-1 flex items-center pl-4 pr-3 min-w-0">
-              <span className="font-black italic uppercase text-[18px] tracking-tight text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] pr-3 truncate block">
+            {/* Player / Team Name (S1/S2 badge right aligned) */}
+            <div className="w-[440px] flex items-center justify-between pl-4 pr-3 flex-shrink-0 min-w-0">
+              <span 
+                className="font-black italic uppercase text-[18px] tracking-[0.3px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)] pr-2 truncate block flex-1 min-w-0"
+                style={{ WebkitTextStroke: "0.5px #031d38" }}
+              >
                 {team2Name}
               </span>
               {isDoubles && match.isServer2 && !isCompleted && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-black/30 text-white font-black text-[11px] italic flex-shrink-0">
+                <span className="ml-auto px-2 py-0.5 rounded-full bg-[#072440]/80 text-[#dfff00] font-black text-[11px] italic border border-white/20 shadow-sm flex-shrink-0">
                   S{match.isFirstServeOfMatch ? "2" : match.serverNumber}
                 </span>
               )}
             </div>
 
-            {/* Set Wins box (BO3 / BO5) */}
-            <div className="w-[46px] h-full bg-white/30 backdrop-blur-sm border-x border-white/20 flex items-center justify-center flex-shrink-0">
-              <span className="font-black italic text-white text-[23px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
+            {/* Set Wins box (BO3 / BO5) - Dark translucent black background */}
+            <div className="w-[48px] h-full bg-[#06182a]/75 backdrop-blur-md border-x border-black/30 flex items-center justify-center flex-shrink-0">
+              <span className="font-black italic text-[#ffffff] text-[24px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                 {match.gamesWonTeam2 ?? 0}
               </span>
             </div>
 
             {/* Game Points */}
-            <div className="w-[56px] h-full flex items-center justify-center flex-shrink-0 pr-4">
-              <span className="font-black italic text-[28px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
+            <div className="w-[58px] h-full flex items-center justify-center flex-shrink-0">
+              <span className="font-black italic text-[29px] text-[#031d38] drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">
                 {match.scoreTeam2}
               </span>
             </div>
+
+            {/* Compact tail end */}
+            <div className="w-[18px] h-full flex-shrink-0" />
           </div>
         </div>
 
-        {/* Tournament & Match Info Footer (2 lines align-right, white tournament name) */}
+        {/* Tournament & Match Info Footer (Black tournament name, align-right) */}
         {(showTournament || showMatchCode) && (
-          <div className="w-full flex flex-col items-end pr-10 font-black italic uppercase text-right text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pt-1 leading-tight">
+          <div className="w-full flex flex-col items-end pr-10 font-black italic uppercase text-right pt-1 leading-tight">
             {showTournament && (
-              <div className="text-[14px] tracking-widest text-white">
+              <div className="text-[14px] tracking-[0.12em] text-[#000000] drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
                 {match.tournamentName || "MEN'S DOUBLES"}
               </div>
             )}
             {(showMatchCode || startTime) && (
-              <div className="text-[12px] tracking-wider text-[#dfff00] flex items-center gap-1.5 justify-end mt-0.5">
+              <div className="text-[12px] tracking-[0.08em] text-[#dfff00] flex items-center gap-1.5 justify-end mt-0.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
                 {showMatchCode && (
                   <span>{match.matchCode || "ROUND OF 16"}</span>
                 )}

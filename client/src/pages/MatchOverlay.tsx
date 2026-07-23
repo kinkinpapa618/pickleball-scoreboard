@@ -98,7 +98,7 @@ export default function MatchOverlay() {
     <div id="overlay-root" className={`h-screen w-full bg-transparent font-sans overflow-hidden select-none transition-opacity duration-1000 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
       <style>{`body { overflow: hidden !important; } ::-webkit-scrollbar { display: none !important; }`}</style>
 
-      <div className={`absolute top-[15px] ${theme === "ppa" ? "left-0" : "left-[15px]"}`}>
+      <div className="absolute top-[15px] -left-[4px] flex flex-col gap-3">
         <ScoreboardOverlay match={match} theme={theme} showTournament={showTournament} showMatchCode={showMatchCode} />
       </div>
 
