@@ -946,6 +946,7 @@ export default function RefereeTools() {
               >
                 <option value="default">Sáng</option>
                 <option value="dark">Tối</option>
+                <option value="ppa">PPA Tour</option>
                 <option value="glassmorphism">Kính mờ</option>
                 <option value="cyberpunk">Cyberpunk</option>
                 <option value="retro">Retro</option>

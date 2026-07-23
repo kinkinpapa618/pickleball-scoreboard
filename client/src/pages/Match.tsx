@@ -1635,6 +1635,7 @@ export default function Match() {
               >
                 <option value="default">Sáng (Mặc định)</option>
                 <option value="dark">Tối (Dark)</option>
+                <option value="ppa">PPA Tour Broadcast</option>
                 <option value="cyberpunk">Cyberpunk Neon</option>
                 <option value="retro">Retro Arcade</option>
                 <option value="glassmorphism">Glassmorphism (Kính mờ)</option>

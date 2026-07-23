@@ -516,6 +516,7 @@ export default function Profile() {
             >
               <option value="default">Sáng (Mặc định)</option>
               <option value="dark">Sleek Tối (Dark)</option>
+              <option value="ppa">PPA Tour Broadcast</option>
               <option value="cyberpunk">Cyberpunk Neon (Cyan/Pink)</option>
               <option value="retro">Retro Arcade (Monospace/Yellow)</option>
               <option value="glassmorphism">Glassmorphism (Kính mờ)</option>
