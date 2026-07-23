@@ -116,7 +116,7 @@ export default function MatchOverlay() {
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Chủ đề bảng điểm</label>
               <div className="grid grid-cols-2 gap-1">
                 {[
-                  { id: "default", name: "Sáng" }, { id: "dark", name: "Tối" }, { id: "cyberpunk", name: "Neon" },
+                  { id: "default", name: "Sáng" }, { id: "dark", name: "Tối" }, { id: "ppa", name: "PPA Tour" }, { id: "cyberpunk", name: "Neon" },
                   { id: "retro", name: "Retro" }, { id: "glassmorphism", name: "Kính mờ" }, { id: "minimal", name: "Thanh ngang" }, { id: "dali-sport", name: "Dali Sport" },
                 ].map((opt) => (
                   <button key={opt.id} onClick={() => updateTheme(opt.id)}

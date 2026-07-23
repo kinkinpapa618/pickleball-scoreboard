@@ -180,6 +180,7 @@ export default function LiveStream() {
               <div className="grid grid-cols-2 gap-1">
                 {[
                   { id: "dark", name: "Dark" },
+                  { id: "ppa", name: "PPA Tour" },
                   { id: "dali-sport", name: "Dali Sport" },
                   { id: "default", name: "Light" },
                   { id: "cyberpunk", name: "Neon" },
